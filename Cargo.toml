@@ -2,6 +2,7 @@
 name = "webkitten"
 version = "0.1.0"
 authors = ["Delisa Mason <iskanamagus@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
 libc = "0.2.8"

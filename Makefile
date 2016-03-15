@@ -10,9 +10,9 @@ LIBS=webkit2gtk-4.0 gtk+-3.0
 # Linking flags for required libraries. The spaces are added for cargo compat.
 CFLAGS:= $(subst -L/,-L /,$(subst  -l, -l ,$(shell pkg-config --libs $(LIBS))))
 # Cargo build manager
-CARGO:=cargo
+CARGO=CFLAGS='$(CFLAGS)' cargo
 
-SRC_FILES=src/main.rs Cargo.toml
+SRC_FILES=src/main.rs build.rs Cargo.toml
 DEV_FILE=target/debug/$(PROJECT)
 PROD_FILE=target/release/$(PROJECT)
 INSTALL_FILE=$(DESTDIR)/bin/$(PROJECT)
