@@ -6,7 +6,9 @@ extern crate glib_sys;
 use libc::{c_char,c_int};
 use std::ffi::CString;
 use std::mem;
-use gtk_sys::{GtkWidget,GtkWindow};
+use gtk_sys::{GtkBox,GtkEntry,GtkWidget,GtkWindow};
+use glib_sys::GTRUE as gtrue;
+use glib_sys::GFALSE as gfalse;
 
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
@@ -67,8 +69,15 @@ impl Window {
         let webview = unsafe {
             let webview = webkit_web_view_new();
             let webview_widget: *mut GtkWidget = mem::transmute(webview);
+            let box_widget = gtk_sys::gtk_box_new(gtk_sys::GtkOrientation::Vertical, 0);
+            let gbox: *mut GtkBox = mem::transmute(box_widget);
             let container: *mut gtk_sys::GtkContainer = mem::transmute(self.gtk_window);
-            gtk_sys::gtk_container_add(container, webview_widget);
+            let entry_widget = gtk_sys::gtk_entry_new();
+            let entry: *mut GtkEntry = mem::transmute(entry_widget);
+            gtk_sys::gtk_entry_set_has_frame(entry, gfalse);
+            gtk_sys::gtk_container_add(container, box_widget);
+            gtk_sys::gtk_box_pack_end(gbox, entry_widget, gfalse, gfalse, 0);
+            gtk_sys::gtk_box_pack_start(gbox, webview_widget, gtrue, gtrue, 0);
 
             let uri = CString::new(uri).unwrap().as_ptr();
             webkit_web_view_load_uri(webview, uri);
