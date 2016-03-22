@@ -27,6 +27,9 @@ $(PROD_FILE): $(SRC_FILES)
 
 .PHONY: build
 
+doc:
+	$(MAKE) -C docs html
+
 build: $(DEV_FILE) ## Build the webkitten binary
 
 release: $(PROD_FILE) ## Build the webkitten binary in release mode
