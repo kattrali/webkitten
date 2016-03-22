@@ -1,22 +1,34 @@
-.. Webkitten documentation master file, created by
-   sphinx-quickstart on Sat Mar 19 18:13:11 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Webkitten: The Hacker's Browser
+===============================
 
-Welcome to Webkitten's documentation!
-=====================================
+Webkitten is a command-driven web browser built on WebKitGTK+ and inspired by
+luakit (https://mason-larobina.github.io/luakit) and Vim (http://www.vim.org).
 
-Contents:
+Webkitten allows you to:
+
+- Browse the web (nearly) pointing device-free
+- Run custom scripts for browser interaction
+- Edit human-readable configuration files
+
+Features
+--------
+
+- Human-readable configuration
+- SQLite bookmark storage
+- Scriptable interface
+- Private browsing modes
+- WebKit content blocking (https://webkit.org/blog/3476)
+- Command autocompletion
+- Customizable keybindings
+- Support for userscripts and custom CSS
+
+User Guide
+----------
 
 .. toctree::
    :maxdepth: 2
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   installation
+   getting-started
+   custom-commands
 
