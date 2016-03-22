@@ -3,6 +3,9 @@ extern crate gtk_sys;
 extern crate gobject_sys;
 extern crate glib_sys;
 
+mod ui;
+use ui::TextField;
+
 use libc::{c_char,c_int};
 use std::ffi::CString;
 use std::mem;
