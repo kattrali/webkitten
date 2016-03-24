@@ -18,8 +18,8 @@ A WebKit2-based hacker's browser, inspired by luakit, written in Rust
 
 `webkitten` depends on:
 
-* GTK+ 3.0
-* WebKit2GTK 4.0
+* Gtk+ 3.0
+* WebKit2Gtk+ 4.0
 
 Both must be present to link and run.
 
