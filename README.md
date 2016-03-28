@@ -20,6 +20,7 @@ A WebKit2-based hacker's browser, inspired by luakit, written in Rust
 
 * Gtk+ 3.0
 * WebKit2Gtk+ 4.0
+* Lua 5.2
 
 Both must be present to link and run.
 
