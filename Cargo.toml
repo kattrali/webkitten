@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Delisa Mason <iskanamagus@gmail.com>"]
 build = "build.rs"
 
+[[bin]]
+doc = false
+name = "webkitten"
+
 [dependencies]
 hlua = "0.1.7"
 libc = "0.2.8"

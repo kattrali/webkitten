@@ -27,7 +27,10 @@ $(PROD_FILE): $(SRC_FILES)
 
 .PHONY: build
 
-doc:
+apidoc: ## Generate API documentation and open in the default browser
+	@$(CARGO) doc --no-deps --open
+
+doc: ## Generate user/development documentation
 	$(MAKE) -C docs html
 
 build: $(DEV_FILE) ## Build the webkitten binary
