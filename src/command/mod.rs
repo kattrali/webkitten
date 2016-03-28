@@ -13,6 +13,7 @@ pub struct Command {
     pub name: String,
 }
 
+/// Parse a command name and arguments into an instance of Command
 pub fn parse_command(search_paths: Vec<&str>, input: &str) -> Option<Command> {
     let mut components = input.split_whitespace();
     return match components.next() {
@@ -39,6 +40,8 @@ pub fn execute(command: Command) -> Result<bool, LuaError> {
     };
 }
 
+/// Iterate over search paths returning the first file path in search paths
+/// with the provided name
 fn resolve_command(search_paths: Vec<&str>, name: &str) -> Option<String> {
     if name.is_empty() {
         return None
@@ -51,6 +54,7 @@ fn resolve_command(search_paths: Vec<&str>, name: &str) -> Option<String> {
     return ordered_paths.pop();
 }
 
+/// Join a directory and file name into a string path if possible
 fn join_paths(dir: &str, file_name: &str) -> Option<String> {
     let buf = Path::new(dir).join(file_name);
     return match buf.to_str() {
