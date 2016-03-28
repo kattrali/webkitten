@@ -5,6 +5,7 @@ extern crate glib_sys;
 
 mod ui;
 mod webkitgtk_sys;
+mod command;
 
 use ui::Window;
 use libc::{c_char,c_int};

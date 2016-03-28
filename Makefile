@@ -12,7 +12,7 @@ CFLAGS:= $(subst -L/,-L /,$(subst  -l, -l ,$(shell pkg-config --libs $(LIBS))))
 # Cargo build manager
 CARGO=CFLAGS='$(CFLAGS)' cargo
 
-SRC_FILES=$(shell git ls-files src) build.rs Cargo.toml
+SRC_FILES=$(shell ls src/{,**/}*.rs) build.rs Cargo.toml
 DEV_FILE=target/debug/$(PROJECT)
 PROD_FILE=target/release/$(PROJECT)
 INSTALL_FILE=$(DESTDIR)/bin/$(PROJECT)
