@@ -1,7 +1,7 @@
 use std::mem::transmute;
 use std::ffi::CString;
 
-use super::{gtk_sys,glib_sys};
+use super::gtk_sys;
 use super::gtk_sys::{GtkWindow,GtkContainer,GtkWidget};
 use super::{WebView,
             BoxContainer,

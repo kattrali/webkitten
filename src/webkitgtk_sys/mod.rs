@@ -1,7 +1,7 @@
 extern crate libc;
 extern crate gtk_sys;
 
-use libc::{c_char,c_int};
+use libc::c_char;
 use gtk_sys::GtkWidget;
 
 pub enum WebKitWebView {}
