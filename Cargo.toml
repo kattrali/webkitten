@@ -5,6 +5,7 @@ authors = ["Delisa Mason <iskanamagus@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
+hlua = "0.1.7"
 libc = "0.2.8"
 gtk-sys     = "0.2.1"
 gobject-sys = "0.2.1"

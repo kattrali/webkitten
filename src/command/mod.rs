@@ -1,6 +1,12 @@
-use std::path::Path;
-use std::fs::metadata;
+extern crate hlua;
 
+use self::hlua::{Lua,LuaError};
+use std::path::Path;
+use std::fs::{File,metadata};
+
+/// A representation of a script which executes and returns a boolean value
+/// indicating success
+#[derive(Debug,Clone)]
 pub struct Command {
     pub path: String,
     pub arguments: Vec<String>,
@@ -19,6 +25,18 @@ pub fn parse_command(search_paths: Vec<&str>, input: &str) -> Option<Command> {
         },
         None => None
     }
+}
+
+/// Run a command instance in a new Lua scripting runtime
+pub fn execute(command: Command) -> Result<bool, LuaError> {
+    let mut lua = Lua::new();
+    lua.set("selected_window_index", 0);
+    lua.set("selected_buffer_index", 0);
+    lua.set("arguments", command.arguments);
+    return match File::open(command.path) {
+        Ok(file) => lua.execute_from_reader::<bool, _>(file),
+        Err(e) => Err(LuaError::ReadError(e))
+    };
 }
 
 fn resolve_command(search_paths: Vec<&str>, name: &str) -> Option<String> {
@@ -50,10 +68,12 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    #[allow(unused_must_use)]
     fn test_resolve_by_filename() {
         let (path, result) = create_command("hello",
-                                            b"print(\"hello world\")",
+                                            b"print(\"hello world\");",
                                             "hello world");
+        remove_file(Path::new(path.as_str().clone()));
         assert!(result.is_some());
 
         let command = result.unwrap();
@@ -62,15 +82,29 @@ mod tests {
         assert_eq!(command.path, path);
     }
 
+    #[test]
+    #[allow(unused_must_use)]
+    fn test_execute() {
+        let (path, result) = create_command("call-and-return",
+                                         b"return true;",
+                                         "call-and-return");
+        let command = result.unwrap();
+        let output = execute(command.clone());
+        remove_file(Path::new(path.as_str().clone()));
+        assert!(output.is_ok());
+        assert!(output.ok().unwrap());
+
+    }
+
+    #[allow(unused_must_use)]
     fn create_command(name: &str, content: &[u8], invocation: &str) -> (String, Option<Command>) {
         let dir = temp_dir();
         let search_path = String::from(dir.clone().to_str().unwrap());
         let file_path = Path::new(dir.to_str().unwrap()).join(name);
         let mut file = File::create(file_path.as_path()).ok().unwrap();
-        file.write(content);
+        assert!(file.write(content).is_ok());
         file.flush();
         let result = parse_command(vec![&search_path], invocation);
-        remove_file(file_path.as_path());
         return (String::from(file_path.to_str().unwrap()), result);
     }
 }
