@@ -8,9 +8,9 @@ use std::fs::{File,metadata};
 /// indicating success
 #[derive(Debug,Clone)]
 pub struct Command {
-    pub path: String,
-    pub arguments: Vec<String>,
-    pub name: String,
+    path: String,
+    arguments: Vec<String>,
+    name: String,
 }
 
 /// Parse a command name and arguments into an instance of Command
