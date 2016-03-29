@@ -3,9 +3,10 @@ extern crate gtk_sys;
 extern crate gobject_sys;
 extern crate glib_sys;
 
+pub mod command;
+pub mod config;
 pub mod ui;
 mod webkitgtk_sys;
-pub mod command;
 
 use ui::Window;
 use libc::{c_char,c_int};
