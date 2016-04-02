@@ -2,6 +2,7 @@ extern crate libc;
 extern crate gtk_sys;
 extern crate gobject_sys;
 extern crate glib_sys;
+extern crate toml;
 
 pub mod command;
 pub mod config;
@@ -10,18 +11,29 @@ mod webkitgtk_sys;
 
 use ui::Window;
 use libc::{c_char,c_int};
+use toml::Value;
 
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
 
 pub struct Application {
     windows: Vec<Window>,
+    config: Value,
+    config_path: String
 }
 
 impl Application {
 
-    pub fn new() -> Self {
-        Application { windows: vec![] }
+    /// Create a new application instance
+    pub fn new(config_path: &str) -> Option<Self> {
+        match config::parse_config_file(config_path.clone()) {
+            Some(config) => Some(Application {
+                windows: vec![],
+                config: config,
+                config_path: String::from(config_path)
+            }),
+            None => None
+        }
     }
 
     pub fn run(&mut self) {

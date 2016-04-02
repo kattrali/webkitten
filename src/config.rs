@@ -1,16 +1,19 @@
 extern crate toml;
 
-use self::toml::{Value};
 use std::fs::File;
 use std::io::Read;
+use self::toml::Value;
 
-const DEFAULT_CONFIG: &'static str = r#"
+pub const DEFAULT_CONFIG: &'static str = r#"
 [window]
 start-page = "https://delisa.fuller.li"
 
 [keybindings]
 back = "<Control>Left"
 forward = "<Control>Right"
+
+[alias]
+r = "reload"
 "#;
 
 pub fn default_config() -> Option<Value> {
