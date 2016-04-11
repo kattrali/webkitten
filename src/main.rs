@@ -2,16 +2,18 @@ extern crate webkitten;
 extern crate getopts;
 
 use std::{env,fs};
-use std::path::Path;
 use std::io::Write;
 use getopts::Options;
 use webkitten::Application;
 
+/// Print command usage, given invocation path and options
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} FILE [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
+/// Check if the given config path exists, creating if not required to already
+/// exist
 fn validate_config_path(config_path: String, require_exists: bool) {
     if !fs::metadata(config_path.as_str()).is_ok() {
         if require_exists {
@@ -27,6 +29,7 @@ fn validate_config_path(config_path: String, require_exists: bool) {
     }
 }
 
+/// Load a new instance of `webkitten::Application` with a given config path
 fn load_app(config_path: String, require_exists: bool) {
     validate_config_path(config_path.clone(), require_exists);
     match Application::new(config_path.as_str()) {
@@ -35,6 +38,7 @@ fn load_app(config_path: String, require_exists: bool) {
     }
 }
 
+/// Computes default configuration path
 fn default_config_path() -> String {
     match env::var("HOME") {
         Ok(home) => format!("{}/.config/webkitten/config.toml", home),
