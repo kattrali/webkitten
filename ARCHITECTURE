@@ -1,0 +1,199 @@
+
+                          8    8    w  w    w
+         Yb  db  dP .d88b 88b. 8.dP w w8ww w8ww .d88b 8d8b.
+          YbdPYbdP  8.dP' 8  8 88b  8  8    8   8.dP' 8P Y8
+           YP  YP   `Y88P 88P' 8 Yb 8  Y8P  Y8P `Y88P 8   8
+
+         ==================================================
+
+
+Webkitten is a command-driven web browser built on WebKit and inspired by
+luakit (https://mason-larobina.github.io/luakit) and Vim
+(http://www.vim.org).
+
+-- [CONTENTS] ---
+
+Goals...................................................................[GOALS]
+Layout.................................................................[LAYOUT]
+Components.........................................................[COMPONENTS]
+Default Commands.....................................................[COMMANDS]
+Common Configuration Options....................................[CONFIGURATION]
+
+-- [GOALS] --
+
+* Human-readable configuration
+* SQLite bookmark storage
+* Scriptable interface
+* Private browsing modes
+* WebKit content blocking (https://webkit.org/blog/3476)
+* Command autocompletion
+* Customizable keybindings
+* User scripts and CSS support
+* Split pane support
+
+
+-- [LAYOUT] --
+
+The webkitten window has three components:
+
+* Buffer pane: Main content pane, containing a swappable web view
+* Address Bar: Shows an editable URI of the web view
+* Command Bar: Allows typing commands, displays ephemeral status info
+
+
+┌────────────────────────────────────────────────────────────────┐
+│                          Address Bar                           │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│                                                                │
+│                                                                │
+│                                                                │
+│                                                                │
+│                   Buffers: Buffer[Web View]                    │
+│                                                                │
+│                                                                │
+│                                                                │
+│                                                                │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│                          Command Bar                           │
+└────────────────────────────────────────────────────────────────┘
+
+
+-- [COMPONENTS] --
+
+Address Bar:
+  Web view URI entry. Has history
+
+  Widget Behavior:
+  * Change contents on keypress up/down from history
+  * Activate on return
+
+Application:
+  Runtime representation. Has windows and configuration
+
+  Tasks:
+  * Start/Stop new instance of app, provided a configuration file path
+  * Reload configuration
+  * Open a new window
+  * Execute text as command
+
+Buffer:
+  Web view container with an index
+
+  Tasks:
+  * Load/Reload URI
+
+Command:
+  Alters app state. Resolved from text.
+
+  Tasks:
+  * Run
+  * Provide completions
+
+Command Bar:
+  Command text entry. Has history
+
+  Tasks:
+  * Set/Clear text
+  * Set (colored) ephemeral text
+
+  Widget Behavior:
+  * Change contents on keypress up/down from history
+  * Activate on return
+
+Command Parser:
+  Creates a command. Has search paths
+
+  Tasks:
+  * Find and create command for text
+
+Configuration:
+  All application preferences. Has load path
+
+  Tasks:
+  * Get value of string/int/array
+  * Reload from path
+
+History:
+  List of textual items
+
+  Tasks:
+  * Push/Pop/Clear
+  * Change strategy (Save all/none/last n)
+  * Get item at index
+
+Window:
+  UI entry point. Has command bar, address bar, and buffers
+
+  Tasks:
+  * Add/Remove buffer
+  * Switch buffer
+  * Close
+
+  Widget Behavior:
+  * Focus command bar on command shortcut
+  * Focus command bar in find mode on find shortcut
+
+Web View:
+  Web renderer widget
+
+  Tasks:
+  * Go back/forward
+  * Refresh
+  * Open URI
+  * Find (next instance of) text
+
+
+
+                    ┌──────────────────┐        executed by
+                    │   Application    │─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+                    └──────────────────┘                             │
+                              │                            ┌──────────────────┐
+         ┌────────────────────┼───────────────────┐        │     Command      │
+         │                    ┼                   │        └──────────────────┘
+         ┼                   ┌┼┐                  ┼                  │
+┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐         │
+│  Configuration  │ │      Window      │ │ Command Parser  │─────────┘
+└─────────────────┘ └──────────────────┘ └─────────────────┘ creates
+                              │
+         ┌────────────────────┼───────────────────┐
+         ┼                    ┼                   ┼
+┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
+│   Address Bar   │ │ Buffer Container │ │   Command Bar   │
+└─────────────────┘ └──────────────────┘ └─────────────────┘
+         │                    ┼                   │
+         ┼                   ┌┼┐                  ┼
+┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
+│     History     │ │      Buffer      │ │     History     │
+└─────────────────┘ └──────────────────┘ └─────────────────┘
+                              │
+                              ┼
+                    ┌──────────────────┐
+                    │     Web View     │
+                    └──────────────────┘
+
+
+-- [COMMANDS] --
+
+* `go URI`: Open URI
+* `forward [NUMBER]`: Move web view forward in history. NUMBER default is 1.
+* `back [NUMBER]`: Move web view back in history. NUMBER default is 1.
+* `openwindow [PRIVATE]`: Open a new window. PRIVATE default is config value.
+* `config edit`: Edit configuration file in $VISUAL, if set.
+* `config reload`: Reload configuration from file
+* `buffers`: List all buffers
+* `buffer NUMBER`: switch to buffer with NUMBER index
+* `bookmark save NAME`: Create bookmark to current page
+* `bookmark open NAME`: Open bookmark with name
+* `clearhistory`: Clear browsing history
+
+
+-- [CONFIGURATION] --
+
+* alias.KEYS: Full name of command to execute when command KEYS is activated
+* command.NAME.enable: Boolean to disable a command named NAME
+* keybindings.CHORD: Key CHORD to trigger a command (optionally with arguments)
+* plugin.NAME.enable: Boolean to allow plugin such as Java or Silverlight
+* window.open-private: Boolean to open new windows in private mode
+* window.start-pages: URIs to open with each new window
