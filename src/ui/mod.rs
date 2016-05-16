@@ -62,8 +62,5 @@ pub fn add_widget_callback(widget: *mut GtkWidget,
 }
 
 fn gboolean(value: bool) -> libc::c_int {
-    return match value {
-        true  => 1,
-        false => 0
-    }
+    return if value { 1 } else { 0 }
 }

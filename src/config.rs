@@ -16,6 +16,10 @@ forward = "<Control>Right"
 r = "reload"
 "#;
 
+/// Configuration key for the page which should be loaded when opening a new
+/// window
+pub const WINDOW_START_PAGE: &'static str = "window.start-page";
+
 pub fn default_config() -> Option<Value> {
     return DEFAULT_CONFIG.parse().ok();
 }

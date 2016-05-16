@@ -19,13 +19,23 @@ fn validate_config_path(config_path: String, require_exists: bool) {
         if require_exists {
             panic!("No config found at path: {}", config_path);
         }
-        match fs::File::create(config_path.as_str()) {
-            Ok(ref mut file) => {
-                file.write(webkitten::config::DEFAULT_CONFIG.as_bytes());
-                file.flush();
-            },
-            Err(e) => panic!("Unable to create default config: {}", e)
-        }
+        write_default_config(config_path);
+    }
+}
+
+fn write_default_config(config_path: String) {
+    match fs::File::create(config_path.as_str()) {
+        Ok(ref mut file) => {
+            if file.write(webkitten::config::DEFAULT_CONFIG.as_bytes()).is_ok() {
+                let result = file.flush();
+                if result.is_err() {
+                    panic!("Unable to create default config ({}): {}",
+                           config_path,
+                           result.err().unwrap());
+                }
+            }
+        },
+        Err(e) => panic!("Unable to create default config ({}): {}", config_path, e)
     }
 }
 
