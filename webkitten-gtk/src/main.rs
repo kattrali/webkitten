@@ -76,3 +76,12 @@ fn main() {
     }
 }
 
+fn with_gtk_app<F>(callback: F) where F: FnOnce() -> () {
+    unsafe { gtk_sys::gtk_init(0 as *mut c_int, 0 as *mut *mut *mut c_char); }
+    callback();
+    unsafe { gtk_sys::gtk_main(); }
+}
+
+pub fn run<T>(args: Vec<&str>) where T: ui::ApplicationUI {
+
+}

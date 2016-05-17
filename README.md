@@ -1,28 +1,36 @@
 # webkitten
 
-A WebKit2-based hacker's browser, inspired by luakit, written in Rust
+A hacker's browser toolkit inspired by luakit and written in Rust
 
 ## Goals
 
 * Human-readable configuration in plain text files
-* [Pass](https://www.passwordstore.org) integration
-* SQLite bookmark storage
 * Scriptable custom commands in Lua
+* SQLite bookmark storage
 * Private browsing mode(s)
 * [WebKit content blocking](https://webkit.org/blog/3476/content-blockers-first-look)
-* Command bar autocompletion
+* Autocompletion interface for commands
 * Per-site userscripts and css
 * Customizable keybindings
 
 ## Usage
 
-`webkitten` depends on:
+Webkitten depends on **Lua 5.2**, which must be present to link and run. Using
+the webkitten toolkit requires implementing the `ui` module and starting the
+application with an implementation of `ui::ApplicationUI`:
 
-* Gtk+ 3.0
-* WebKit2Gtk+ 4.0
-* Lua 5.2
+```rust
+let mut app = Application::<GTKWebkitten>::new(config_path);
+app.run();
+```
 
-Both must be present to link and run.
+Existing implementations:
+
+* [Webkitten-gtk]()
+* [Webkitten-cocoa]()
+
+While named "webkitten", new UI bindings do not necessarily need to be
+WebKit-based. An implementation using Servo could be of particular interest.
 
 ## Development
 
