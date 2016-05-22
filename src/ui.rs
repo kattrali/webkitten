@@ -9,16 +9,16 @@ pub trait ApplicationUI: Sized {
     fn run(&mut self);
 
     /// Open a new window, returning the opened window
-    fn open_window<B: BrowserWindow>(&mut self, uri: String) -> &B;
+    fn open_window<B: BrowserWindow>(&self, uri: String) -> &B;
 
     /// Window at index
     fn window<B: BrowserWindow>(&self, index: u8) -> Option<&B>;
 
     /// The index of the focused window
-    fn focused_window_index() -> u8;
+    fn focused_window_index(&self) -> u8;
 
     /// Focus window at index
-    fn focus_window(&mut self, index: u8);
+    fn focus_window(&self, index: u8);
 
     /// Number of open windows
     fn window_count(&self) -> u8;
@@ -26,19 +26,19 @@ pub trait ApplicationUI: Sized {
 
 pub trait BrowserWindow {
 
-    fn show(&mut self);
+    fn show(&self);
 
-    fn hide(&mut self);
+    fn hide(&self);
 
-    fn open_webview(&mut self, uri: String);
+    fn open_webview(&self, uri: String);
 
-    fn close_webview(&mut self, index: u8);
+    fn close_webview(&self, index: u8);
 
-    fn focus_webview(&mut self, index: u8);
+    fn focus_webview(&self, index: u8);
 
     fn webview<W: WebView>(&self, index: u8) -> Option<&W>;
 
-    fn resize(&mut self, width: u32, height: u32);
+    fn resize(&self, width: u32, height: u32);
 
     fn address_field_text(&self) -> String;
 
@@ -55,7 +55,7 @@ pub trait WebView {
 
     fn new() -> Self;
 
-    fn load_uri(&self, uri: &'static str);
+    fn load_uri(&self, uri: &str);
 
     fn go_back(&self);
 
@@ -65,11 +65,15 @@ pub trait WebView {
 
     fn raw_html(&self) -> String;
 
-    fn apply_javascript(&mut self, script: &str);
+    fn uri(&self) -> String;
 
-    fn apply_styles(&mut self, styles: &str);
+    fn title(&self) -> String;
 
-    fn apply_content_blockers(&mut self, blockers: &str);
+    fn apply_javascript(&self, script: &str);
+
+    fn apply_styles(&self, styles: &str);
+
+    fn apply_content_blockers(&self, blockers: &str);
 }
 
 pub enum CommandError {

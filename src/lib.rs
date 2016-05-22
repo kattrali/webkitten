@@ -3,6 +3,7 @@ extern crate toml;
 pub mod command;
 pub mod config;
 pub mod ui;
+mod script;
 
 use toml::Value;
 use ui::{ApplicationUI,BrowserWindow,EventHandler};
