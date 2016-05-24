@@ -2,8 +2,10 @@
 pub trait ApplicationUI: Sized {
 
     /// Create a new UI
-    fn new() -> Option<Self>;
-    //fn new<E: EventHandler>(event_handler: &E) -> Option<Self>;
+    fn new<E: EventHandler>(event_handler: E) -> Option<Self>;
+
+    /// UI event handler
+    fn event_handler<E: EventHandler>(&self) -> &E;
 
     /// Initialize all needed UI functions
     fn run(&mut self);
@@ -98,30 +100,30 @@ pub enum AddressUpdateError {
 }
 
 pub struct CommandOutput {
-    error: Option<CommandError>,
-    message: Option<String>,
+    pub error: Option<CommandError>,
+    pub message: Option<String>,
 }
 
 pub struct AddressUpdateOutput {
-    error: Option<AddressUpdateError>,
-    message: Option<String>,
+    pub error: Option<AddressUpdateError>,
+    pub message: Option<String>,
 }
 
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command(window_index: u8, webview_index: u8, text: &str) -> CommandOutput;
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str) -> CommandOutput;
 
     /// Handle a Return key press within the address bar
-    fn update_address(window_index: u8, webview_index: u8, text: &str) -> AddressUpdateOutput;
+    fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str) -> AddressUpdateOutput;
 
     /// Close the application
-    fn close();
+    fn close<T: ApplicationUI>(&self, ui: &T);
 
     /// Get available commands and/or arguments given a prefix
-    fn command_completions(prefix: &str) -> Vec<String>;
+    fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
 
     /// Get available completions given addressable text, such as a URL
     /// fragment, page title, or bookmark
-    fn address_completions(prefix: &str) -> Vec<String>;
+    fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
 }
