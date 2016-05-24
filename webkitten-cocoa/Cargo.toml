@@ -1,0 +1,8 @@
+[package]
+name = "webkitten-cocoa"
+version = "0.1.0"
+authors = ["Delisa Mason <iskanamagus@gmail.com>"]
+
+[dependencies]
+cocoa = "0.4.1"
+webkitten = { path = "../" }
