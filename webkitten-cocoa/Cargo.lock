@@ -3,6 +3,8 @@ name = "webkitten-cocoa"
 version = "0.1.0"
 dependencies = [
  "cocoa 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "core-graphics 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "objc 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "webkitten 0.1.0",
 ]
 

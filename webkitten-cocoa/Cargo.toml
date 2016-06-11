@@ -4,5 +4,7 @@ version = "0.1.0"
 authors = ["Delisa Mason <iskanamagus@gmail.com>"]
 
 [dependencies]
-cocoa = "0.4.1"
+cocoa = "0.4"
+objc = "0.2"
+core-graphics = ">=0.2, <0.4"
 webkitten = { path = "../" }

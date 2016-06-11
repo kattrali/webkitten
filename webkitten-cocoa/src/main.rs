@@ -1,5 +1,16 @@
-extern crate cocoa;
+#![allow(non_snake_case)]
 
+extern crate cocoa;
+#[macro_use]
+extern crate objc;
+extern crate core_graphics;
+
+
+mod webkit;
+mod foundation;
+
+use webkit::*;
+use foundation::*;
 use cocoa::base::{selector, nil, NO};
 use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize,
                         NSAutoreleasePool, NSProcessInfo, NSString};
@@ -7,7 +18,8 @@ use cocoa::appkit::{NSApp,
                     NSApplication, NSApplicationActivationPolicyRegular,
                     NSWindow, NSTitledWindowMask, NSBackingStoreBuffered,
                     NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps};
+                    NSApplicationActivateIgnoringOtherApps, NSView};
+use core_graphics::geometry::{CGRect,CGPoint,CGSize};
 
 fn main() {
     unsafe {
@@ -40,13 +52,21 @@ fn main() {
 
         // create Window
         let window = NSWindow::alloc(nil).initWithContentRect_styleMask_backing_defer_(
-            NSRect::new(NSPoint::new(0., 0.), NSSize::new(200., 200.)),
+            NSRect::new(NSPoint::new(0., 0.), NSSize::new(700., 700.)),
             NSTitledWindowMask as NSUInteger,
             NSBackingStoreBuffered,
             NO
         ).autorelease();
         window.cascadeTopLeftFromPoint_(NSPoint::new(20., 20.));
         window.center();
+        let config = WKWebViewConfiguration::new(nil).autorelease();
+        let frame: CGRect = CGRect {
+            origin: CGPoint { x: 0.0, y: 0.0 },
+            size: CGSize { width: 700., height: 700.}
+        };
+        let webview = WKWebView::alloc(nil).init_frame_configuration(frame, config).autorelease();
+        window.contentView().addSubview_(webview);
+        webview.load_request(NSURLRequest::with_url(nil, NSURL("http://delisa.me")));
         let title = NSString::alloc(nil).init_str("Hello World!");
         window.setTitle_(title);
         window.makeKeyAndOrderFront_(nil);
