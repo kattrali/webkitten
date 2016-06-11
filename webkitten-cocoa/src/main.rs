@@ -4,14 +4,14 @@ extern crate cocoa;
 #[macro_use]
 extern crate objc;
 extern crate core_graphics;
-
+extern crate block;
 
 mod webkit;
 mod foundation;
 
 use webkit::*;
 use foundation::*;
-use cocoa::base::{selector, nil, NO};
+use cocoa::base::{selector, id, nil, NO};
 use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize,
                         NSAutoreleasePool, NSProcessInfo, NSString};
 use cocoa::appkit::{NSApp,
@@ -20,6 +20,7 @@ use cocoa::appkit::{NSApp,
                     NSMenu, NSMenuItem, NSRunningApplication,
                     NSApplicationActivateIgnoringOtherApps, NSView};
 use core_graphics::geometry::{CGRect,CGPoint,CGSize};
+use block::ConcreteBlock;
 
 fn main() {
     unsafe {
@@ -59,14 +60,25 @@ fn main() {
         ).autorelease();
         window.cascadeTopLeftFromPoint_(NSPoint::new(20., 20.));
         window.center();
-        let config = WKWebViewConfiguration::new(nil).autorelease();
-        let frame: CGRect = CGRect {
-            origin: CGPoint { x: 0.0, y: 0.0 },
-            size: CGSize { width: 700., height: 700.}
-        };
-        let webview = WKWebView::alloc(nil).init_frame_configuration(frame, config).autorelease();
-        window.contentView().addSubview_(webview);
-        webview.load_request(NSURLRequest::with_url(nil, NSURL("http://delisa.me")));
+        let store = _WKUserContentExtensionStore::default_store(nil);
+        let rules = "[{'trigger':{'url-filter':'^https?://+([^:/]+\\\\.)?google\\\\.com/images/','url-filter-is-case-sensitive':true},'action':{'type': 'block'}}]";
+        store.compile_content_extension("sandblocks",
+                                        &rules.replace("'", "\""),
+                                        ConcreteBlock::new(move |filter: id, err: id| {
+            let config = WKWebViewConfiguration::new(nil).autorelease();
+            if err == nil {
+                config.user_content_controller().add_user_content_filter(filter);
+            } else {
+                println!("failed to load extension");
+            }
+            let frame: CGRect = CGRect {
+                origin: CGPoint { x: 0.0, y: 0.0 },
+                size: CGSize { width: 700., height: 700.}
+            };
+            let webview = WKWebView::alloc(nil).init_frame_configuration(frame, config).autorelease();
+            window.contentView().addSubview_(webview);
+            webview.load_request(NSURLRequest::with_url(nil, NSURL("https://google.com")));
+        }));
         let title = NSString::alloc(nil).init_str("Hello World!");
         window.setTitle_(title);
         window.makeKeyAndOrderFront_(nil);
