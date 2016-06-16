@@ -28,6 +28,8 @@ pub trait ApplicationUI: Sized {
 
 pub trait BrowserWindow {
 
+    fn new() -> Self;
+
     fn show(&self);
 
     fn hide(&self);
@@ -55,8 +57,6 @@ pub trait BrowserWindow {
 
 pub trait WebView {
 
-    fn new() -> Self;
-
     fn load_uri(&self, uri: &str);
 
     fn go_back(&self);
@@ -75,7 +75,7 @@ pub trait WebView {
 
     fn apply_styles(&self, styles: &str);
 
-    fn apply_content_blockers(&self, blockers: &str);
+    fn apply_content_filters(&self, identifier: &str, rules: &str);
 }
 
 pub enum CommandError {

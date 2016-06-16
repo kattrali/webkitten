@@ -1,6 +1,6 @@
 extern crate hlua;
 
-use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
+use self::hlua::{Lua,LuaError,function0,function1,function2,function3,function4};
 use self::hlua::functions_read::LuaFunction;
 use std::fs::File;
 use super::Engine;
@@ -111,9 +111,9 @@ fn create_runtime<T, B, V>(ui: &T) -> Lua
             with_webview::<B, V, _>(w, webview_index, |v| v.apply_styles(styles.as_str()));
         });
     }));
-    lua.set("add_content_blockers", function3(|window_index: u8, webview_index: u8, blockers: String| {
+    lua.set("add_content_filters", function4(|window_index: u8, webview_index: u8, identifier: String, rules: String| {
         with_window::<T, B, _>(ui, window_index, |w| {
-            with_webview::<B, V, _>(w, webview_index, |v| v.apply_content_blockers(blockers.as_str()));
+            with_webview::<B, V, _>(w, webview_index, |v| v.apply_content_filters(&identifier, &rules));
         });
     }));
     lua

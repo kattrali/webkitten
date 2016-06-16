@@ -31,6 +31,7 @@ pub trait WKWebView {
                                        frame: CGRect,
                                        config: id /* WKWebViewConfiguration */) -> Self;
     unsafe fn load_request(self, request: id /* NSURLRequest */);
+    unsafe fn configuration(self) -> id;
 }
 
 impl WKWebView for id {
@@ -44,6 +45,10 @@ impl WKWebView for id {
 
     unsafe fn load_request(self, request: id) {
         msg_send![self, loadRequest:request];
+    }
+
+    unsafe fn configuration(self) -> id {
+        msg_send![self, configuration]
     }
 }
 
