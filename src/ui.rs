@@ -2,16 +2,16 @@
 pub trait ApplicationUI: Sized {
 
     /// Create a new UI
-    fn new<E: EventHandler>(event_handler: E) -> Option<Self>;
+    fn new(event_handler: super::Engine) -> Option<Self>;
 
     /// UI event handler
-    fn event_handler<E: EventHandler>(&self) -> &E;
+    fn event_handler(&self) -> &super::Engine;
 
     /// Initialize all needed UI functions
     fn run(&mut self);
 
     /// Open a new window, returning the opened window
-    fn open_window<B: BrowserWindow>(&self, uri: String) -> &B;
+    fn open_window(&self, uri: &str);
 
     /// Window at index
     fn window<B: BrowserWindow>(&self, index: u8) -> Option<&B>;

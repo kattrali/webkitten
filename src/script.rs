@@ -31,7 +31,7 @@ fn create_runtime<T, B, V>(ui: &T) -> Lua
         ui.focus_window(index);
     }));
     lua.set("open_window", function1(|uri: String| {
-        ui.open_window::<B>(uri);
+        ui.open_window(&uri);
     }));
     lua.set("window_count", function0(|| {
         ui.window_count()
@@ -123,9 +123,8 @@ fn with_window<T, W, F>(ui: &T, window_index: u8, callback: F)
     where T: ApplicationUI,
           W: BrowserWindow,
           F: FnOnce(&W) -> () {
-    match ui.window(window_index) {
-        Some(window) => callback(window),
-        None => {}
+    if let Some(window) = ui.window(window_index) {
+        callback(window);
     }
 }
 
@@ -133,8 +132,7 @@ fn with_webview<W, V, F>(window: &W, webview_index: u8, callback: F)
     where W: BrowserWindow,
           V: WebView,
           F: FnOnce(&V) -> () {
-    match window.webview(webview_index) {
-        Some(webview) => callback(webview),
-        None => {}
+    if let Some(webview) = window.webview(webview_index) {
+        callback(webview);
     }
 }
