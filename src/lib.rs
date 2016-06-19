@@ -1,8 +1,10 @@
 extern crate toml;
+extern crate getopts;
 
 pub mod command;
 pub mod config;
 pub mod ui;
+pub mod optparse;
 mod script;
 
 use toml::Value;
