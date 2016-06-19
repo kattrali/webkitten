@@ -31,7 +31,11 @@ fn create_runtime<T, B, V>(ui: &T) -> Lua
         ui.focus_window(index);
     }));
     lua.set("open_window", function1(|uri: String| {
-        ui.open_window(&uri);
+        if uri.len() > 0 {
+            ui.open_window(Some(&uri));
+        } else {
+            ui.open_window(None);
+        }
     }));
     lua.set("window_count", function0(|| {
         ui.window_count()
@@ -46,7 +50,7 @@ fn create_runtime<T, B, V>(ui: &T) -> Lua
         with_window::<T, B, _>(ui, window_index, |w| w.show());
     }));
     lua.set("open_webview", function2(|window_index: u8, uri: String| {
-        with_window::<T, B, _>(ui, window_index, |w| w.open_webview(uri));
+        with_window::<T, B, _>(ui, window_index, |w| w.open_webview(&uri));
     }));
     lua.set("set_address_field_text", function2(|window_index: u8, uri: String| {
         with_window::<T, B, _>(ui, window_index, |w| w.set_address_field_text(uri));

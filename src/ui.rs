@@ -11,7 +11,7 @@ pub trait ApplicationUI: Sized {
     fn run(&mut self);
 
     /// Open a new window, returning the opened window
-    fn open_window(&self, uri: &str);
+    fn open_window(&self, uri: Option<&str>);
 
     /// Window at index
     fn window<B: BrowserWindow>(&self, index: u8) -> Option<&B>;
@@ -34,7 +34,7 @@ pub trait BrowserWindow {
 
     fn hide(&self);
 
-    fn open_webview(&self, uri: String);
+    fn open_webview(&self, uri: &str);
 
     fn close_webview(&self, index: u8);
 

@@ -14,7 +14,7 @@ pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
 
 pub struct Engine {
-    config: Value,
+    pub config: Value,
     config_path: String
 }
 
