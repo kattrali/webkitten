@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserWindow,WebView};
 use webkitten::{WEBKITTEN_TITLE,Engine};
 use cocoa::base::{selector,id,nil,NO};
-use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize,
+use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool, NSProcessInfo, NSString};
 use cocoa::appkit::{NSApp,
                     NSApplication, NSApplicationActivationPolicyRegular,
@@ -10,10 +10,24 @@ use cocoa::appkit::{NSApp,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSBackingStoreBuffered,
                     NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps, NSView};
+                    NSApplicationActivateIgnoringOtherApps};
 use block::ConcreteBlock;
 use webkit::*;
-use foundation::*;
+use cocoa_ext::foundation::NSURLRequest;
+use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,NSLayoutRelation,
+                        NSConstraintBasedLayoutInstallingConstraints,
+                        NSTextField,NSView};
+use cocoa_ext::core_graphics::CGRectZero;
+use core_graphics::base::CGFloat;
+
+
+const BAR_HEIGHT: usize = 26;
+
+enum CocoaWindowSubview {
+    AddressBar       = 0,
+    WebViewContainer = 1,
+    CommandBar       = 2,
+}
 
 pub struct CocoaUI {
     handler: Engine,
@@ -44,6 +58,9 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn run(&mut self) {
+        if let Some(start_page) = self.handler.config.lookup("window.start-page") {
+            self.open_window(start_page.as_str());
+        }
         unsafe {
             let _pool = NSAutoreleasePool::new(nil);
 
@@ -76,9 +93,12 @@ impl ApplicationUI for CocoaUI {
         }
     }
 
-    fn open_window(&self, uri: &str) {
+    fn open_window(&self, uri: Option<&str>) {
         let window = CocoaWindow::new();
         let mut windows = self.windows.borrow_mut();
+        if let Some(uri) = uri {
+            window.open_webview(uri);
+        }
         windows.push(window);
     }
 
@@ -116,6 +136,28 @@ impl BrowserWindow for CocoaWindow {
             window.center();
             let title = NSString::alloc(nil).init_str(WEBKITTEN_TITLE);
             window.setTitle_(title);
+
+            let container = <id as NSView>::new();
+            let address_bar = <id as NSTextField>::new();
+            let command_bar = <id as NSTextField>::new();
+            window.contentView().add_subview(address_bar);
+            window.contentView().add_subview(container);
+            window.contentView().add_subview(command_bar);
+            address_bar.disable_translates_autoresizing_mask_into_constraints();
+            address_bar.set_height(BAR_HEIGHT as CGFloat);
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Top, window.contentView(), NSLayoutAttribute::Top));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
+            command_bar.disable_translates_autoresizing_mask_into_constraints();
+            command_bar.set_height(BAR_HEIGHT as CGFloat);
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Bottom, window.contentView(), NSLayoutAttribute::Bottom));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
+            container.disable_translates_autoresizing_mask_into_constraints();
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Top, address_bar, NSLayoutAttribute::Bottom));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Bottom, command_bar, NSLayoutAttribute::Top));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
+            window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
             window.makeKeyAndOrderFront_(nil);
             window
         };
@@ -130,7 +172,21 @@ impl BrowserWindow for CocoaWindow {
         unsafe { self.nswindow.orderOut_(nil); }
     }
 
-    fn open_webview(&self, uri: String) {
+    fn open_webview(&self, uri: &str) {
+        unsafe {
+            let container = self.subview(CocoaWindowSubview::WebViewContainer);
+            for view in container.subviews().iter() {
+                view.set_hidden(true);
+            }
+            let webview = WKWebView(CGRectZero(), WKWebViewConfiguration().autorelease()).autorelease();
+            webview.disable_translates_autoresizing_mask_into_constraints();
+            container.add_subview(webview);
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Top, container, NSLayoutAttribute::Top));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Left, container, NSLayoutAttribute::Left));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Right, container, NSLayoutAttribute::Right));
+            webview.load_request(NSURLRequest(uri));
+        }
     }
 
     fn close_webview(&self, index: u8) {
@@ -165,11 +221,19 @@ impl BrowserWindow for CocoaWindow {
     }
 }
 
+impl CocoaWindow {
+
+    unsafe fn subview(&self, index: CocoaWindowSubview) -> id {
+        let subviews = self.nswindow.contentView().subviews();
+        msg_send![subviews, objectAtIndex:index]
+    }
+}
+
 impl WebView for CocoaWebView {
 
     fn load_uri(&self, uri: &str) {
         let webview = self.wkwebview.borrow();
-        webview.load_request(NSURLRequest::with_url(nil, NSURL(uri)));
+        unsafe { webview.load_request(NSURLRequest(uri)); }
     }
 
     fn go_back(&self) {
@@ -201,17 +265,17 @@ impl WebView for CocoaWebView {
 
     fn apply_content_filters(&self, identifier: &str, rules: &str) {
         unsafe {
-            let store = _WKUserContentExtensionStore::default_store(nil);
-            store.compile_content_extension(identifier,
-                                            rules,
-                                            ConcreteBlock::new(move |filter: id, err: id| {
-                let mut webview = self.wkwebview.borrow_mut();
-                if err == nil {
-                    webview.configuration().user_content_controller().add_user_content_filter(filter);
-                } else {
-                    println!("failed to load extension");
-                }
-            }));
+            //let store = _WKUserContentExtensionStore::default_store(nil);
+            //store.compile_content_extension(identifier,
+                                            //rules,
+                                            //ConcreteBlock::new(move |filter: id, err: id| {
+                //let mut webview = self.wkwebview.borrow_mut();
+                //if err == nil {
+                    //webview.configuration().user_content_controller().add_user_content_filter(filter);
+                //} else {
+                    //println!("failed to load extension");
+                //}
+            //}));
         }
     }
 }
