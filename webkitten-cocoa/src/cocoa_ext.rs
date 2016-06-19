@@ -14,12 +14,17 @@ pub mod foundation {
     pub trait NSArray {
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id;
+        unsafe fn count(self) -> NSUInteger;
     }
 
     impl NSArray for id {
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id {
             msg_send![self, objectAtIndex:index]
+        }
+
+        unsafe fn count(self) -> NSUInteger {
+            msg_send![self, count]
         }
     }
 }
@@ -111,6 +116,7 @@ pub mod appkit {
         unsafe fn subviews(self) -> id;
         unsafe fn add_subview(self, view: id);
         unsafe fn set_hidden(self, hidden: bool);
+        unsafe fn remove_from_superview(self);
     }
 
     impl NSView for id {
@@ -126,6 +132,10 @@ pub mod appkit {
         unsafe fn set_hidden(self, hidden: bool) {
             let value = if hidden { YES } else { NO };
             msg_send![self, setHidden:value];
+        }
+
+        unsafe fn remove_from_superview(self) {
+            msg_send![self, removeFromSuperview];
         }
     }
 
