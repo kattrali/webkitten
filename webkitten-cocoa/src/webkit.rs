@@ -6,11 +6,11 @@ use block::{ConcreteBlock,IntoConcreteBlock};
 #[link(name = "WebKit", kind = "framework")]
 extern {}
 
-pub trait WKWebViewConfiguration {
+pub unsafe fn WKWebViewConfiguration() -> id {
+    msg_send![class("WKWebViewConfiguration"), new]
+}
 
-    unsafe fn new(_:Self) -> id {
-        msg_send![class("WKWebViewConfiguration"), new]
-    }
+pub trait WKWebViewConfiguration {
 
     unsafe fn user_content_controller(self) -> id;
 }
@@ -27,21 +27,15 @@ pub trait WKWebView {
         msg_send![class("WKWebView"), alloc]
     }
 
-    unsafe fn init_frame_configuration(self,
-                                       frame: CGRect,
-                                       config: id /* WKWebViewConfiguration */) -> Self;
     unsafe fn load_request(self, request: id /* NSURLRequest */);
     unsafe fn configuration(self) -> id;
 }
 
+pub unsafe fn WKWebView(frame: CGRect, config: id) -> id {
+    let webview = WKWebView::alloc(nil);
+    msg_send![webview, initWithFrame:frame configuration:config]
+}
 impl WKWebView for id {
-
-    unsafe fn init_frame_configuration(self,
-                                       frame: CGRect,
-                                       config: id) -> id {
-        msg_send![self, initWithFrame:frame
-                        configuration:config]
-    }
 
     unsafe fn load_request(self, request: id) {
         msg_send![self, loadRequest:request];
