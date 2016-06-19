@@ -28,12 +28,7 @@ impl Engine {
                     config: config,
                     config_path: String::from(config_path)
                 };
-                let ui = T::new(engine);
-                if ui.is_some() {
-                    Some(ui.unwrap())
-                } else {
-                    None
-                }
+                T::new(engine)
             },
             None => None
         }
