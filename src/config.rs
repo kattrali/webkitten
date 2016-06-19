@@ -29,16 +29,12 @@ pub fn parse_config(raw_input: &str) -> Option<Value> {
 }
 
 pub fn parse_config_file(path: &str) -> Option<Value> {
-    return match File::open(path) {
-        Ok(mut file) => {
-            let mut buffer = String::new();
-            match file.read_to_string(&mut buffer) {
-                Ok(_) => parse_config(buffer.as_str()),
-                _ => None
-            }
-        },
-        _ => None
-    }
+    File::open(path).ok().and_then(|mut file| {
+        let mut buffer = String::new();
+        file.read_to_string(&mut buffer).ok().and_then(|_| {
+            parse_config(buffer.as_str())
+        })
+    })
 }
 
 #[cfg(test)]

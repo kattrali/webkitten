@@ -7,6 +7,7 @@ pub mod ui;
 pub mod optparse;
 mod script;
 
+use std::path::{Path,PathBuf};
 use toml::Value;
 use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput};
 
@@ -22,16 +23,27 @@ impl Engine {
 
     /// Create a new running application
     pub fn run<T: ApplicationUI>(config_path: &str) -> Option<T> {
-        match config::parse_config_file(config_path.clone()) {
-            Some(config) => {
-                let engine = Engine {
-                    config: config,
-                    config_path: String::from(config_path)
-                };
-                T::new(engine)
-            },
-            None => None
+        config::parse_config_file(config_path).and_then(|config| {
+            let engine = Engine {
+                config: config,
+                config_path: String::from(config_path)
+            };
+            T::new(engine)
+        })
+    }
+
+    /// Reload configuration from path
+    pub fn reload(&mut self) -> bool {
+        if let Some(config) = config::parse_config_file(&self.config_path) {
+            self.config = config;
+            return true;
         }
+        false
+    }
+
+    fn command_search_path(&self) -> Option<PathBuf> {
+        let path = Path::new(&self.config_path);
+        path.parent().and_then(|path| Some(path.join("scripts")))
     }
 }
 
@@ -39,6 +51,7 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
+
         CommandOutput { error: None, message: None }
     }
 

@@ -1,9 +1,8 @@
 extern crate hlua;
 
-use self::hlua::{Lua,LuaError,function0,function1,function2,function3,function4};
+use self::hlua::{Lua,function0,function1,function2,function3,function4};
 use self::hlua::functions_read::LuaFunction;
 use std::fs::File;
-use super::Engine;
 use super::ui::{ApplicationUI,BrowserWindow,WebView};
 
 const INVALID_RESULT: u8 = 247;

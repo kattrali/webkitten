@@ -10,34 +10,27 @@ use std::fs::{File,metadata};
 pub struct Command {
     path: String,
     arguments: Vec<String>,
-    name: String,
 }
 
-/// Parse a command name and arguments into an instance of Command
-pub fn parse_command(search_paths: Vec<&str>, input: &str) -> Option<Command> {
-    let mut components = input.split_whitespace();
-    return match components.next() {
-        Some(name) => match resolve_command(search_paths, name) {
-            Some(path) => Some(Command {
-                path: path,
-                arguments: components.map(|arg| String::from(arg)).collect(),
-                name: String::from(name) }),
-            None => None
-        },
-        None => None
+impl Command {
+
+    /// Parse a command name and arguments into an instance of Command
+    pub fn parse(input: &str, search_paths: Vec<&str>) -> Option<Self> {
+        let mut components = input.split_whitespace();
+        components.next()
+            .and_then(|name| resolve_command(search_paths, name))
+            .and_then(|path| {
+                Some(Command {
+                    path: path,
+                    arguments: components.map(|arg| String::from(arg)).collect(),
+                })
+            })
     }
-}
 
-/// Run a command instance in a new Lua scripting runtime
-pub fn execute(command: Command) -> Result<bool, LuaError> {
-    let mut lua = Lua::new();
-    lua.set("selected_window_index", 0);
-    lua.set("selected_buffer_index", 0);
-    lua.set("arguments", command.arguments);
-    return match File::open(command.path) {
-        Ok(file) => lua.execute_from_reader::<bool, _>(file),
-        Err(e) => Err(LuaError::ReadError(e))
-    };
+    /// A File handle to the command path
+    pub fn file(&self) -> Option<File> {
+        File::open(&self.path).ok()
+    }
 }
 
 /// Iterate over search paths returning the first file path in search paths
@@ -57,10 +50,7 @@ fn resolve_command(search_paths: Vec<&str>, name: &str) -> Option<String> {
 /// Join a directory and file name into a string path if possible
 fn join_paths(dir: &str, file_name: &str) -> Option<String> {
     let buf = Path::new(dir).join(file_name);
-    return match buf.to_str() {
-        Some(path) => Some(String::from(path)),
-        None => None
-    }
+    buf.to_str().and_then(|path| Some(String::from(path)))
 }
 
 #[cfg(test)]
@@ -81,23 +71,8 @@ mod tests {
         assert!(result.is_some());
 
         let command = result.unwrap();
-        assert_eq!(command.name, "hello");
         assert_eq!(command.arguments, vec![String::from("world")]);
         assert_eq!(command.path, path);
-    }
-
-    #[test]
-    #[allow(unused_must_use)]
-    fn test_execute() {
-        let (path, result) = create_command("call-and-return",
-                                         b"return true;",
-                                         "call-and-return");
-        let command = result.unwrap();
-        let output = execute(command.clone());
-        remove_file(Path::new(path.as_str().clone()));
-        assert!(output.is_ok());
-        assert!(output.ok().unwrap());
-
     }
 
     #[allow(unused_must_use)]
@@ -108,7 +83,7 @@ mod tests {
         let mut file = File::create(file_path.as_path()).ok().unwrap();
         assert!(file.write(content).is_ok());
         file.flush();
-        let result = parse_command(vec![&search_path], invocation);
+        let result = Command::parse(invocation, vec![&search_path]);
         return (String::from(file_path.to_str().unwrap()), result);
     }
 }
