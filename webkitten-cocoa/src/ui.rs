@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserWindow,WebView};
 use webkitten::{WEBKITTEN_TITLE,Engine};
-use cocoa::base::{selector,id,nil,NO};
+use cocoa::base::{selector,id,nil,NO,class};
 use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool, NSProcessInfo, NSString};
 use cocoa::appkit::{NSApp,
@@ -13,15 +13,21 @@ use cocoa::appkit::{NSApp,
                     NSApplicationActivateIgnoringOtherApps};
 use block::ConcreteBlock;
 use webkit::*;
-use cocoa_ext::foundation::{NSURLRequest,NSArray};
+use cocoa_ext::foundation::{NSURLRequest,NSArray,NSDictionary,NSNotification,
+                            NSNumber};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,NSLayoutRelation,
                         NSConstraintBasedLayoutInstallingConstraints,
-                        NSTextField,NSView};
+                        NSTextField,NSView,NSControl};
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
-
+use objc::declare::ClassDecl;
+use objc::runtime::{Class, Object, Sel};
+use libc::c_char;
+use std::{slice,str};
 
 const BAR_HEIGHT: usize = 26;
+const ABDELEGATE_CLASS: &'static str = "AddressBarDelegate";
+const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 
 enum CocoaWindowSubview {
     AddressBar       = 0,
@@ -52,10 +58,11 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn run(&self) {
+        declare_bar_delegates();
         if let Some(start_page) = self.event_handler().config.lookup("window.start-page") {
             self.open_window(start_page.as_str());
         }
-        self.start_run_loop();
+        start_run_loop();
     }
 
     fn open_window(&self, uri: Option<&str>) {
@@ -81,43 +88,102 @@ impl ApplicationUI for CocoaUI {
     }
 }
 
-impl CocoaUI {
+fn start_run_loop() {
+    unsafe {
+        let _pool = NSAutoreleasePool::new(nil);
+        nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
+        create_menu();
+        let current_app = NSRunningApplication::currentApplication(nil);
+        current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps);
+        nsapp().run();
+    }
+}
 
-    fn start_run_loop(&self) {
-        unsafe {
-            let _pool = NSAutoreleasePool::new(nil);
-            self.nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
-            self.create_menu();
-            let current_app = NSRunningApplication::currentApplication(nil);
-            current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps);
-            self.nsapp().run();
+unsafe fn create_menu() {
+    let menubar = NSMenu::new(nil).autorelease();
+    let app_menu_item = NSMenuItem::new(nil).autorelease();
+    menubar.addItem_(app_menu_item);
+    nsapp().setMainMenu_(menubar);
+    let app_menu = NSMenu::new(nil).autorelease();
+    let quit_prefix = NSString::alloc(nil).init_str("Quit");
+    let quit_title = quit_prefix.stringByAppendingString_(
+        NSProcessInfo::processInfo(nil).processName()
+    );
+    let quit_action = selector("terminate:");
+    let quit_key = NSString::alloc(nil).init_str("q");
+    let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        quit_title,
+        quit_action,
+        quit_key
+    ).autorelease();
+    app_menu.addItem_(quit_item);
+    app_menu_item.setSubmenu_(app_menu);
+}
+
+unsafe fn nsapp() -> id {
+    NSApplication::sharedApplication(nil)
+}
+
+
+fn declare_bar_delegates() {
+    if let Some(superclass) = Class::get("NSObject") {
+        if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
+            unsafe {
+                decl.add_method(sel!(controlTextDidEndEditing:),
+                    command_bar_did_end_editing as extern fn(&Object, Sel, id));
+            }
+
+            decl.register();
+        }
+        if let Some(mut decl) = ClassDecl::new(ABDELEGATE_CLASS, superclass) {
+            unsafe {
+                decl.add_method(sel!(controlTextDidEndEditing:),
+                    address_bar_did_end_editing as extern fn(&Object, Sel, id));
+            }
+
+            decl.register();
         }
     }
+}
 
-    unsafe fn create_menu(&self) {
-        let menubar = NSMenu::new(nil).autorelease();
-        let app_menu_item = NSMenuItem::new(nil).autorelease();
-        menubar.addItem_(app_menu_item);
-        self.nsapp().setMainMenu_(menubar);
-        let app_menu = NSMenu::new(nil).autorelease();
-        let quit_prefix = NSString::alloc(nil).init_str("Quit");
-        let quit_title = quit_prefix.stringByAppendingString_(
-            NSProcessInfo::processInfo(nil).processName()
-        );
-        let quit_action = selector("terminate:");
-        let quit_key = NSString::alloc(nil).init_str("q");
-        let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
-            quit_title,
-            quit_action,
-            quit_key
-        ).autorelease();
-        app_menu.addItem_(quit_item);
-        app_menu_item.setSubmenu_(app_menu);
+extern fn command_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
+    if let Some(text) = notification_object_text(notification) {
+        super::UI.engine.execute_command::<CocoaUI>(&super::UI, 0, 0, text);
     }
+}
 
-    unsafe fn nsapp(&self) -> id {
-        NSApplication::sharedApplication(nil)
+extern fn address_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
+    if let Some(text) = notification_object_text(notification) {
+        super::UI.engine.update_address::<CocoaUI>(&super::UI, 0, 0, text);
     }
+}
+
+fn notification_object_text<'a>(notification: id) -> Option<&'a str> {
+    if is_return_key_event(notification) {
+        let raw_text = unsafe {
+            let control = notification.object();
+            control.string_value()
+        };
+        return nsstring_as_str(raw_text);
+    }
+    None
+}
+
+fn nsstring_as_str<'a>(nsstring: id) -> Option<&'a str> {
+    let bytes = unsafe {
+        let bytes: *const c_char = nsstring.UTF8String();
+        let byte_str = bytes as *const u8;
+        let len = nsstring.len();
+        slice::from_raw_parts(byte_str, len)
+    };
+    str::from_utf8(bytes).ok()
+}
+
+fn is_return_key_event(notification: id) -> bool {
+    let keycode = unsafe {
+        notification.user_info().object_for_key("NSTextMovement").integer_value()
+    };
+    keycode == 0x10
 }
 
 impl BrowserWindow for CocoaWindow {
@@ -206,7 +272,7 @@ impl CocoaWindow {
         }
     }
 
-    fn configure_subviews(&self) {
+    fn configure_subviews(&self) -> (id, id) {
         let window = self.nswindow;
         unsafe {
             let container = <id as NSView>::new();
@@ -231,6 +297,11 @@ impl CocoaWindow {
             window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
             window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
             window.makeKeyAndOrderFront_(nil);
+            let address_bar_delegate: id = msg_send![class(ABDELEGATE_CLASS), new];
+            let command_bar_delegate: id = msg_send![class(CBDELEGATE_CLASS), new];
+            address_bar.set_delegate(address_bar_delegate);
+            command_bar.set_delegate(command_bar_delegate);
+            (address_bar_delegate, command_bar_delegate)
         }
     }
 

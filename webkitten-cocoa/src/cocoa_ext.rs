@@ -1,6 +1,6 @@
 pub mod foundation {
     use cocoa::base::{class,id,nil};
-    use cocoa::foundation::{NSString,NSUInteger};
+    use cocoa::foundation::{NSString,NSUInteger,NSInteger};
 
     pub unsafe fn NSURL(url: &str) -> id {
         let url_str = NSString::alloc(nil).init_str(url);
@@ -9,6 +9,31 @@ pub mod foundation {
 
     pub unsafe fn NSURLRequest(url: &str) -> id {
         msg_send![class("NSURLRequest"), requestWithURL:NSURL(url)]
+    }
+
+    pub trait NSNumber {
+
+        unsafe fn integer_value(self) -> NSInteger;
+    }
+
+    impl NSNumber for id {
+
+        unsafe fn integer_value(self) -> NSInteger {
+            msg_send![self, integerValue]
+        }
+    }
+
+    pub trait NSDictionary {
+
+        unsafe fn object_for_key(self, key: &str) -> id;
+    }
+
+    impl NSDictionary for id {
+
+        unsafe fn object_for_key(self, key: &str) -> id {
+            let key_str = NSString::alloc(nil).init_str(key);
+            msg_send![self, objectForKey:key_str]
+        }
     }
 
     pub trait NSArray {
@@ -25,6 +50,23 @@ pub mod foundation {
 
         unsafe fn count(self) -> NSUInteger {
             msg_send![self, count]
+        }
+    }
+
+    pub trait NSNotification {
+
+        unsafe fn object(self) -> id;
+        unsafe fn user_info(self) -> id;
+    }
+
+    impl NSNotification for id {
+
+        unsafe fn object(self) -> id {
+            msg_send![self, object]
+        }
+
+        unsafe fn user_info(self) -> id {
+            msg_send![self, userInfo]
         }
     }
 }
@@ -88,6 +130,18 @@ pub mod appkit {
 
     impl NSLayoutConstraint for id {}
 
+    pub trait NSControl {
+
+        unsafe fn string_value(self) -> id;
+    }
+
+    impl NSControl for id {
+
+        unsafe fn string_value(self) -> id {
+            msg_send![self, stringValue]
+        }
+    }
+
     pub trait NSConstraintBasedLayoutInstallingConstraints {
 
         unsafe fn add_constraint(self, constraint: id);
@@ -143,6 +197,7 @@ pub mod appkit {
 
         unsafe fn new() -> id;
         unsafe fn disable_translates_autoresizing_mask_into_constraints(self);
+        unsafe fn set_delegate(self, delegate: id);
     }
 
     impl NSTextField for id {
@@ -153,6 +208,10 @@ pub mod appkit {
 
         unsafe fn disable_translates_autoresizing_mask_into_constraints(self) {
             msg_send![self, setTranslatesAutoresizingMaskIntoConstraints:NO];
+        }
+
+        unsafe fn set_delegate(self, delegate: id) {
+            msg_send![self, setDelegate:delegate];
         }
     }
 }
