@@ -13,6 +13,7 @@ extern crate webkitten;
 mod webkit;
 mod cocoa_ext;
 mod ui;
+mod runtime;
 
 use std::env;
 use webkitten::ui::ApplicationUI;
@@ -37,5 +38,6 @@ lazy_static! {
 }
 
 fn main() {
+    runtime::declare_bar_delegates();
     UI.run();
 }

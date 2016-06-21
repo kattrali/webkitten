@@ -1,4 +1,6 @@
-use cocoa::base::{class,id,nil};
+//! Bindings to WebKit.framework on macOS
+
+use cocoa::base::{class,id,nil,NO,YES,BOOL};
 use core_graphics::geometry::CGRect;
 use cocoa::foundation::NSString;
 use block::{ConcreteBlock,IntoConcreteBlock};
@@ -29,12 +31,27 @@ pub trait WKWebView {
 
     unsafe fn load_request(self, request: id /* NSURLRequest */);
     unsafe fn configuration(self) -> id;
+    unsafe fn go_back(self);
+    unsafe fn can_go_back(self) -> BOOL;
+    unsafe fn go_forward(self);
+    unsafe fn can_go_forward(self) -> BOOL;
+    unsafe fn reload(self);
+    unsafe fn stop_loading(self);
+    unsafe fn has_only_secure_content(self) -> BOOL;
+    unsafe fn load_html_string(self, contents: &str, base_url: &str);
+    unsafe fn is_loading(self) -> BOOL;
+    unsafe fn url(self) -> id;
+    unsafe fn title(self) -> id;
+    unsafe fn set_custom_user_agent(self, user_agent: &str);
+    unsafe fn custom_user_agent(self) -> id;
+    unsafe fn evaluate_javascript(self, script: &str);
 }
 
 pub unsafe fn WKWebView(frame: CGRect, config: id) -> id {
     let webview = WKWebView::alloc(nil);
     msg_send![webview, initWithFrame:frame configuration:config]
 }
+
 impl WKWebView for id {
 
     unsafe fn load_request(self, request: id) {
@@ -43,6 +60,66 @@ impl WKWebView for id {
 
     unsafe fn configuration(self) -> id {
         msg_send![self, configuration]
+    }
+
+    unsafe fn can_go_back(self) -> BOOL {
+        msg_send![self, canGoBack]
+    }
+
+    unsafe fn can_go_forward(self) -> BOOL {
+        msg_send![self, canGoForward]
+    }
+
+    unsafe fn go_back(self) {
+        msg_send![self, goBack];
+    }
+
+    unsafe fn go_forward(self) {
+        msg_send![self, goForward];
+    }
+
+    unsafe fn reload(self) {
+        msg_send![self, reload];
+    }
+
+    unsafe fn stop_loading(self) {
+        msg_send![self, stopLoading];
+    }
+
+    unsafe fn has_only_secure_content(self) -> BOOL {
+        msg_send![self, hasOnlySecureContent]
+    }
+
+    unsafe fn load_html_string(self, contents: &str, base_url: &str) {
+        let contents_str = NSString::alloc(nil).init_str(contents);
+        let url_str = NSString::alloc(nil).init_str(base_url);
+        msg_send![self, loadHTMLString:contents_str baseURL:url_str];
+    }
+
+    unsafe fn is_loading(self) -> BOOL {
+        msg_send![self, isLoading]
+    }
+
+    unsafe fn url(self) -> id {
+        msg_send![self, URL]
+    }
+
+    unsafe fn title(self) -> id {
+        msg_send![self, title]
+    }
+
+    unsafe fn set_custom_user_agent(self, user_agent: &str) {
+        let ua_str = NSString::alloc(nil).init_str(user_agent);
+        msg_send![self, setCustomUserAgent:ua_str];
+    }
+
+    unsafe fn custom_user_agent(self) -> id {
+        msg_send![self, customUserAgent]
+    }
+
+    unsafe fn evaluate_javascript(self, script: &str) {
+        let script_str = NSString::alloc(nil).init_str(script);
+        msg_send![self, evaluateJavaScript:script_str completionHandler:nil];
     }
 }
 

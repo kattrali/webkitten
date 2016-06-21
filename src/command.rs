@@ -8,8 +8,8 @@ use std::fs::{File,metadata};
 /// indicating success
 #[derive(Debug,Clone)]
 pub struct Command {
-    path: String,
-    arguments: Vec<String>,
+    pub path: String,
+    pub arguments: Vec<String>,
 }
 
 impl Command {

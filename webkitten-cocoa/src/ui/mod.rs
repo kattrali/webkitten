@@ -1,26 +1,12 @@
+mod application;
 mod webview;
 mod window;
 
-use std::{slice,str};
-use libc::c_char;
-
-use cocoa::base::{selector,id,nil};
-use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo, NSString};
-use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
-                    NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps};
-use cocoa_ext::foundation::{NSDictionary,NSNotification,NSNumber};
-use cocoa_ext::appkit::{NSControl};
-use objc::declare::ClassDecl;
-use objc::runtime::{Class, Object, Sel};
-
-use webkitten::ui::{ApplicationUI,EventHandler,BrowserWindow,WebView};
-use webkitten::{Engine};
-use self::webview::CocoaWebView;
-use self::window::{CocoaWindow,ABDELEGATE_CLASS,CBDELEGATE_CLASS};
+use webkitten::ui::{ApplicationUI,EventHandler};
+use webkitten::Engine;
 
 pub struct CocoaUI {
-    engine: Engine
+    pub engine: Engine
 }
 
 impl ApplicationUI for CocoaUI {
@@ -34,22 +20,17 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn run(&self) {
-        declare_bar_delegates();
         if let Some(start_page) = self.event_handler().config.lookup("window.start-page") {
             self.open_window(start_page.as_str());
         }
-        start_run_loop();
+        application::start_run_loop();
+    }
+
+    fn register_content_filters(&self, identifier: &str, rules: &str) {
     }
 
     fn open_window(&self, uri: Option<&str>) {
-        let window = CocoaWindow::new();
-        if let Some(uri) = uri {
-            window.open_webview(uri);
-        }
-    }
-
-    fn window<B: BrowserWindow>(&self, index: u8) -> Option<&B> {
-        None
+        window::open(uri);
     }
 
     fn focused_window_index(&self) -> u8 {
@@ -62,102 +43,99 @@ impl ApplicationUI for CocoaUI {
     fn window_count(&self) -> u8 {
         0
     }
-}
 
-fn start_run_loop() {
-    unsafe {
-        let _pool = NSAutoreleasePool::new(nil);
-        nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
-        create_menu();
-        let current_app = NSRunningApplication::currentApplication(nil);
-        current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps);
-        nsapp().run();
+    fn toggle_window(&self, window_index: u8, visible: bool) {
     }
-}
 
-unsafe fn create_menu() {
-    let menubar = NSMenu::new(nil).autorelease();
-    let app_menu_item = NSMenuItem::new(nil).autorelease();
-    menubar.addItem_(app_menu_item);
-    nsapp().setMainMenu_(menubar);
-    let app_menu = NSMenu::new(nil).autorelease();
-    let quit_prefix = NSString::alloc(nil).init_str("Quit");
-    let quit_title = quit_prefix.stringByAppendingString_(
-        NSProcessInfo::processInfo(nil).processName()
-    );
-    let quit_action = selector("terminate:");
-    let quit_key = NSString::alloc(nil).init_str("q");
-    let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
-        quit_title,
-        quit_action,
-        quit_key
-    ).autorelease();
-    app_menu.addItem_(quit_item);
-    app_menu_item.setSubmenu_(app_menu);
-}
+    fn resize_window(&self, window_index: u8, width: u32, height: u32) {
+    }
 
-unsafe fn nsapp() -> id {
-    NSApplication::sharedApplication(nil)
-}
+    fn address_field_text(&self, window_index: u8) -> String {
+        String::new()
+    }
 
+    fn set_address_field_text(&self, window_index: u8, text: &str) {
+    }
 
-fn declare_bar_delegates() {
-    if let Some(superclass) = Class::get("NSObject") {
-        if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
-            unsafe {
-                decl.add_method(sel!(controlTextDidEndEditing:),
-                    command_bar_did_end_editing as extern fn(&Object, Sel, id));
-            }
+    fn command_field_text(&self, window_index: u8) -> String {
+        String::new()
+    }
 
-            decl.register();
-        }
-        if let Some(mut decl) = ClassDecl::new(ABDELEGATE_CLASS, superclass) {
-            unsafe {
-                decl.add_method(sel!(controlTextDidEndEditing:),
-                    address_bar_did_end_editing as extern fn(&Object, Sel, id));
-            }
+    fn set_command_field_text(&self, window_index: u8, text: &str) {
+    }
 
-            decl.register();
+    fn window_title(&self, window_index: u8) -> String {
+        String::new()
+    }
+
+    fn set_window_title(&self, window_index: u8, title: &str) {
+    }
+
+    fn focused_webview_index(&self, window_index: u8) -> u8 {
+        0
+    }
+
+    fn open_webview(&self, window_index: u8, uri: &str) {
+    }
+
+    fn close_webview(&self, window_index: u8, webview_index: u8) {
+        window::close_webview(window_index, webview_index);
+    }
+
+    fn focus_webview(&self, window_index: u8, webview_index: u8) {
+    }
+
+    fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {
+        println!("Setting URI");
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            println!("Loading URI: {}", uri);
+            webview::load_uri(webview, uri);
         }
     }
-}
 
-extern fn command_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
-    if let Some(text) = notification_object_text(notification) {
-        super::UI.engine.execute_command::<CocoaUI>(&super::UI, 0, 0, text);
+    fn go_back(&self, window_index: u8, webview_index: u8) -> bool {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::go_back(webview)
+        } else {
+            false
+        }
+    }
+
+    fn go_forward(&self, window_index: u8, webview_index: u8) -> bool {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::go_forward(webview)
+        } else {
+            false
+        }
+    }
+
+    fn raw_html(&self, window_index: u8, webview_index: u8, uri: &str) -> String {
+        String::new()
+    }
+
+    fn uri(&self, window_index: u8, webview_index: u8) -> String {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::title(webview)
+        } else {
+            String::new()
+        }
+    }
+
+    fn webview_title(&self, window_index: u8, webview_index: u8) -> String {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::uri(webview)
+        } else {
+            String::new()
+        }
+    }
+
+    fn run_javascript(&self, window_index: u8, webview_index: u8, script: &str) {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::run_javascript(webview, script)
+        }
+    }
+
+    fn apply_styles(&self, window_index: u8, webview_index: u8, styles: &str) {
     }
 }
 
-extern fn address_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
-    if let Some(text) = notification_object_text(notification) {
-        super::UI.engine.update_address::<CocoaUI>(&super::UI, 0, 0, text);
-    }
-}
-
-fn notification_object_text<'a>(notification: id) -> Option<&'a str> {
-    if is_return_key_event(notification) {
-        let raw_text = unsafe {
-            let control = notification.object();
-            control.string_value()
-        };
-        return nsstring_as_str(raw_text);
-    }
-    None
-}
-
-fn nsstring_as_str<'a>(nsstring: id) -> Option<&'a str> {
-    let bytes = unsafe {
-        let bytes: *const c_char = nsstring.UTF8String();
-        let byte_str = bytes as *const u8;
-        let len = nsstring.len();
-        slice::from_raw_parts(byte_str, len)
-    };
-    str::from_utf8(bytes).ok()
-}
-
-fn is_return_key_event(notification: id) -> bool {
-    let keycode = unsafe {
-        notification.user_info().object_for_key("NSTextMovement").integer_value()
-    };
-    keycode == 0x10
-}

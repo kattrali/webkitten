@@ -50,12 +50,24 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
-
+        if let Some(search_path) = self.command_search_path() {
+            println!("Found search path: {}", search_path.display());
+            if let Some(search_path) = search_path.to_str() {
+                if let Some(command) = command::Command::parse(text, vec![search_path]) {
+                    println!("Found command match: {}", text);
+                    if let Some(file) = command.file() {
+                        println!("Running a command");
+                        script::execute::<T>(file, command.arguments, ui);
+                    }
+                }
+            }
+        }
         CommandOutput { error: None, message: None }
     }
 
     fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> AddressUpdateOutput {
+        println!("Updating the address");
         AddressUpdateOutput { error: None, message: None }
     }
 

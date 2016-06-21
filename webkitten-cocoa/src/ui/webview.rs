@@ -1,62 +1,93 @@
-use std::cell::RefCell;
-
-use cocoa::base::{id};
+use cocoa::base::{id,nil,YES,NO};
 use cocoa_ext::foundation::{NSURLRequest};
 
-use webkitten::ui::WebView;
 use webkit::*;
+use runtime;
 
-pub struct CocoaWebView {
-    wkwebview: RefCell<id>
+
+pub fn load_uri(webview: id, uri: &str) {
+    unsafe { webview.load_request(NSURLRequest(uri)); }
 }
 
-impl WebView for CocoaWebView {
+pub fn load_html_string(webview: id, contents: &str) {
+    unsafe { webview.load_html_string(contents, ""); }
+}
 
-    fn load_uri(&self, uri: &str) {
-        let webview = self.wkwebview.borrow();
-        unsafe { webview.load_request(NSURLRequest(uri)); }
-    }
+pub fn is_loading(webview: id) -> bool {
+    unsafe { webview.is_loading() == YES }
+}
 
-    fn go_back(&self) {
-    }
+fn set_custom_user_agent(webview: id, user_agent: &str) {
+    unsafe { webview.set_custom_user_agent(user_agent) }
+}
 
-    fn go_forward(&self) {
-    }
-
-    fn focus(&self) {
-    }
-
-    fn raw_html(&self) -> String {
-        String::new()
-    }
-
-    fn uri(&self) -> String {
-        String::new()
-    }
-
-    fn title(&self) -> String {
-        String::new()
-    }
-
-    fn apply_javascript(&self, script: &str) {
-    }
-
-    fn apply_styles(&self, styles: &str) {
-    }
-
-    fn apply_content_filters(&self, identifier: &str, rules: &str) {
-        unsafe {
-            //let store = _WKUserContentExtensionStore::default_store(nil);
-            //store.compile_content_extension(identifier,
-                                            //rules,
-                                            //ConcreteBlock::new(move |filter: id, err: id| {
-                //let mut webview = self.wkwebview.borrow_mut();
-                //if err == nil {
-                    //webview.configuration().user_content_controller().add_user_content_filter(filter);
-                //} else {
-                    //println!("failed to load extension");
-                //}
-            //}));
+fn custom_user_agent(webview: id) -> String {
+    unsafe {
+        let user_agent = webview.custom_user_agent();
+        if user_agent != nil {
+            if let Some(user_agent) = runtime::nsstring_as_str(user_agent) {
+                return String::from(user_agent);
+            }
         }
+        return String::new();
     }
+}
+
+pub fn go_back(webview: id) -> bool {
+    unsafe {
+        if webview.can_go_back() == NO {
+            return false
+        }
+        webview.go_back();
+    }
+    true
+}
+
+pub fn go_forward(webview: id) -> bool {
+    unsafe {
+        if webview.can_go_forward() == NO {
+            return false
+        }
+        webview.go_forward();
+    }
+    true
+}
+
+pub fn stop_loading(webview: id) {
+    unsafe { webview.stop_loading(); }
+}
+
+pub fn raw_html(webview: id) -> String {
+    String::new()
+}
+
+pub fn uri(webview: id) -> String {
+    unsafe {
+        let url = webview.url();
+        if url != nil {
+            if let Some(url) = runtime::nsstring_as_str(url) {
+                return String::from(url);
+            }
+        }
+        return String::new();
+    }
+}
+
+pub fn title(webview: id) -> String {
+    unsafe {
+        let title = webview.title();
+        if title != nil {
+            if let Some(title) = runtime::nsstring_as_str(title) {
+                return String::from(title);
+            }
+        }
+        return String::new();
+    }
+}
+
+pub fn run_javascript(webview: id, script: &str) {
+    unsafe { webview.evaluate_javascript(script); }
+}
+
+pub fn apply_styles(webview: id, styles: &str) {
 }

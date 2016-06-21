@@ -39,6 +39,7 @@ pub mod foundation {
     pub trait NSArray {
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id;
+        unsafe fn get(self, index: NSUInteger) -> Option<id>;
         unsafe fn count(self) -> NSUInteger;
     }
 
@@ -46,6 +47,14 @@ pub mod foundation {
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id {
             msg_send![self, objectAtIndex:index]
+        }
+
+        unsafe fn get(self, index: NSUInteger) -> Option<id> {
+            if self.count() > index {
+                Some(self.object_at_index(index))
+            } else {
+                None
+            }
         }
 
         unsafe fn count(self) -> NSUInteger {
