@@ -30,9 +30,7 @@ enum CocoaWindowSubview {
 }
 
 pub struct CocoaUI {
-    handler: Engine,
-    nsapp: id,
-    windows: RefCell<Vec<CocoaWindow>>
+    engine: Engine
 }
 
 pub struct CocoaWindow {
@@ -45,20 +43,16 @@ pub struct CocoaWebView {
 
 impl ApplicationUI for CocoaUI {
 
-    fn new(handler: Engine) -> Option<Self> {
-        Some(CocoaUI {
-            handler: handler,
-            nsapp: unsafe { NSApp() },
-            windows: RefCell::new(vec![])
-        })
+    fn new(engine: Engine) -> Option<Self> {
+        Some(CocoaUI {engine: engine})
     }
 
     fn event_handler(&self) -> &Engine {
-        &self.handler
+       &self.engine
     }
 
-    fn run(&mut self) {
-        if let Some(start_page) = self.handler.config.lookup("window.start-page") {
+    fn run(&self) {
+        if let Some(start_page) = self.event_handler().config.lookup("window.start-page") {
             self.open_window(start_page.as_str());
         }
         self.start_run_loop();
@@ -66,11 +60,9 @@ impl ApplicationUI for CocoaUI {
 
     fn open_window(&self, uri: Option<&str>) {
         let window = CocoaWindow::new();
-        let mut windows = self.windows.borrow_mut();
         if let Some(uri) = uri {
             window.open_webview(uri);
         }
-        windows.push(window);
     }
 
     fn window<B: BrowserWindow>(&self, index: u8) -> Option<&B> {
@@ -94,11 +86,11 @@ impl CocoaUI {
     fn start_run_loop(&self) {
         unsafe {
             let _pool = NSAutoreleasePool::new(nil);
-            self.nsapp.setActivationPolicy_(NSApplicationActivationPolicyRegular);
+            self.nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
             self.create_menu();
             let current_app = NSRunningApplication::currentApplication(nil);
             current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps);
-            self.nsapp.run();
+            self.nsapp().run();
         }
     }
 
@@ -106,7 +98,7 @@ impl CocoaUI {
         let menubar = NSMenu::new(nil).autorelease();
         let app_menu_item = NSMenuItem::new(nil).autorelease();
         menubar.addItem_(app_menu_item);
-        self.nsapp.setMainMenu_(menubar);
+        self.nsapp().setMainMenu_(menubar);
         let app_menu = NSMenu::new(nil).autorelease();
         let quit_prefix = NSString::alloc(nil).init_str("Quit");
         let quit_title = quit_prefix.stringByAppendingString_(
@@ -121,6 +113,10 @@ impl CocoaUI {
         ).autorelease();
         app_menu.addItem_(quit_item);
         app_menu_item.setSubmenu_(app_menu);
+    }
+
+    unsafe fn nsapp(&self) -> id {
+        NSApplication::sharedApplication(nil)
     }
 }
 
@@ -306,3 +302,11 @@ impl WebView for CocoaWebView {
         }
     }
 }
+
+//let superclass = NSObject::class();
+//if let Some(mut decl) = ClassDecl::new("AddressBarDelegate", superclass) {
+    //extern fn check_input(this: &mut Object, _cmd: Sel, control: id, editor: id) {
+        //println!("Whammo!");
+    //}
+    //decl.add_method(sel!(control:textShouldEndEditing:), check_input);
+//}

@@ -21,14 +21,13 @@ pub struct Engine {
 
 impl Engine {
 
-    /// Create a new running application
-    pub fn run<T: ApplicationUI>(config_path: &str) -> Option<T> {
+    /// Create a new application engine
+    pub fn new(config_path: &str) -> Option<Self> {
         config::parse_config_file(config_path).and_then(|config| {
-            let engine = Engine {
+            Some(Engine {
                 config: config,
                 config_path: String::from(config_path)
-            };
-            T::new(engine)
+            })
         })
     }
 

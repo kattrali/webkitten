@@ -8,4 +8,5 @@ cocoa = "0.4"
 objc = "0.2"
 block = "0.1"
 core-graphics = ">=0.2, <0.4"
+lazy_static = "0.2"
 webkitten = { path = "../" }
