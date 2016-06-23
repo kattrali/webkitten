@@ -1,5 +1,7 @@
 extern crate toml;
 extern crate getopts;
+#[macro_use]
+extern crate log;
 
 pub mod command;
 pub mod config;
@@ -24,6 +26,7 @@ impl Engine {
     /// Create a new application engine
     pub fn new(config_path: &str) -> Option<Self> {
         config::parse_config_file(config_path).and_then(|config| {
+            info!("Creating application engine with config path: {}", config_path);
             Some(Engine {
                 config: config,
                 config_path: String::from(config_path)
@@ -51,12 +54,12 @@ impl EventHandler for Engine {
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
         if let Some(search_path) = self.command_search_path() {
-            println!("Found search path: {}", search_path.display());
+            info!("Found search path: {}", search_path.display());
             if let Some(search_path) = search_path.to_str() {
                 if let Some(command) = command::Command::parse(text, vec![search_path]) {
-                    println!("Found command match: {}", text);
+                    info!("Found command match: {}", text);
                     if let Some(file) = command.file() {
-                        println!("Running a command");
+                        info!("Running a command: {}", command.path);
                         script::execute::<T>(file, command.arguments, ui);
                     }
                 }
@@ -67,7 +70,7 @@ impl EventHandler for Engine {
 
     fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> AddressUpdateOutput {
-        println!("Updating the address");
+        info!("Updating the address with: {}", text);
         AddressUpdateOutput { error: None, message: None }
     }
 
@@ -84,3 +87,4 @@ impl EventHandler for Engine {
         vec![]
     }
 }
+

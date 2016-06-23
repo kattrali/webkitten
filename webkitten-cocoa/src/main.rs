@@ -3,9 +3,11 @@
 extern crate cocoa;
 extern crate core_graphics;
 extern crate block;
+extern crate env_logger;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate log;
 #[macro_use]
 extern crate objc;
 extern crate webkitten;
@@ -38,6 +40,7 @@ lazy_static! {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     runtime::declare_bar_delegates();
     UI.run();
 }

@@ -30,16 +30,22 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
             ui.open_window(None);
         }
     }));
+    lua.set("log", function1(|message: String| {
+        info!("lua: {}", message);
+    }));
     lua.set("window_count", function0(|| {
         ui.window_count()
     }));
     lua.set("focused_window_index", function0(|| {
+        info!("get focused_window_index");
         ui.focused_window_index()
     }));
     lua.set("hide_window", function1(|window_index: u8| {
+        info!("hide_window: {}", window_index);
         ui.toggle_window(window_index, false);
     }));
     lua.set("show_window", function1(|window_index: u8| -> () {
+        info!("show_window: {}", window_index);
         ui.toggle_window(window_index, true);
     }));
     lua.set("open_webview", function2(|window_index: u8, uri: String| {
@@ -58,6 +64,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.command_field_text(window_index)
     }));
     lua.set("focused_webview_index", function1(|window_index: u8| {
+        info!("get focused_webview_index");
         ui.focused_webview_index(window_index)
     }));
     lua.set("resize_window", function3(|window_index: u8, width: u32, height: u32| {
@@ -70,13 +77,15 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.focus_webview(window_index, webview_index);
     }));
     lua.set("load_uri", function3(|window_index: u8, webview_index: u8, uri: String| {
-        println!("entered script load_uri");
+        info!("load_uri: ({}, {}) => {}", window_index, webview_index, uri);
         ui.set_uri(window_index, webview_index, &uri);
     }));
     lua.set("go_back", function2(|window_index: u8, webview_index: u8| {
+        info!("go_back: ({}, {})", window_index, webview_index);
         ui.go_back(window_index, webview_index);
     }));
     lua.set("go_forward", function2(|window_index: u8, webview_index: u8| {
+        info!("go_forward: ({}, {})", window_index, webview_index);
         ui.go_forward(window_index, webview_index);
     }));
     lua.set("webview_title", function2(|window_index: u8, webview_index: u8| {

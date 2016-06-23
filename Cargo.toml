@@ -7,3 +7,4 @@ authors = ["Delisa Mason <iskanamagus@gmail.com>"]
 hlua    = "0.1.8"
 toml    = "0.1.28"
 getopts = "0.2"
+log     = "0.3"
