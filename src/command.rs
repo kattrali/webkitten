@@ -17,8 +17,7 @@ impl Command {
     pub fn parse(input: &str, search_paths: Vec<String>, aliases: Option<&Value>) -> Option<Self> {
         let mut components = input.split_whitespace();
         components.next()
-            .and_then(|name| resolve_name(&name, aliases))
-            .and_then(|name| resolve_command(search_paths, &name))
+            .and_then(|name| resolve_command(search_paths, &resolve_name(name, aliases)))
             .and_then(|path| {
                 Some(Command {
                     path: path,
@@ -33,11 +32,11 @@ impl Command {
     }
 }
 
-fn resolve_name(name: &str, aliases: Option<&Value>) -> Option<String> {
+fn resolve_name(name: &str, aliases: Option<&Value>) -> String {
     if let Some(resolved_name) = aliases.and_then(|a| a.lookup(name)).and_then(|n| n.as_str()) {
-        Some(String::from(resolved_name))
+        String::from(resolved_name)
     } else {
-        None
+        String::from(name)
     }
 }
 
