@@ -9,7 +9,7 @@ use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
 use cocoa_ext::foundation::{NSURLRequest,NSArray};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
-                        NSTextField,NSView};
+                        NSTextField,NSView,NSControl};
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
 
@@ -18,7 +18,7 @@ use webkit::*;
 use runtime::{AddressBarDelegate,CommandBarDelegate};
 use super::webview;
 
-const BAR_HEIGHT: usize = 26;
+const BAR_HEIGHT: usize = 24;
 
 pub enum CocoaWindowSubview {
     AddressBar       = 0,
@@ -45,6 +45,13 @@ pub fn open(uri: Option<&str>) {
     }
 }
 
+pub fn close(window_index: u8) {
+}
+
+pub fn title(window_index: u8) -> String {
+    String::new()
+}
+
 pub fn open_webview(window_index: u8, uri: &str) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
@@ -67,6 +74,7 @@ pub fn close_webview(window_index: u8, index: u8) {
 pub fn focus_webview(window_index: u8, webview_index: u8) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
+            println!("Focusing webview {} in window {}", webview_index, window_index);
             let expected_index = webview_index as usize;
             for (index, view) in window_webviews(window).iter().enumerate() {
                 view.set_hidden(index == expected_index);
@@ -92,18 +100,50 @@ pub fn address_field_text(window_index: u8) -> String {
     String::new()
 }
 
-pub fn set_address_field_text(window_index: u8, text: String) {
+pub fn set_address_field_text(window_index: u8, text: &str) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            let bar = subview(window, CocoaWindowSubview::AddressBar);
+            bar.set_string_value(text);
+        }
+    }
 }
 
 pub fn command_field_text(window_index: u8) -> String {
     String::new()
 }
 
-pub fn set_command_field_text(window_index: u8, text: String) {
+pub fn set_command_field_text(window_index: u8, text: &str) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            let bar = subview(window, CocoaWindowSubview::CommandBar);
+            bar.set_string_value(text);
+        }
+    }
 }
 
 pub fn focused_webview_index(window_index: u8) -> u8 {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            for (index, view) in window_webviews(window).iter().enumerate() {
+                if view.hidden() == NO {
+                    return index as u8;
+                }
+            }
+
+        }
+    }
     0
+}
+
+pub fn webview_count(window_index: u8) -> u8 {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            window_webviews(window).count() as u8
+        } else {
+            0
+        }
+    }
 }
 
 unsafe fn window_for_index(index: u8) -> Option<id> {

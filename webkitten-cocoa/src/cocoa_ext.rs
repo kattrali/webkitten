@@ -92,7 +92,8 @@ pub mod core_graphics {
 }
 
 pub mod appkit {
-    use cocoa::base::{class,id,nil,NO,YES};
+    use cocoa::base::{class,id,nil,NO,YES,BOOL};
+    use cocoa::foundation::NSString;
     use core_graphics::base::CGFloat;
 
     pub enum NSLayoutAttribute {
@@ -142,12 +143,18 @@ pub mod appkit {
     pub trait NSControl {
 
         unsafe fn string_value(self) -> id;
+        unsafe fn set_string_value(self, value: &str);
     }
 
     impl NSControl for id {
 
         unsafe fn string_value(self) -> id {
             msg_send![self, stringValue]
+        }
+
+        unsafe fn set_string_value(self, value: &str) {
+            let value_str = NSString::alloc(nil).init_str(value);
+            msg_send![self, setStringValue:value_str];
         }
     }
 
@@ -179,6 +186,7 @@ pub mod appkit {
         unsafe fn subviews(self) -> id;
         unsafe fn add_subview(self, view: id);
         unsafe fn set_hidden(self, hidden: bool);
+        unsafe fn hidden(self) -> BOOL;
         unsafe fn remove_from_superview(self);
     }
 
@@ -195,6 +203,10 @@ pub mod appkit {
         unsafe fn set_hidden(self, hidden: bool) {
             let value = if hidden { YES } else { NO };
             msg_send![self, setHidden:value];
+        }
+
+        unsafe fn hidden(self) -> BOOL {
+            msg_send![self, isHidden]
         }
 
         unsafe fn remove_from_superview(self) {

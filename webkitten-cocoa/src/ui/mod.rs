@@ -33,6 +33,10 @@ impl ApplicationUI for CocoaUI {
         window::open(uri);
     }
 
+    fn close_window(&self, index: u8) {
+        window::close(index);
+    }
+
     fn focused_window_index(&self) -> u8 {
         0
     }
@@ -55,27 +59,34 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn set_address_field_text(&self, window_index: u8, text: &str) {
+        window::set_address_field_text(window_index, text);
     }
 
     fn command_field_text(&self, window_index: u8) -> String {
-        String::new()
+        window::command_field_text(window_index)
     }
 
     fn set_command_field_text(&self, window_index: u8, text: &str) {
+        window::set_command_field_text(window_index, text);
     }
 
     fn window_title(&self, window_index: u8) -> String {
-        String::new()
+        window::title(window_index)
     }
 
     fn set_window_title(&self, window_index: u8, title: &str) {
     }
 
     fn focused_webview_index(&self, window_index: u8) -> u8 {
-        0
+        window::focused_webview_index(window_index)
+    }
+
+    fn webview_count(&self, window_index: u8) -> u8 {
+        window::webview_count(window_index)
     }
 
     fn open_webview(&self, window_index: u8, uri: &str) {
+        window::open_webview(window_index, uri);
     }
 
     fn close_webview(&self, window_index: u8, webview_index: u8) {
@@ -83,6 +94,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn focus_webview(&self, window_index: u8, webview_index: u8) {
+        window::focus_webview(window_index, webview_index);
     }
 
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {

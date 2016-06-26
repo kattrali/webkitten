@@ -1,20 +1,32 @@
 extern crate hlua;
 
-use self::hlua::{Lua,function0,function1,function2,function3,function4};
+use self::hlua::{Lua,LuaError,function0,function1,function2,function3,function4};
 use self::hlua::functions_read::LuaFunction;
 use std::fs::File;
 use super::ui::ApplicationUI;
 
 const INVALID_RESULT: u8 = 247;
 
-pub fn execute<T: ApplicationUI>(file: File, arguments: Vec<String>, ui: &T) {
+pub fn execute<T: ApplicationUI>(file: File, arguments: Vec<String>, ui: &T) -> bool {
     let mut lua = create_runtime::<T>(ui);
+    lua.openlibs();
     lua.set("arguments", arguments);
     lua.execute_from_reader::<(), _>(file);
     let run: Option<LuaFunction<_>> = lua.get("run");
     if run.is_some() {
-        let output: Result<bool, _> = run.unwrap().call();
+        let output: Result<bool, LuaError> = run.unwrap().call();
+        if let Err(err) = output {
+            match err {
+                LuaError::SyntaxError(err) => warn!("syntax error: {}", err),
+                LuaError::ExecutionError(err) => warn!("execution error: {}", err),
+                LuaError::ReadError(err) => warn!("read error: {}", err),
+                _ => {}
+            }
+            return false
+        }
+        return true
     }
+    return false
 }
 
 fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
@@ -30,8 +42,14 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
             ui.open_window(None);
         }
     }));
-    lua.set("log", function1(|message: String| {
+    lua.set("close_window", function1(|window_index: u8| {
+        ui.close_window(window_index);
+    }));
+    lua.set("log_info", function1(|message: String| {
         info!("lua: {}", message);
+    }));
+    lua.set("log_debug", function1(|message: String| {
+        debug!("lua: {}", message);
     }));
     lua.set("window_count", function0(|| {
         ui.window_count()
@@ -50,6 +68,9 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_webview", function2(|window_index: u8, uri: String| {
         ui.open_webview(window_index, &uri);
+    }));
+    lua.set("webview_count", function1(|window_index: u8| {
+        ui.webview_count(window_index)
     }));
     lua.set("set_address_field_text", function2(|window_index: u8, text: String| {
         ui.set_address_field_text(window_index, &text);

@@ -20,8 +20,11 @@ pub trait ApplicationUI: Sized {
     /// Number of open windows
     fn window_count(&self) -> u8;
 
-    /// Open a new window, returning the opened window
+    /// Open a new window
     fn open_window(&self, uri: Option<&str>);
+
+    /// Close a window
+    fn close_window(&self, index: u8);
 
     /// Focus window at index
     fn focus_window(&self, index: u8);
@@ -53,6 +56,9 @@ pub trait ApplicationUI: Sized {
 
     /// Index of the webview currently visible in a specified window
     fn focused_webview_index(&self, window_index: u8) -> u8;
+
+    /// Number of webviews in a window
+    fn webview_count(&self, window_index: u8) -> u8;
 
     /// Open a new webview in a specified window
     fn open_webview(&self, window_index: u8, uri: &str);
