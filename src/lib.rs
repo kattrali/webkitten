@@ -22,6 +22,8 @@ pub const WEBKITTEN_TITLE: &'static str = "webkitten";
 /// property `general.config-dir`.
 const CONFIG_DIR: &'static str = "CONFIG_DIR";
 
+/// The core of a webkitten application. The engine handles configuration options
+/// and responding to lifecycle and user events from the UI.
 pub struct Engine {
     pub config: Value,
     config_path: String
@@ -68,6 +70,11 @@ impl Engine {
         }
         resolved_paths
     }
+
+    /// The configuration section values for `alias`
+    fn command_aliases(&self) -> Option<&Value> {
+        self.config.lookup("alias")
+    }
 }
 
 impl EventHandler for Engine {
@@ -75,7 +82,7 @@ impl EventHandler for Engine {
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
         let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(text, search_paths) {
+        if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases()) {
             info!("Found command match: {}", text);
             if let Some(file) = command.file() {
                 info!("Running a command: {}", command.path);

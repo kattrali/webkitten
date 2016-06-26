@@ -1,8 +1,7 @@
-extern crate hlua;
-
-use self::hlua::{Lua,LuaError};
 use std::path::Path;
 use std::fs::{File,metadata};
+
+use toml::Value;
 
 /// A representation of a script which executes and returns a boolean value
 /// indicating success
@@ -15,10 +14,11 @@ pub struct Command {
 impl Command {
 
     /// Parse a command name and arguments into an instance of Command
-    pub fn parse(input: &str, search_paths: Vec<String>) -> Option<Self> {
+    pub fn parse(input: &str, search_paths: Vec<String>, aliases: Option<&Value>) -> Option<Self> {
         let mut components = input.split_whitespace();
         components.next()
-            .and_then(|name| resolve_command(search_paths, name))
+            .and_then(|name| resolve_name(&name, aliases))
+            .and_then(|name| resolve_command(search_paths, &name))
             .and_then(|path| {
                 Some(Command {
                     path: path,
@@ -30,6 +30,14 @@ impl Command {
     /// A File handle to the command path
     pub fn file(&self) -> Option<File> {
         File::open(&self.path).ok()
+    }
+}
+
+fn resolve_name(name: &str, aliases: Option<&Value>) -> Option<String> {
+    if let Some(resolved_name) = aliases.and_then(|a| a.lookup(name)).and_then(|n| n.as_str()) {
+        Some(String::from(resolved_name))
+    } else {
+        None
     }
 }
 
