@@ -15,7 +15,7 @@ pub struct Command {
 impl Command {
 
     /// Parse a command name and arguments into an instance of Command
-    pub fn parse(input: &str, search_paths: Vec<&str>) -> Option<Self> {
+    pub fn parse(input: &str, search_paths: Vec<String>) -> Option<Self> {
         let mut components = input.split_whitespace();
         components.next()
             .and_then(|name| resolve_command(search_paths, name))
@@ -35,12 +35,12 @@ impl Command {
 
 /// Iterate over search paths returning the first file path in search paths
 /// with the provided name
-fn resolve_command(search_paths: Vec<&str>, name: &str) -> Option<String> {
+fn resolve_command(search_paths: Vec<String>, name: &str) -> Option<String> {
     if name.is_empty() {
         return None
     }
     let mut ordered_paths: Vec<String> = search_paths.iter()
-        .filter_map(|path| join_paths(path, name.clone()))
+        .filter_map(|path| join_paths(&path, name.clone()))
         .filter(|path| metadata(&path).is_ok())
         .collect();
     ordered_paths.reverse();

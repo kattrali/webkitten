@@ -13,8 +13,14 @@ use std::path::{Path,PathBuf};
 use toml::Value;
 use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput};
 
+/// Application identifier for apps built with webkitten core
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
+/// Application title for apps built with webkitten core
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
+
+/// Placeholder used in webkitten configuration to represent the configuration
+/// property `general.config-dir`.
+const CONFIG_DIR: &'static str = "CONFIG_DIR";
 
 pub struct Engine {
     pub config: Value,
@@ -43,9 +49,24 @@ impl Engine {
         false
     }
 
-    fn command_search_path(&self) -> Option<PathBuf> {
-        let path = Path::new(&self.config_path);
-        path.parent().and_then(|path| Some(path.join("scripts")))
+    fn command_search_paths(&self) -> Vec<String> {
+        let mut config_dir: Option<&str> = None;
+        let mut resolved_paths: Vec<String> = vec![];
+        if let Some(path) = self.config.lookup("general.config-dir") {
+            config_dir = path.as_str();
+        }
+        if let Some(load_paths) = self.config.lookup("commands.search-paths").and_then(|p| p.as_slice()) {
+            for mut value_path in load_paths {
+                if let Some(path) = value_path.as_str() {
+                    if let Some(config_dir) = config_dir {
+                        resolved_paths.push(path.replace(CONFIG_DIR, config_dir));
+                    } else {
+                        resolved_paths.push(String::from(path))
+                    }
+                }
+            }
+        }
+        resolved_paths
     }
 }
 
@@ -53,15 +74,13 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
-        if let Some(search_path) = self.command_search_path() {
-            info!("Found search path: {}", search_path.display());
-            if let Some(search_path) = search_path.to_str() {
-                if let Some(command) = command::Command::parse(text, vec![search_path]) {
-                    info!("Found command match: {}", text);
-                    if let Some(file) = command.file() {
-                        info!("Running a command: {}", command.path);
-                        script::execute::<T>(file, command.arguments, ui);
-                    }
+        let search_paths = self.command_search_paths();
+        if let Some(command) = command::Command::parse(text, search_paths) {
+            info!("Found command match: {}", text);
+            if let Some(file) = command.file() {
+                info!("Running a command: {}", command.path);
+                if script::execute::<T>(file, command.arguments, ui) {
+                    ui.set_command_field_text(window_index, "");
                 }
             }
         }
