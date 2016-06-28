@@ -1,9 +1,10 @@
 //! Bindings to WebKit.framework on macOS
 
-use cocoa::base::{class,id,nil,NO,YES,BOOL};
+use std::ops::Deref;
+use cocoa::base::{class,id,nil,BOOL};
 use core_graphics::geometry::CGRect;
 use cocoa::foundation::NSString;
-use block::{ConcreteBlock,IntoConcreteBlock};
+use block::Block;
 
 #[link(name = "WebKit", kind = "framework")]
 extern {}
@@ -135,33 +136,43 @@ impl WKUserContentController for id {
     }
 }
 
+pub type ContentExtensionCompletionHandler = Deref<Target=Block<(id, id), ()>>;
+
 pub trait _WKUserContentExtensionStore {
 
     unsafe fn default_store(_:Self) -> id {
         msg_send![class("_WKUserContentExtensionStore"), defaultStore]
     }
 
-    unsafe fn compile_content_extension<F>(self,
+    unsafe fn compile_content_extension(self,
                                         identifier: &str,
                                         extension: &str,
-                                        block: ConcreteBlock<(id /* _WKUserContentFilter */, id /* NSError */), (), F>)
-        where F: IntoConcreteBlock<(id, id), Ret=()> + 'static;
+                                        block: &ContentExtensionCompletionHandler);
+
+    unsafe fn lookup_content_extension(self,
+                                       identifier: &str,
+                                       block: &ContentExtensionCompletionHandler);
 }
 
 impl _WKUserContentExtensionStore for id {
 
-    unsafe fn compile_content_extension<F>(self,
+    unsafe fn compile_content_extension(self,
                                         identifier: &str,
                                         extension: &str,
-                                        block: ConcreteBlock<(id, id), (), F>)
-        where F: IntoConcreteBlock<(id, id), Ret=()> + 'static {
+                                        block: &ContentExtensionCompletionHandler) {
         let id_str = NSString::alloc(nil).init_str(identifier);
         let ex_str = NSString::alloc(nil).init_str(extension);
-        let block = block.copy();
         msg_send![self, compileContentExtensionForIdentifier:id_str
                                      encodedContentExtension:ex_str
-                                           completionHandler:block];
+                                           completionHandler:block.deref()];
+    }
 
+    unsafe fn lookup_content_extension(self,
+                                       identifier: &str,
+                                       block: &ContentExtensionCompletionHandler) {
+        let id_str = NSString::alloc(nil).init_str(identifier);
+        msg_send![self, lookupContentExtensionForIdentifier:id_str
+                                          completionHandler:block.deref()];
     }
 }
 

@@ -1,21 +1,22 @@
 use std::str;
 
-use cocoa::base::{id,nil,NO,class};
+use cocoa::base::{id,nil,NO};
 use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool, NSString};
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSBackingStoreBuffered};
-use cocoa_ext::foundation::{NSURLRequest,NSArray};
+use cocoa_ext::foundation::NSArray;
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
                         NSTextField,NSView,NSControl};
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
+use block::ConcreteBlock;
 
 use webkitten::WEBKITTEN_TITLE;
 use webkit::*;
-use runtime::{AddressBarDelegate,CommandBarDelegate};
+use runtime::{AddressBarDelegate,CommandBarDelegate,log_error_description};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
@@ -38,10 +39,8 @@ pub fn toggle(window: id, visible: bool) {
 
 pub fn open(uri: Option<&str>) {
     unsafe {
-        let window = create_nswindow();
-        if let Some(uri) = uri {
-            webview::load_uri(add_and_focus_webview(window), uri);
-        }
+        create_nswindow();
+        add_and_focus_webview(window_count() - 1);
     }
 }
 
@@ -52,10 +51,18 @@ pub fn title(window_index: u8) -> String {
     String::new()
 }
 
+pub fn window_count() -> u8 {
+    unsafe {
+        let windows: id = msg_send![super::application::nsapp(), windows];
+        windows.count() as u8
+    }
+}
+
 pub fn open_webview(window_index: u8, uri: &str) {
     unsafe {
-        if let Some(window) = window_for_index(window_index) {
-            webview::load_uri(add_and_focus_webview(window), uri);
+        add_and_focus_webview(window_index);
+        if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
+            webview::load_uri(webview, uri);
         }
     }
 }
@@ -156,12 +163,30 @@ unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
     msg_send![subviews, objectAtIndex:index]
 }
 
-unsafe fn add_and_focus_webview(window: id) -> id {
-    let container = subview(window, CocoaWindowSubview::WebViewContainer);
-    for view in container.subviews().iter() {
-        view.set_hidden(true);
-    }
-    add_webview(container)
+unsafe fn add_and_focus_webview(window_index: u8) {
+    let store = _WKUserContentExtensionStore::default_store(nil);
+    let block = ConcreteBlock::new(move |filter: id, err: id| {
+        if let Some(window) = window_for_index(window_index) {
+            let container = subview(window, CocoaWindowSubview::WebViewContainer);
+            for view in container.subviews().iter() {
+                view.set_hidden(true);
+            }
+            let config = WKWebViewConfiguration().autorelease();
+            if err == nil {
+                config.user_content_controller().add_user_content_filter(filter);
+            } else {
+                log_error_description(err);
+            }
+            let webview = WKWebView(CGRectZero(), config).autorelease();
+            webview.disable_translates_autoresizing_mask_into_constraints();
+            container.add_subview(webview);
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Top, container, NSLayoutAttribute::Top));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Left, container, NSLayoutAttribute::Left));
+            container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Right, container, NSLayoutAttribute::Right));
+        }
+    });
+    store.lookup_content_extension("filter", &block.copy());
 }
 
 unsafe fn window_webviews(window: id) -> id {
@@ -185,17 +210,6 @@ unsafe fn create_nswindow() -> id {
     window.setTitle_(title);
     layout_window_subviews(window);
     window
-}
-
-unsafe fn add_webview(container: id) -> id {
-    let webview = WKWebView(CGRectZero(), WKWebViewConfiguration().autorelease()).autorelease();
-    webview.disable_translates_autoresizing_mask_into_constraints();
-    container.add_subview(webview);
-    container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Top, container, NSLayoutAttribute::Top));
-    container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
-    container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Left, container, NSLayoutAttribute::Left));
-    container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Right, container, NSLayoutAttribute::Right));
-    webview
 }
 
 unsafe fn layout_window_subviews(window: id) -> (id, id) {

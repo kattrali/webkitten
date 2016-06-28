@@ -3,7 +3,7 @@ use libc::c_char;
 
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
-use cocoa::base::{selector,id,nil,class};
+use cocoa::base::{id,nil,class};
 use webkitten::ui::EventHandler;
 use cocoa::foundation::NSString;
 
@@ -35,6 +35,17 @@ pub fn nsstring_as_str<'a>(nsstring: id) -> Option<&'a str> {
     str::from_utf8(bytes).ok()
 }
 
+pub fn log_error_description(err: id) {
+    if err != nil {
+        unsafe {
+            let desc = msg_send![err, description];
+            if let Some(desc) = nsstring_as_str(desc) {
+                error!("{}", desc);
+            }
+        }
+    }
+}
+
 pub fn declare_bar_delegates() {
     if let Some(superclass) = Class::get("NSObject") {
         if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
@@ -56,13 +67,13 @@ pub fn declare_bar_delegates() {
     }
 }
 
-extern fn command_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
+extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
         super::UI.engine.execute_command::<CocoaUI>(&super::UI, 0, 0, text);
     }
 }
 
-extern fn address_bar_did_end_editing(this: &Object, _cmd: Sel, notification: id) {
+extern fn address_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
         super::UI.engine.update_address::<CocoaUI>(&super::UI, 0, 0, text);
     }

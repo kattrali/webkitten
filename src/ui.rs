@@ -10,9 +10,6 @@ pub trait ApplicationUI: Sized {
     /// Initialize all needed UI functions
     fn run(&self);
 
-    /// Register content filtering rules to be applied to loaded resources
-    fn register_content_filters(&self, identifier: &str, rules: &str);
-
 
     /// The index of the focused window
     fn focused_window_index(&self) -> u8;

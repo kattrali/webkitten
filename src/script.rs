@@ -118,8 +118,5 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("add_styles", function3(|window_index: u8, webview_index: u8, styles: String| {
         ui.apply_styles(window_index, webview_index, &styles);
     }));
-    lua.set("register_content_filters", function2(|identifier: String, rules: String| {
-        ui.register_content_filters(&identifier, &rules);
-    }));
     lua
 }

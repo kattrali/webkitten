@@ -2,17 +2,52 @@ mod application;
 mod webview;
 mod window;
 
-use webkitten::ui::{ApplicationUI,EventHandler};
+use std::fs::File;
+use std::io::Read;
+use webkitten::ui::ApplicationUI;
 use webkitten::Engine;
+
+use cocoa::base::{id,nil};
+use block::ConcreteBlock;
+use webkit::*;
+use runtime::log_error_description;
 
 pub struct CocoaUI {
     pub engine: Engine
 }
 
+impl CocoaUI {
+
+    fn compile_content_extensions<F>(&self, completion: F)
+        where F: Fn(bool) + 'static {
+        if let Some(mut file) = self.content_filter_path().and_then(|p| File::open(p).ok()) {
+            let mut contents = String::new();
+            if let Some(_) = file.read_to_string(&mut contents).ok() {
+                unsafe {
+                    let block = ConcreteBlock::new(move |_: id, err: id| {
+                        log_error_description(err);
+                        completion(err == nil);
+                    });
+                    let store = _WKUserContentExtensionStore::default_store(nil);
+                    store.compile_content_extension("filter", &contents, &block.copy());
+                }
+            }
+        }
+    }
+
+    fn content_filter_path(&self) -> Option<&str> {
+	    self.engine.config
+            .lookup("general.content-filter")
+            .and_then(|value| value.as_str())
+    }
+}
+
 impl ApplicationUI for CocoaUI {
 
     fn new(engine: Engine) -> Option<Self> {
-        Some(CocoaUI {engine: engine})
+        Some(CocoaUI {
+            engine: engine
+        })
     }
 
     fn event_handler(&self) -> &Engine {
@@ -20,13 +55,11 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn run(&self) {
+        self.compile_content_extensions(|_| {});
         if let Some(start_page) = self.event_handler().config.lookup("window.start-page") {
             self.open_window(start_page.as_str());
         }
         application::start_run_loop();
-    }
-
-    fn register_content_filters(&self, identifier: &str, rules: &str) {
     }
 
     fn open_window(&self, uri: Option<&str>) {
@@ -98,9 +131,9 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {
-        println!("Setting URI");
+        info!("Setting URI");
         if let Some(webview) = window::webview(window_index, webview_index) {
-            println!("Loading URI: {}", uri);
+            info!("Loading URI: {}", uri);
             webview::load_uri(webview, uri);
         }
     }

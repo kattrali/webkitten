@@ -39,17 +39,3 @@ unsafe fn create_menu() {
 pub unsafe fn nsapp() -> id {
     NSApplication::sharedApplication(nil)
 }
-
-pub unsafe fn register_content_filters(identifier: &str, rules: &str) {
-    //let store = _WKUserContentExtensionStore::default_store(nil);
-    //store.compile_content_extension(identifier,
-                                    //rules,
-                                    //ConcreteBlock::new(move |filter: id, err: id| {
-        //let mut webview = self.wkwebview.borrow_mut();
-        //if err == nil {
-            //webview.configuration().user_content_controller().add_user_content_filter(filter);
-        //} else {
-            //println!("failed to load extension");
-        //}
-    //}));
-}
