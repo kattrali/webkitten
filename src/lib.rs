@@ -18,14 +18,10 @@ pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
 /// Application title for apps built with webkitten core
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
 
-/// Placeholder used in webkitten configuration to represent the configuration
-/// property `general.config-dir`.
-const CONFIG_DIR: &'static str = "CONFIG_DIR";
-
 /// The core of a webkitten application. The engine handles configuration options
 /// and responding to lifecycle and user events from the UI.
 pub struct Engine {
-    pub config: Value,
+    pub config: config::Config,
     config_path: String
 }
 
@@ -33,7 +29,7 @@ impl Engine {
 
     /// Create a new application engine
     pub fn new(config_path: &str) -> Option<Self> {
-        config::parse_config_file(config_path).and_then(|config| {
+        config::Config::parse_file(config_path).and_then(|config| {
             info!("Creating application engine with config path: {}", config_path);
             Some(Engine {
                 config: config,
@@ -44,31 +40,16 @@ impl Engine {
 
     /// Reload configuration from path
     pub fn reload(&mut self) -> bool {
-        if let Some(config) = config::parse_config_file(&self.config_path) {
-            self.config = config;
-            return true;
-        }
-        false
+        self.config.load(&self.config_path)
     }
 
+    /// Paths searched for script commands
     fn command_search_paths(&self) -> Vec<String> {
-        let mut config_dir: Option<&str> = None;
-        let mut resolved_paths: Vec<String> = vec![];
-        if let Some(path) = self.config.lookup("general.config-dir") {
-            config_dir = path.as_str();
+        if let Some(paths) = self.config.lookup_path_slice("commands.search-paths") {
+            paths
+        } else {
+            vec![]
         }
-        if let Some(load_paths) = self.config.lookup("commands.search-paths").and_then(|p| p.as_slice()) {
-            for mut value_path in load_paths {
-                if let Some(path) = value_path.as_str() {
-                    if let Some(config_dir) = config_dir {
-                        resolved_paths.push(path.replace(CONFIG_DIR, config_dir));
-                    } else {
-                        resolved_paths.push(String::from(path))
-                    }
-                }
-            }
-        }
-        resolved_paths
     }
 
     /// The configuration section values for `alias`
