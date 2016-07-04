@@ -75,9 +75,6 @@ pub trait ApplicationUI: Sized {
     /// Go forward to the next loaded resource in a webview
     fn go_forward(&self, window_index: u8, webview_index: u8) -> bool;
 
-    /// Get the raw contents of the loaded resource in a webview
-    fn raw_html(&self, window_index: u8, webview_index: u8, uri: &str) -> String;
-
     /// Get the currently loaded URI or empty string
     fn uri(&self, window_index: u8, webview_index: u8) -> String;
 

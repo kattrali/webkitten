@@ -87,10 +87,10 @@ impl Config {
             })
     }
 
-    pub fn lookup_str<'a>(&self, key: &'a str) -> Option<String> {
+    pub fn lookup_str<'a>(&'a self, key: &'a str) -> Option<&'a str> {
         self.value.lookup(key)
             .and_then(|value| value.as_str())
-            .and_then(|value| Some(String::from(value)))
+            .and_then(|value| Some(value))
     }
 
     pub fn lookup_path<'a>(&self, key: &'a str) -> Option<String> {

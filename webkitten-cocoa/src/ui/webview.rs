@@ -53,12 +53,12 @@ pub fn go_forward(webview: id) -> bool {
     true
 }
 
-pub fn stop_loading(webview: id) {
-    unsafe { webview.stop_loading(); }
+pub fn reload(webview: id) {
+    unsafe { webview.reload(); }
 }
 
-pub fn raw_html(webview: id) -> String {
-    String::new()
+pub fn stop_loading(webview: id) {
+    unsafe { webview.stop_loading(); }
 }
 
 pub fn uri(webview: id) -> String {
@@ -90,4 +90,8 @@ pub fn run_javascript(webview: id, script: &str) {
 }
 
 pub fn apply_styles(webview: id, styles: &str) {
+    unsafe {
+        let sheet = <id as _WKUserStyleSheet>::init_source(styles);
+        webview.configuration().user_content_controller().add_user_style_sheet(sheet);
+    }
 }

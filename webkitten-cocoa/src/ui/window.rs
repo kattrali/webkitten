@@ -1,12 +1,12 @@
 use std::str;
 
-use cocoa::base::{id,nil,NO};
+use cocoa::base::{id,nil,NO,YES,BOOL};
 use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool, NSString};
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSBackingStoreBuffered};
-use cocoa_ext::foundation::NSArray;
+use cocoa_ext::foundation::{NSArray,NSURLRequest};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
                         NSTextField,NSView,NSControl};
@@ -16,7 +16,7 @@ use block::ConcreteBlock;
 
 use webkitten::WEBKITTEN_TITLE;
 use webkit::*;
-use runtime::{AddressBarDelegate,CommandBarDelegate,log_error_description};
+use runtime::{AddressBarDelegate,CommandBarDelegate,log_error_description,nsstring_as_str};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
@@ -27,12 +27,13 @@ pub enum CocoaWindowSubview {
     CommandBar       = 2,
 }
 
-pub fn toggle(window: id, visible: bool) {
+pub fn toggle(window_index: u8, visible: bool) {
     unsafe {
-        if visible {
-            window.makeKeyAndOrderFront_(nil);
-        } else {
-            window.orderOut_(nil);
+        if let Some(window) = window_for_index(window_index) {
+            match visible {
+                true => window.makeKeyAndOrderFront_(nil),
+                false => window.orderOut_(nil)
+            }
         }
     }
 }
@@ -44,11 +45,51 @@ pub fn open(uri: Option<&str>) {
     }
 }
 
+pub fn focus(window_index: u8) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            window.makeKeyAndOrderFront_(nil);
+        }
+    }
+}
+
+pub fn focused_index() -> u8 {
+    unsafe {
+        let windows: id = msg_send![super::application::nsapp(), windows];
+        for (index, window) in windows.iter().enumerate() {
+            let key: BOOL = msg_send![window, isKeyWindow];
+            if key == YES {
+                return index as u8;
+            }
+        }
+        0
+    }
+}
+
 pub fn close(window_index: u8) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            window.close();
+        }
+    }
 }
 
 pub fn title(window_index: u8) -> String {
-    String::new()
+    unsafe {
+        window_for_index(window_index)
+            .and_then(|win| nsstring_as_str(msg_send![win, title]))
+            .and_then(|title| Some(String::from(title)))
+            .unwrap_or(String::new())
+    }
+}
+
+pub fn set_title(window_index: u8, title: &str) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            let title_str = NSString::alloc(nil).init_str(title);
+            window.setTitle_(title_str);
+        }
+    }
 }
 
 pub fn window_count() -> u8 {
@@ -101,10 +142,19 @@ pub fn webview(window_index: u8, webview_index: u8) -> Option<id> {
 }
 
 pub fn resize(window_index: u8, width: u32, height: u32) {
+    unsafe {
+        if let Some(window) = window_for_index(window_index) {
+            let frame = NSRect {
+                origin: window.frame().origin,
+                size: NSSize { width: width as CGFloat, height: height as CGFloat }
+            };
+            window.setFrame_display_(frame, YES);
+        }
+    }
 }
 
 pub fn address_field_text(window_index: u8) -> String {
-    String::new()
+    field_text(window_index, CocoaWindowSubview::AddressBar)
 }
 
 pub fn set_address_field_text(window_index: u8, text: &str) {
@@ -117,7 +167,19 @@ pub fn set_address_field_text(window_index: u8, text: &str) {
 }
 
 pub fn command_field_text(window_index: u8) -> String {
-    String::new()
+    field_text(window_index, CocoaWindowSubview::CommandBar)
+}
+
+fn field_text(window_index: u8, view: CocoaWindowSubview) -> String {
+    unsafe {
+        window_for_index(window_index)
+            .and_then(|window| {
+                let field = subview(window, view);
+                let text: id = field.string_value();
+                nsstring_as_str(text) })
+            .and_then(|text| Some(String::from(text)))
+            .unwrap_or(String::new())
+    }
 }
 
 pub fn set_command_field_text(window_index: u8, text: &str) {
@@ -137,7 +199,6 @@ pub fn focused_webview_index(window_index: u8) -> u8 {
                     return index as u8;
                 }
             }
-
         }
     }
     0

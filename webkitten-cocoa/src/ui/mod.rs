@@ -45,9 +45,7 @@ impl CocoaUI {
 impl ApplicationUI for CocoaUI {
 
     fn new(engine: Engine) -> Option<Self> {
-        Some(CocoaUI {
-            engine: engine
-        })
+        Some(CocoaUI { engine: engine })
     }
 
     fn event_handler(&self) -> &Engine {
@@ -56,9 +54,7 @@ impl ApplicationUI for CocoaUI {
 
     fn run(&self) {
         self.compile_content_extensions(|_| {});
-        if let Some(start_page) = self.event_handler().config.lookup("window.start-page") {
-            self.open_window(start_page.as_str());
-        }
+        self.open_window(self.engine.config.lookup_str("window.start-page"));
         application::start_run_loop();
     }
 
@@ -71,24 +67,27 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn focused_window_index(&self) -> u8 {
-        0
+        window::focused_index()
     }
 
     fn focus_window(&self, index: u8) {
+        window::focus(index);
     }
 
     fn window_count(&self) -> u8 {
-        0
+        window::window_count()
     }
 
     fn toggle_window(&self, window_index: u8, visible: bool) {
+        window::toggle(window_index, visible);
     }
 
     fn resize_window(&self, window_index: u8, width: u32, height: u32) {
+        window::resize(window_index, width, height);
     }
 
     fn address_field_text(&self, window_index: u8) -> String {
-        String::new()
+        window::address_field_text(window_index)
     }
 
     fn set_address_field_text(&self, window_index: u8, text: &str) {
@@ -108,6 +107,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn set_window_title(&self, window_index: u8, title: &str) {
+        window::set_title(window_index, title);
     }
 
     fn focused_webview_index(&self, window_index: u8) -> u8 {
@@ -154,10 +154,6 @@ impl ApplicationUI for CocoaUI {
         }
     }
 
-    fn raw_html(&self, window_index: u8, webview_index: u8, uri: &str) -> String {
-        String::new()
-    }
-
     fn uri(&self, window_index: u8, webview_index: u8) -> String {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::title(webview)
@@ -181,6 +177,9 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn apply_styles(&self, window_index: u8, webview_index: u8, styles: &str) {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::apply_styles(webview, styles);
+        }
     }
 }
 

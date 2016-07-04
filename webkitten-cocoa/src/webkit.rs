@@ -1,7 +1,7 @@
 //! Bindings to WebKit.framework on macOS
 
 use std::ops::Deref;
-use cocoa::base::{class,id,nil,BOOL};
+use cocoa::base::{class,id,nil,BOOL,NO};
 use core_graphics::geometry::CGRect;
 use cocoa::foundation::NSString;
 use block::Block;
@@ -80,7 +80,7 @@ impl WKWebView for id {
     }
 
     unsafe fn reload(self) {
-        msg_send![self, reload];
+        msg_send![self, reload:nil];
     }
 
     unsafe fn stop_loading(self) {
@@ -127,6 +127,7 @@ impl WKWebView for id {
 pub trait WKUserContentController {
 
     unsafe fn add_user_content_filter(self, filter: id /* _WKUserContentFilter */);
+    unsafe fn add_user_style_sheet(self, stylsheet: id /* _WKUserStyleSheet */);
 }
 
 impl WKUserContentController for id {
@@ -134,7 +135,23 @@ impl WKUserContentController for id {
     unsafe fn add_user_content_filter(self, filter: id) {
         msg_send![self, _addUserContentFilter:filter];
     }
+
+    unsafe fn add_user_style_sheet(self, stylesheet: id) {
+        msg_send![self, _addUserStyleSheet:stylesheet];
+    }
 }
+
+pub trait _WKUserStyleSheet {
+
+    unsafe fn init_source(styles: &str) -> id {
+        let source = NSString::alloc(nil).init_str(styles);
+        let sheet: id = msg_send![class("_WKUserStyleSheet"), alloc];
+        let sheet: id = msg_send![sheet, initWithSource:source mainFrameOnly:NO];
+        sheet
+    }
+}
+
+impl _WKUserStyleSheet for id {}
 
 pub type ContentExtensionCompletionHandler = Deref<Target=Block<(id, id), ()>>;
 
