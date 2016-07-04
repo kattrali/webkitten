@@ -17,6 +17,8 @@ use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput};
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
 /// Application title for apps built with webkitten core
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
+/// File extension used by command files
+const COMMAND_FILE_SUFFIX: &'static str = "lua";
 
 /// The core of a webkitten application. The engine handles configuration options
 /// and responding to lifecycle and user events from the UI.
@@ -63,7 +65,7 @@ impl EventHandler for Engine {
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> CommandOutput {
         let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases()) {
+        if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
             info!("Found command match: {}", text);
             if let Some(file) = command.file() {
                 info!("Running a command: {}", command.path);

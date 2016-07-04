@@ -14,10 +14,10 @@ pub struct Command {
 impl Command {
 
     /// Parse a command name and arguments into an instance of Command
-    pub fn parse(input: &str, search_paths: Vec<String>, aliases: Option<&Value>) -> Option<Self> {
+    pub fn parse(input: &str, search_paths: Vec<String>, aliases: Option<&Value>, suffix: &str) -> Option<Self> {
         let mut components = input.split_whitespace();
         components.next()
-            .and_then(|name| resolve_command(search_paths, &resolve_name(name, aliases)))
+            .and_then(|name| resolve_command(search_paths, &resolve_name(name, aliases), suffix))
             .and_then(|path| {
                 Some(Command {
                     path: path,
@@ -42,12 +42,12 @@ fn resolve_name(name: &str, aliases: Option<&Value>) -> String {
 
 /// Iterate over search paths returning the first file path in search paths
 /// with the provided name
-fn resolve_command(search_paths: Vec<String>, name: &str) -> Option<String> {
+fn resolve_command(search_paths: Vec<String>, name: &str, suffix: &str) -> Option<String> {
     if name.is_empty() {
         return None
     }
     let mut ordered_paths: Vec<String> = search_paths.iter()
-        .filter_map(|path| join_paths(&path, name.clone()))
+        .filter_map(|path| join_paths(&path, &format!("{}.{}", name, suffix)))
         .filter(|path| metadata(&path).is_ok())
         .collect();
     ordered_paths.reverse();
