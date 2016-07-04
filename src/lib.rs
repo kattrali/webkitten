@@ -9,7 +9,6 @@ pub mod ui;
 pub mod optparse;
 mod script;
 
-use std::path::{Path,PathBuf};
 use toml::Value;
 use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput};
 
@@ -58,6 +57,24 @@ impl Engine {
     fn command_aliases(&self) -> Option<&Value> {
         self.config.lookup("alias")
     }
+
+    fn fetch_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str, variant: script::CompletionType) -> Vec<String> {
+        let search_paths = self.command_search_paths();
+        if let Some(command) = command::Command::parse(prefix, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
+            info!("Found command match for completion: {}", prefix);
+            if let Some(file) = command.file() {
+                info!("Completing command text using {}", command.path);
+                return match script::autocomplete::<T>(file, prefix, variant, ui) {
+                    Err(err) => {
+                        warn!("{}", err);
+                        vec![]
+                    },
+                    Ok(completions) => completions
+                }
+            }
+        }
+        vec![]
+    }
 }
 
 impl EventHandler for Engine {
@@ -69,8 +86,9 @@ impl EventHandler for Engine {
             info!("Found command match: {}", text);
             if let Some(file) = command.file() {
                 info!("Running a command: {}", command.path);
-                if script::execute::<T>(file, command.arguments, ui) {
-                    ui.set_command_field_text(window_index, "");
+                match script::execute::<T>(file, command.arguments, ui) {
+                    Err(err) => warn!("{}", err),
+                    _ => ui.set_command_field_text(window_index, "")
                 }
             }
         }
@@ -80,15 +98,16 @@ impl EventHandler for Engine {
     fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
         -> AddressUpdateOutput {
         info!("Updating the address with: {}", text);
-        AddressUpdateOutput { error: None, message: None }
+        unimplemented!()
     }
 
     fn close<T: ApplicationUI>(&self, ui: &T) {
+        unimplemented!()
     }
 
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)
         -> Vec<String> {
-        vec![]
+        self.fetch_completions(ui, prefix, script::CompletionType::Command)
     }
 
     fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)

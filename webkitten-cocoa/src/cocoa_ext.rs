@@ -1,6 +1,21 @@
 pub mod foundation {
+    use objc::{Encode,Encoding};
     use cocoa::base::{class,id,nil};
     use cocoa::foundation::{NSString,NSUInteger,NSInteger};
+
+    pub struct NSRange {
+        location: NSUInteger,
+        length: NSUInteger,
+    }
+
+    unsafe impl Encode for NSRange {
+        fn encode() -> Encoding {
+            let encoding = format!("{{NSRange={}{}}}",
+                                   NSUInteger::encode().as_str(),
+                                   NSUInteger::encode().as_str());
+            unsafe { Encoding::from_str(&encoding) }
+        }
+    }
 
     pub unsafe fn NSURL(url: &str) -> id {
         let url_str = NSString::alloc(nil).init_str(url);
@@ -38,6 +53,15 @@ pub mod foundation {
 
     pub trait NSArray {
 
+        unsafe fn from_vec<T, F>(items: Vec<T>, transform: F) -> id
+            where F: Fn(&T) -> id {
+            let array: id = msg_send![class("NSMutableArray"), new];
+            for item in items {
+                array.add_object(transform(&item));
+            }
+            array
+        }
+
         unsafe fn object_at_index(self, index: NSUInteger) -> id;
         unsafe fn get(self, index: NSUInteger) -> Option<id>;
         unsafe fn count(self) -> NSUInteger;
@@ -59,6 +83,17 @@ pub mod foundation {
 
         unsafe fn count(self) -> NSUInteger {
             msg_send![self, count]
+        }
+    }
+
+    pub trait NSMutableArray {
+
+        unsafe fn add_object(self, object: id);
+    }
+
+    impl NSMutableArray for id {
+        unsafe fn add_object(self, object: id) {
+            msg_send![self, addObject:object];
         }
     }
 
