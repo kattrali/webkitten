@@ -57,10 +57,15 @@ impl Config {
     }
 
     pub fn parse(raw_input: &str) -> Option<Self> {
-        if let Some(value) = raw_input.parse().ok() {
-            Some(Config { value: value })
-        } else {
-            None
+        let result = raw_input.parse();
+        match result {
+            Ok(value) => Some(Config { value: value }),
+            Err(errors) => {
+                for err in errors {
+                    error!("Failed to parse toml: {}", err);
+                }
+                None
+            },
         }
     }
 

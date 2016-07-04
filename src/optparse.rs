@@ -4,7 +4,8 @@ use getopts::Options;
 use super::config;
 
 pub struct RunConfiguration {
-    pub path: String
+    pub path: String,
+    pub start_pages: Vec<String>,
 }
 
 pub fn parse_opts(default_config_path: &str) -> Option<RunConfiguration> {
@@ -23,7 +24,7 @@ pub fn parse_opts(default_config_path: &str) -> Option<RunConfiguration> {
     }
     let path = matches.opt_str("c").unwrap_or(String::from(default_config_path));
     validate_config_path(&path);
-    Some(RunConfiguration { path: path })
+    Some(RunConfiguration { path: path, start_pages: matches.free })
 }
 
 /// Print command usage, given invocation path and options

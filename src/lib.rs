@@ -23,25 +23,25 @@ const COMMAND_FILE_SUFFIX: &'static str = "lua";
 /// and responding to lifecycle and user events from the UI.
 pub struct Engine {
     pub config: config::Config,
-    config_path: String
+    run_config: optparse::RunConfiguration,
 }
 
 impl Engine {
 
     /// Create a new application engine
-    pub fn new(config_path: &str) -> Option<Self> {
-        config::Config::parse_file(config_path).and_then(|config| {
-            info!("Creating application engine with config path: {}", config_path);
+    pub fn new(runtime: optparse::RunConfiguration) -> Option<Self> {
+        config::Config::parse_file(&runtime.path).and_then(|config| {
+            info!("Creating application engine with config path: {}", &runtime.path);
             Some(Engine {
                 config: config,
-                config_path: String::from(config_path)
+                run_config: runtime
             })
         })
     }
 
     /// Reload configuration from path
     pub fn reload(&mut self) -> bool {
-        self.config.load(&self.config_path)
+        self.config.load(&self.run_config.path)
     }
 
     /// Paths searched for script commands
@@ -55,7 +55,7 @@ impl Engine {
 
     /// The configuration section values for `alias`
     fn command_aliases(&self) -> Option<&Value> {
-        self.config.lookup("alias")
+        self.config.lookup("commands.aliases")
     }
 
     fn fetch_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str, variant: script::CompletionType) -> Vec<String> {
@@ -112,7 +112,7 @@ impl EventHandler for Engine {
 
     fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)
         -> Vec<String> {
-        vec![]
+        self.fetch_completions(ui, prefix, script::CompletionType::Address)
     }
 }
 

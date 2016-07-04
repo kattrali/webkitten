@@ -23,17 +23,16 @@ use webkitten::ui::ApplicationUI;
 use webkitten::Engine;
 use ui::CocoaUI;
 
+const DEFAULT_CONFIG_PATH: &'static str = ".config/webkitten/config.toml";
+
 lazy_static! {
     pub static ref UI: CocoaUI = {
         if let Some(home_dir) = env::home_dir() {
-            let default_config_path = &format!("{}/.config/webkitten/config.toml", home_dir.display());
-            let ui = webkitten::optparse::parse_opts(default_config_path).and_then(|run_config| {
-                Engine::new(&run_config.path)
-            }).and_then(|engine| CocoaUI::new(engine));
-            if let Some(ui) = ui {
-                return ui;
-            }
-            panic!("Unable to initialize application");
+            let default_config_path = &format!("{}/{}", home_dir.display(), DEFAULT_CONFIG_PATH);
+            webkitten::optparse::parse_opts(default_config_path)
+                .and_then(|run_config| Engine::new(run_config))
+                .and_then(|engine| CocoaUI::new(engine))
+                .unwrap_or_else(|| panic!("Unable to initialize application"))
         } else {
             panic!("Unable to locate home directory");
         }
