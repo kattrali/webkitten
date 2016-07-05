@@ -65,6 +65,7 @@ pub fn uri(webview: id) -> String {
     unsafe {
         let url = webview.url();
         if url != nil {
+            let url: id = msg_send![url, absoluteString];
             if let Some(url) = runtime::nsstring_as_str(url) {
                 return String::from(url);
             }
