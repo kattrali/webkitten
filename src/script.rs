@@ -29,6 +29,7 @@ impl ScriptError {
     fn new(description: &str, error: Option<LuaError>) -> Self {
         let mut full_description = String::from(description);
         if let Some(error) = error {
+            full_description.push_str(": ");
             match error {
                 LuaError::SyntaxError(err) => full_description.push_str(&err),
                 LuaError::ExecutionError(err) => full_description.push_str(&err),
