@@ -155,19 +155,15 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn uri(&self, window_index: u8, webview_index: u8) -> String {
-        if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::title(webview)
-        } else {
-            String::new()
-        }
+        window::webview(window_index, webview_index)
+            .and_then(|webview| Some(webview::uri(webview)))
+            .unwrap_or(String::new())
     }
 
     fn webview_title(&self, window_index: u8, webview_index: u8) -> String {
-        if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::uri(webview)
-        } else {
-            String::new()
-        }
+        window::webview(window_index, webview_index)
+            .and_then(|webview| Some(webview::title(webview)))
+            .unwrap_or(String::new())
     }
 
     fn run_javascript(&self, window_index: u8, webview_index: u8, script: &str) {

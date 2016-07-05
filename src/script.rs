@@ -189,6 +189,9 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("go_forward: ({}, {})", window_index, webview_index);
         ui.go_forward(window_index, webview_index);
     }));
+    lua.set("webview_uri", function2(|window_index: u8, webview_index: u8| {
+        ui.uri(window_index, webview_index)
+    }));
     lua.set("webview_title", function2(|window_index: u8, webview_index: u8| {
         ui.webview_title(window_index, webview_index)
     }));
