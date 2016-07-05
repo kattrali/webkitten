@@ -72,9 +72,10 @@ pub fn execute<T: ApplicationUI>(file: File, arguments: Vec<String>, ui: &T) -> 
     }
 }
 
-pub fn autocomplete<T: ApplicationUI>(file: File, prefix: &str, variant: CompletionType, ui: &T) -> ScriptResult<Vec<String>> {
+pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix: &str, variant: CompletionType, ui: &T) -> ScriptResult<Vec<String>> {
     let mut lua = create_runtime::<T>(ui);
     lua.set("prefix", prefix);
+    lua.set("arguments", arguments);
     if let Err(err) = lua.execute_from_reader::<(), _>(file) {
         Err(ScriptError::new("script parsing failed", Some(err)))
     } else {

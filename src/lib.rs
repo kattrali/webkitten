@@ -64,7 +64,7 @@ impl Engine {
             info!("Found command match for completion: {}", prefix);
             if let Some(file) = command.file() {
                 info!("Completing command text using {}", command.path);
-                return match script::autocomplete::<T>(file, prefix, variant, ui) {
+                return match script::autocomplete::<T>(file, command.arguments, prefix, variant, ui) {
                     Err(err) => {
                         warn!("{}", err);
                         vec![]
@@ -83,9 +83,8 @@ impl EventHandler for Engine {
         -> CommandOutput {
         let search_paths = self.command_search_paths();
         if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
-            info!("Found command match: {}", text);
+            info!("Found command match: {}", command.path);
             if let Some(file) = command.file() {
-                info!("Running a command: {}", command.path);
                 match script::execute::<T>(file, command.arguments, ui) {
                     Err(err) => warn!("{}", err),
                     _ => ui.set_command_field_text(window_index, "")
