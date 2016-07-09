@@ -90,6 +90,11 @@ impl Config {
             })
     }
 
+    pub fn lookup_bool<'a>(&'a self, key: &'a str) -> Option<bool> {
+        self.value.lookup(key)
+            .and_then(|value| value.as_bool())
+    }
+
     pub fn lookup_str<'a>(&'a self, key: &'a str) -> Option<&'a str> {
         self.value.lookup(key)
             .and_then(|value| value.as_str())

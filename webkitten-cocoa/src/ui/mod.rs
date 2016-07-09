@@ -2,15 +2,34 @@ mod application;
 mod webview;
 mod window;
 
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use webkitten::ui::ApplicationUI;
 use webkitten::Engine;
+use webkitten::optparse::parse_opts;
 
 use cocoa::base::{id,nil};
 use block::ConcreteBlock;
 use webkit::*;
 use runtime::log_error_description;
+
+const DEFAULT_CONFIG_PATH: &'static str = ".config/webkitten/config.toml";
+
+lazy_static! {
+    pub static ref UI: CocoaUI = {
+        if let Some(home_dir) = env::home_dir() {
+            let default_config_path = &format!("{}/{}", home_dir.display(), DEFAULT_CONFIG_PATH);
+            parse_opts(default_config_path)
+                .and_then(|run_config| Engine::new(run_config))
+                .and_then(|engine| CocoaUI::new(engine))
+                .unwrap_or_else(|| panic!("Unable to initialize application"))
+        } else {
+            panic!("Unable to locate home directory");
+        }
+    };
+}
+
 
 pub struct CocoaUI {
     pub engine: Engine

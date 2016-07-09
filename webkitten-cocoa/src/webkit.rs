@@ -9,18 +9,30 @@ use block::Block;
 #[link(name = "WebKit", kind = "framework")]
 extern {}
 
-pub unsafe fn WKWebViewConfiguration() -> id {
-    msg_send![class("WKWebViewConfiguration"), new]
-}
-
 pub trait WKWebViewConfiguration {
 
+    unsafe fn new() -> id;
     unsafe fn user_content_controller(self) -> id;
+    unsafe fn website_data_store(self) -> id;
+    unsafe fn set_website_data_store(self, store: id);
 }
 
 impl WKWebViewConfiguration for id {
+
+    unsafe fn new() -> id {
+        msg_send![class("WKWebViewConfiguration"), new]
+    }
+
     unsafe fn user_content_controller(self) -> id {
         msg_send![self, userContentController]
+    }
+
+    unsafe fn website_data_store(self) -> id {
+        msg_send![self, websiteDataStore]
+    }
+
+    unsafe fn set_website_data_store(self, store: id) {
+        msg_send![self, setWebsiteDataStore: store];
     }
 }
 
@@ -190,6 +202,23 @@ impl _WKUserContentExtensionStore for id {
         let id_str = <id as NSString>::from_str(identifier);
         msg_send![self, lookupContentExtensionForIdentifier:id_str
                                           completionHandler:block.deref()];
+    }
+}
+
+pub trait WKWebsiteDataStore {
+
+    unsafe fn default_store() -> id;
+    unsafe fn nonpersistent_store() -> id;
+}
+
+impl WKWebsiteDataStore for id {
+
+    unsafe fn default_store() -> id {
+        msg_send![class("WKWebsiteDataStore"), defaultDataStore]
+    }
+
+    unsafe fn nonpersistent_store() -> id {
+        msg_send![class("WKWebsiteDataStore"), nonPersistentDataStore]
     }
 }
 

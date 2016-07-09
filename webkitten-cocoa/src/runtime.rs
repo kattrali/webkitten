@@ -7,7 +7,7 @@ use cocoa::base::{id,nil,class,BOOL,YES};
 use webkitten::ui::{ApplicationUI,EventHandler};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
-use ui::CocoaUI;
+use ui::{CocoaUI,UI};
 
 const ABDELEGATE_CLASS: &'static str = "AddressBarDelegate";
 const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
@@ -71,7 +71,7 @@ pub fn declare_bar_delegates() {
 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
-        super::UI.engine.execute_command::<CocoaUI>(&super::UI, super::UI.focused_window_index(), text);
+        UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
     }
 }
 
@@ -79,7 +79,7 @@ extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
     info!("requesting address bar completions",);
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {
-            let completions = super::UI.engine.address_completions::<CocoaUI>(&super::UI, prefix);
+            let completions = UI.engine.address_completions::<CocoaUI>(&UI, prefix);
             <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
         } else {
             words
@@ -91,7 +91,7 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
     info!("requesting command bar completions");
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {
-            let completions = super::UI.engine.command_completions::<CocoaUI>(&super::UI, prefix);
+            let completions = UI.engine.command_completions::<CocoaUI>(&UI, prefix);
             <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
         } else {
             words
@@ -101,7 +101,7 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
 
 extern fn address_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
-        super::UI.engine.update_address::<CocoaUI>(&super::UI, 0, 0, text);
+        UI.engine.update_address::<CocoaUI>(&UI, 0, 0, text);
     }
 }
 
