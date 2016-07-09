@@ -8,7 +8,6 @@ function run()
     end
   end
   windex = focused_window_index()
-  set_address_field_text(windex, target)
   open_webview(windex, target)
   return true
 end

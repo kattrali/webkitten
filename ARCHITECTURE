@@ -37,13 +37,12 @@ Common Configuration Options....................................[CONFIGURATION]
 The webkitten window has three components:
 
 * Buffer pane: Main content pane, containing a swappable web view
-* Address Bar: Shows an editable URI of the web view
 * Command Bar: Allows typing commands, displays ephemeral status info
 
 
 ┌────────────────────────────────────────────────────────────────┐
-│                          Address Bar                           │
-├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│                                                                │
 │                                                                │
 │                                                                │
 │                                                                │
@@ -61,13 +60,6 @@ The webkitten window has three components:
 
 
 -- [COMPONENTS] --
-
-Address Bar:
-  Web view URI entry. Has history
-
-  Widget Behavior:
-  * Change contents on keypress up/down from history
-  * Activate on return
 
 Application:
   Runtime representation. Has windows and configuration
@@ -157,16 +149,16 @@ Web View:
 │  Configuration  │ │      Window      │ │ Command Parser  │─────────┘
 └─────────────────┘ └──────────────────┘ └─────────────────┘ creates
                               │
-         ┌────────────────────┼───────────────────┐
-         ┼                    ┼                   ┼
-┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
-│   Address Bar   │ │ Buffer Container │ │   Command Bar   │
-└─────────────────┘ └──────────────────┘ └─────────────────┘
-         │                    ┼                   │
-         ┼                   ┌┼┐                  ┼
-┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
-│     History     │ │      Buffer      │ │     History     │
-└─────────────────┘ └──────────────────┘ └─────────────────┘
+                              │───────────────────┐
+                              ┼                   ┼
+                    ┌──────────────────┐ ┌─────────────────┐
+                    │ Buffer Container │ │   Command Bar   │
+                    └──────────────────┘ └─────────────────┘
+                              ┼                   │
+                             ┌┼┐                  ┼
+                    ┌──────────────────┐ ┌─────────────────┐
+                    │      Buffer      │ │     History     │
+                    └──────────────────┘ └─────────────────┘
                               │
                               ┼
                     ┌──────────────────┐

@@ -11,11 +11,6 @@ use super::ui::ApplicationUI;
 
 const INVALID_RESULT: u8 = 247;
 
-pub enum CompletionType {
-    Address,
-    Command,
-}
-
 
 pub type ScriptResult<T> = Result<T, ScriptError>;
 
@@ -73,23 +68,19 @@ pub fn execute<T: ApplicationUI>(file: File, arguments: Vec<String>, ui: &T) -> 
     }
 }
 
-pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix: &str, variant: CompletionType, ui: &T) -> ScriptResult<Vec<String>> {
+pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix: &str, ui: &T) -> ScriptResult<Vec<String>> {
     let mut lua = create_runtime::<T>(ui);
     lua.set("prefix", prefix);
     lua.set("arguments", arguments);
     if let Err(err) = lua.execute_from_reader::<(), _>(file) {
         Err(ScriptError::new("script parsing failed", Some(err)))
     } else {
-        let method = match variant {
-            CompletionType::Address => "complete_address",
-            CompletionType::Command => "complete_command",
-        };
-        let complete: Option<LuaFunction<_>> = lua.get(method);
+        let complete: Option<LuaFunction<_>> = lua.get("complete_command");
         if let Some(mut complete) = complete {
             resolve_script_output::<AnyLuaValue>(complete.call())
                 .and_then(|output| coerce_lua_array(output))
         } else {
-            Err(ScriptError::new(&format!("'{}' method missing", method), None))
+            Err(ScriptError::new("'complete_command' method missing", None))
         }
     }
 }
@@ -156,14 +147,8 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("webview_count", function1(|window_index: u8| {
         ui.webview_count(window_index)
     }));
-    lua.set("set_address_field_text", function2(|window_index: u8, text: String| {
-        ui.set_address_field_text(window_index, &text);
-    }));
     lua.set("set_command_field_text", function2(|window_index: u8, text: String| {
         ui.set_command_field_text(window_index, &text);
-    }));
-    lua.set("address_field_text", function1(|window_index: u8| {
-        ui.address_field_text(window_index)
     }));
     lua.set("command_field_text", function1(|window_index: u8| {
         ui.command_field_text(window_index)

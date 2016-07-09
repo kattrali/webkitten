@@ -35,12 +35,6 @@ pub trait ApplicationUI: Sized {
     /// Change the dimensions of a specified window
     fn resize_window(&self, window_index: u8, width: u32, height: u32);
 
-    /// Text in the address bar of a specified window
-    fn address_field_text(&self, window_index: u8) -> String;
-
-    /// Set the text in the address bar of a specified window
-    fn set_address_field_text(&self, window_index: u8, text: &str);
-
     /// Text in the command bar of a specified window
     fn command_field_text(&self, window_index: u8) -> String;
 
@@ -102,23 +96,8 @@ pub enum CommandError {
     NoCommandSpecified,
 }
 
-pub enum AddressUpdateError {
-    /// This address could not be resolved because it used an unsupported
-    /// protocol
-    ProtocolUnsupported,
-    /// There was no address text specified
-    NoAddressSpecified,
-    /// Failed to resolve address
-    ResolutionFailed,
-}
-
 pub struct CommandOutput {
     pub error: Option<CommandError>,
-    pub message: Option<String>,
-}
-
-pub struct AddressUpdateOutput {
-    pub error: Option<AddressUpdateError>,
     pub message: Option<String>,
 }
 
@@ -128,18 +107,11 @@ pub trait EventHandler {
     fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, text: &str)
         -> CommandOutput;
 
-    /// Handle a Return key press within the address bar
-    fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str) -> AddressUpdateOutput;
-
     /// Close the application
     fn close<T: ApplicationUI>(&self, ui: &T);
 
     /// Get available commands and/or arguments given a prefix
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
-
-    /// Get available completions given addressable text, such as a URL
-    /// fragment, page title, or bookmark
-    fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
 }
 
 pub trait BrowserConfiguration: Sized {

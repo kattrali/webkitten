@@ -10,7 +10,7 @@ pub mod ui;
 pub mod optparse;
 mod script;
 
-use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput,BrowserConfiguration};
+use ui::{ApplicationUI,EventHandler,CommandOutput,BrowserConfiguration};
 
 /// Application identifier for apps built with webkitten core
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
@@ -44,16 +44,13 @@ impl Engine {
         self.config.load(&self.run_config.path)
     }
 
-    fn fetch_completions<T: ApplicationUI>(&self,
-                                           ui: &T,
-                                           prefix: &str,
-                                           variant: script::CompletionType)
-                                           -> Vec<String> {
+    fn fetch_completions<T>(&self, ui: &T, prefix: &str) -> Vec<String>
+        where T: ApplicationUI {
         if let Some(command) = command::Command::parse(prefix, &self.config, COMMAND_FILE_SUFFIX) {
             info!("Found command match for completion: {}", prefix);
             if let Some(file) = command.file() {
                 info!("Completing command text using {}", command.path);
-                return match script::autocomplete::<T>(file, command.arguments, prefix, variant, ui) {
+                return match script::autocomplete::<T>(file, command.arguments, prefix, ui) {
                     Err(err) => {
                         warn!("{}", err);
                         vec![]
@@ -93,24 +90,13 @@ impl EventHandler for Engine {
         CommandOutput { error: None, message: None }
     }
 
-    fn update_address<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
-        -> AddressUpdateOutput {
-        info!("Updating the address with: {}", text);
-        unimplemented!()
-    }
-
     fn close<T: ApplicationUI>(&self, ui: &T) {
         unimplemented!()
     }
 
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)
         -> Vec<String> {
-        self.fetch_completions(ui, prefix, script::CompletionType::Command)
-    }
-
-    fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)
-        -> Vec<String> {
-        self.fetch_completions(ui, prefix, script::CompletionType::Address)
+        self.fetch_completions(ui, prefix)
     }
 }
 

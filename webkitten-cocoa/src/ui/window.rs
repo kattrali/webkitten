@@ -17,15 +17,14 @@ use block::ConcreteBlock;
 use webkitten::WEBKITTEN_TITLE;
 use webkitten::ui::BrowserConfiguration;
 use webkit::*;
-use runtime::{AddressBarDelegate,CommandBarDelegate,log_error_description,nsstring_as_str};
+use runtime::{CommandBarDelegate,log_error_description,nsstring_as_str};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
 
 pub enum CocoaWindowSubview {
-    AddressBar       = 0,
-    WebViewContainer = 1,
-    CommandBar       = 2,
+    WebViewContainer = 0,
+    CommandBar       = 1,
 }
 
 pub fn toggle(window_index: u8, visible: bool) {
@@ -156,19 +155,6 @@ pub fn resize(window_index: u8, width: u32, height: u32) {
     }
 }
 
-pub fn address_field_text(window_index: u8) -> String {
-    field_text(window_index, CocoaWindowSubview::AddressBar)
-}
-
-pub fn set_address_field_text(window_index: u8, text: &str) {
-    unsafe {
-        if let Some(window) = window_for_index(window_index) {
-            let bar = subview(window, CocoaWindowSubview::AddressBar);
-            bar.set_string_value(text);
-        }
-    }
-}
-
 pub fn command_field_text(window_index: u8) -> String {
     field_text(window_index, CocoaWindowSubview::CommandBar)
 }
@@ -286,32 +272,23 @@ unsafe fn create_nswindow() -> id {
     window
 }
 
-unsafe fn layout_window_subviews(window: id) -> (id, id) {
+unsafe fn layout_window_subviews(window: id) -> (id) {
     let container = <id as NSView>::new();
-    let address_bar = <id as NSTextField>::new();
     let command_bar = <id as NSTextField>::new();
-    window.contentView().add_subview(address_bar);
     window.contentView().add_subview(container);
     window.contentView().add_subview(command_bar);
-    address_bar.disable_translates_autoresizing_mask_into_constraints();
-    address_bar.set_height(BAR_HEIGHT as CGFloat);
-    window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Top, window.contentView(), NSLayoutAttribute::Top));
-    window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
-    window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(address_bar, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
     command_bar.disable_translates_autoresizing_mask_into_constraints();
     command_bar.set_height(BAR_HEIGHT as CGFloat);
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Bottom, window.contentView(), NSLayoutAttribute::Bottom));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(command_bar, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
     container.disable_translates_autoresizing_mask_into_constraints();
-    window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Top, address_bar, NSLayoutAttribute::Bottom));
+    window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Top, window.contentView(), NSLayoutAttribute::Top));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Bottom, command_bar, NSLayoutAttribute::Top));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
     window.makeKeyAndOrderFront_(nil);
-    let address_bar_delegate: id = AddressBarDelegate::new();
     let command_bar_delegate: id = CommandBarDelegate::new();
-    address_bar.set_delegate(address_bar_delegate);
     command_bar.set_delegate(command_bar_delegate);
-    (address_bar_delegate, command_bar_delegate)
+    command_bar_delegate
 }

@@ -9,15 +9,9 @@ use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::{CocoaUI,UI};
 
-const ABDELEGATE_CLASS: &'static str = "AddressBarDelegate";
 const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 
-pub struct AddressBarDelegate {}
 pub struct CommandBarDelegate {}
-
-impl AddressBarDelegate {
-    pub unsafe fn new() -> id { msg_send![class(ABDELEGATE_CLASS), new] }
-}
 
 impl CommandBarDelegate {
     pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
@@ -56,34 +50,12 @@ pub fn declare_bar_delegates() {
 
             decl.register();
         }
-        if let Some(mut decl) = ClassDecl::new(ABDELEGATE_CLASS, superclass) {
-            unsafe {
-                decl.add_method(sel!(controlTextDidEndEditing:),
-                    address_bar_did_end_editing as extern fn(&Object, Sel, id));
-                decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
-                    address_bar_get_completion as extern fn(&Object, Sel, id, id, id, NSRange, id) -> id);
-            }
-
-            decl.register();
-        }
     }
 }
 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
         UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
-    }
-}
-
-extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, _: NSRange, _: id) -> id {
-    info!("requesting address bar completions",);
-    unsafe {
-        if let Some(prefix) = nsstring_as_str(control.string_value()) {
-            let completions = UI.engine.address_completions::<CocoaUI>(&UI, prefix);
-            <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
-        } else {
-            words
-        }
     }
 }
 
@@ -96,12 +68,6 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
         } else {
             words
         }
-    }
-}
-
-extern fn address_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
-    if let Some(text) = notification_object_text(notification) {
-        UI.engine.update_address::<CocoaUI>(&UI, 0, 0, text);
     }
 }
 

@@ -110,14 +110,6 @@ impl ApplicationUI for CocoaUI {
         window::resize(window_index, width, height);
     }
 
-    fn address_field_text(&self, window_index: u8) -> String {
-        window::address_field_text(window_index)
-    }
-
-    fn set_address_field_text(&self, window_index: u8, text: &str) {
-        window::set_address_field_text(window_index, text);
-    }
-
     fn command_field_text(&self, window_index: u8) -> String {
         window::command_field_text(window_index)
     }
