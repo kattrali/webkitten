@@ -53,14 +53,23 @@ impl Engine {
         }
     }
 
-    /// The configuration section values for `alias`
+    /// The configuration section mapping aliases to command names
     fn command_aliases(&self) -> Option<&Value> {
         self.config.lookup("commands.aliases")
     }
 
-    fn fetch_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str, variant: script::CompletionType) -> Vec<String> {
+    /// The commands disabled in configuration by name
+    fn commands_disabled(&self) -> Option<Vec<String>> {
+        self.config.lookup_path_slice("commands.disabled")
+    }
+
+    fn fetch_completions<T: ApplicationUI>(&self,
+                                           ui: &T,
+                                           prefix: &str,
+                                           variant: script::CompletionType)
+                                           -> Vec<String> {
         let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(prefix, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
+        if let Some(command) = command::Command::parse(prefix, search_paths, self.commands_disabled(), self.command_aliases(), COMMAND_FILE_SUFFIX) {
             info!("Found command match for completion: {}", prefix);
             if let Some(file) = command.file() {
                 info!("Completing command text using {}", command.path);
@@ -79,10 +88,13 @@ impl Engine {
 
 impl EventHandler for Engine {
 
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, text: &str)
-        -> CommandOutput {
+    fn execute_command<T: ApplicationUI>(&self,
+                                         ui: &T,
+                                         window_index: u8,
+                                         text: &str)
+                                         -> CommandOutput {
         let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
+        if let Some(command) = command::Command::parse(text, search_paths, self.commands_disabled(), self.command_aliases(), COMMAND_FILE_SUFFIX) {
             info!("Found command match: {}", command.path);
             if let Some(file) = command.file() {
                 match script::execute::<T>(file, command.arguments, ui) {

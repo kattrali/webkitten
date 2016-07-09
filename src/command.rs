@@ -14,10 +14,16 @@ pub struct Command {
 impl Command {
 
     /// Parse a command name and arguments into an instance of Command
-    pub fn parse(input: &str, search_paths: Vec<String>, aliases: Option<&Value>, suffix: &str) -> Option<Self> {
+    pub fn parse(input: &str,
+                 search_paths: Vec<String>,
+                 disabled: Option<Vec<String>>,
+                 aliases: Option<&Value>,
+                 suffix: &str)
+                 -> Option<Self> {
         let mut components = input.split_whitespace();
         components.next()
-            .and_then(|name| resolve_command(search_paths, &resolve_name(name, aliases), suffix))
+            .and_then(|name| filter_name(resolve_name(name, aliases), disabled))
+            .and_then(|name| resolve_command(search_paths, &name, suffix))
             .and_then(|path| {
                 Some(Command {
                     path: path,
@@ -33,10 +39,22 @@ impl Command {
 }
 
 fn resolve_name(name: &str, aliases: Option<&Value>) -> String {
-    if let Some(resolved_name) = aliases.and_then(|a| a.lookup(name)).and_then(|n| n.as_str()) {
-        String::from(resolved_name)
+    aliases
+        .and_then(|a| a.lookup(name))
+        .and_then(|n| n.as_str())
+        .unwrap_or(name).to_owned()
+}
+
+fn filter_name(name: String, disabled: Option<Vec<String>>) -> Option<String> {
+    if let Some(disabled) = disabled {
+        info!("Checking disabled ({:?}) for '{}'", disabled, name);
+        if disabled.contains(&name) {
+            None
+        } else {
+            Some(name)
+        }
     } else {
-        String::from(name)
+        Some(name)
     }
 }
 
