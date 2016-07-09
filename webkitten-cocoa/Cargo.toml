@@ -12,5 +12,4 @@ lazy_static = "0.2"
 libc = "0.2"
 log = "0.3"
 env_logger = "0.3"
-url = "1.1.1"
 webkitten = { path = "../" }

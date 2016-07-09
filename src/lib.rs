@@ -1,3 +1,4 @@
+extern crate url;
 extern crate toml;
 extern crate getopts;
 #[macro_use]
@@ -9,8 +10,7 @@ pub mod ui;
 pub mod optparse;
 mod script;
 
-use toml::Value;
-use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput};
+use ui::{ApplicationUI,EventHandler,CommandOutput,AddressUpdateOutput,BrowserConfiguration};
 
 /// Application identifier for apps built with webkitten core
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
@@ -44,32 +44,12 @@ impl Engine {
         self.config.load(&self.run_config.path)
     }
 
-    /// Paths searched for script commands
-    fn command_search_paths(&self) -> Vec<String> {
-        if let Some(paths) = self.config.lookup_path_slice("commands.search-paths") {
-            paths
-        } else {
-            vec![]
-        }
-    }
-
-    /// The configuration section mapping aliases to command names
-    fn command_aliases(&self) -> Option<&Value> {
-        self.config.lookup("commands.aliases")
-    }
-
-    /// The commands disabled in configuration by name
-    fn commands_disabled(&self) -> Option<Vec<String>> {
-        self.config.lookup_path_slice("commands.disabled")
-    }
-
     fn fetch_completions<T: ApplicationUI>(&self,
                                            ui: &T,
                                            prefix: &str,
                                            variant: script::CompletionType)
                                            -> Vec<String> {
-        let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(prefix, search_paths, self.commands_disabled(), self.command_aliases(), COMMAND_FILE_SUFFIX) {
+        if let Some(command) = command::Command::parse(prefix, &self.config, COMMAND_FILE_SUFFIX) {
             info!("Found command match for completion: {}", prefix);
             if let Some(file) = command.file() {
                 info!("Completing command text using {}", command.path);
@@ -93,8 +73,7 @@ impl EventHandler for Engine {
                                          window_index: u8,
                                          text: &str)
                                          -> CommandOutput {
-        let search_paths = self.command_search_paths();
-        if let Some(command) = command::Command::parse(text, search_paths, self.commands_disabled(), self.command_aliases(), COMMAND_FILE_SUFFIX) {
+        if let Some(command) = command::Command::parse(text, &self.config, COMMAND_FILE_SUFFIX) {
             info!("Found command match: {}", command.path);
             if let Some(file) = command.file() {
                 match script::execute::<T>(file, command.arguments, ui) {
@@ -102,8 +81,8 @@ impl EventHandler for Engine {
                     _ => ui.set_command_field_text(window_index, "")
                 }
             }
-        } else if let Some(default) = self.config.lookup_str("commands.default") {
-            if !text.starts_with(default) {
+        } else if let Some(default) = self.config.default_command() {
+            if !text.starts_with(&default) {
                 let mut command = String::from(default);
                 command.push_str(" ");
                 command.push_str(text);

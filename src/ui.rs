@@ -141,3 +141,105 @@ pub trait EventHandler {
     /// fragment, page title, or bookmark
     fn address_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
 }
+
+pub trait BrowserConfiguration: Sized {
+
+    /// Parse a string literal into a `BrowserConfiguration`
+    fn parse(raw_input: &str) -> Option<Self>;
+
+    /// The page opened with each new window or empty buffer based on
+    /// `window.start-page`
+    fn start_page(&self) -> Option<String> {
+        self.lookup_str("window.start-page")
+    }
+
+    /// The directory to replace instances of CONFIG_DIR in the configuration
+    /// file
+    fn config_dir(&self) -> Option<String> {
+        self.lookup_raw_str("general.config-dir")
+    }
+
+    /// The name of a command resolving any matching alias in `commands.aliases`
+    fn resolved_command_name(&self, name: &str) -> Option<String> {
+        let command = self.lookup_str(&format!("commands.aliases.{}", name))
+            .unwrap_or(String::from(name));
+        if self.command_disabled(&command) { None } else { Some(command) }
+    }
+
+    /// Whether a command is disabled based on `commands.disabled`
+    fn command_disabled(&self, name: &str) -> bool {
+        if let Some(disabled) = self.lookup_str_vec("commands.disabled") {
+            return disabled.contains(&String::from(name));
+        }
+        false
+    }
+
+    /// The path to the content filter used in buffers based on
+    /// `general.content-filter`
+    fn content_filter_path(&self) -> Option<String> {
+        self.lookup_str("general.content-filter")
+    }
+
+    /// Whether to enable private browsing based on the global option
+    /// `general.private-browsing` and site-specific option
+    /// `sites."[HOST]".private-browsing`. Defaults to `false`.
+    fn use_private_browsing(&self, uri: &str) -> bool {
+        if let Some(value) = self.lookup_site_bool(uri, "private-browsing") {
+            return value;
+        } else if let Some(mode) = self.lookup_bool("general.private-browsing") {
+            return mode;
+        }
+        false
+    }
+
+    /// Whether to allow browser plugins to run in a buffer based on the global
+    /// option `general.allow-plugins` and site-specific option
+    /// `sites."[HOST]".allow-plugins`. Defaults to `false`.
+    fn use_plugins(&self, uri: &str) -> bool {
+        if let Some(value) = self.lookup_site_bool(uri, "allow-plugins") {
+            return value;
+        } else if let Some(mode) = self.lookup_bool("general.allow-plugins") {
+            return mode;
+        }
+        false
+    }
+
+    /// Paths to search for command scripts using configuration option
+    /// `command.search-paths`
+    fn command_search_paths(&self) -> Vec<String> {
+        self.lookup_str_vec("commands.search-paths").unwrap_or(vec![])
+    }
+
+    /// Command to run when no other commands are matched using configuration
+    /// option `commands.default`
+    fn default_command(&self) -> Option<String> {
+        self.lookup_str("commands.default")
+    }
+
+
+    /// Look up the bool value of a configuration option matching key
+    fn lookup_bool<'a>(&'a self, key: &'a str) -> Option<bool>;
+
+    /// Look up the string value of a configuration option matching key,
+    /// replacing string variables where possible
+    fn lookup_str<'a>(&'a self, key: &'a str) -> Option<String>;
+
+    /// Look up the string value of a configuration option without any
+    /// substitutions
+    fn lookup_raw_str<'a>(&'a self, key: &'a str) -> Option<String>;
+
+    /// Look up the string vector value of a configuration option matching key
+    fn lookup_str_vec(&self, key: &str) -> Option<Vec<String>>;
+
+    /// Look up the bool value of a configuration option matching key
+    /// formatted as `sites."[HOST]".[key]`
+    fn lookup_site_bool<'a>(&'a self, uri: &str, key: &'a str) -> Option<bool>;
+
+    /// Look up the string value of a configuration option matching key
+    /// formatted as `sites."[HOST]".[key]`
+    fn lookup_site_str<'a>(&'a self, uri: &str, key: &'a str) -> Option<String>;
+
+    /// Look up the string vector value of a configuration option matching key
+    /// formatted as `sites."[HOST]".[key]`
+    fn lookup_site_str_vec<'a>(&'a self, uri: &str, key: &'a str) -> Option<Vec<String>>;
+}

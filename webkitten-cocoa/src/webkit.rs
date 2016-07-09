@@ -1,7 +1,7 @@
 //! Bindings to WebKit.framework on macOS
 
 use std::ops::Deref;
-use cocoa::base::{class,id,nil,BOOL,NO};
+use cocoa::base::{class,id,nil,BOOL,NO,YES};
 use core_graphics::geometry::CGRect;
 use cocoa_ext::foundation::NSString;
 use block::Block;
@@ -12,6 +12,7 @@ extern {}
 pub trait WKWebViewConfiguration {
 
     unsafe fn new() -> id;
+    unsafe fn preferences(self) -> id;
     unsafe fn user_content_controller(self) -> id;
     unsafe fn website_data_store(self) -> id;
     unsafe fn set_website_data_store(self, store: id);
@@ -21,6 +22,10 @@ impl WKWebViewConfiguration for id {
 
     unsafe fn new() -> id {
         msg_send![class("WKWebViewConfiguration"), new]
+    }
+
+    unsafe fn preferences(self) -> id {
+        msg_send![self, preferences]
     }
 
     unsafe fn user_content_controller(self) -> id {
@@ -150,6 +155,23 @@ impl WKUserContentController for id {
 
     unsafe fn add_user_style_sheet(self, stylesheet: id) {
         msg_send![self, _addUserStyleSheet:stylesheet];
+    }
+}
+
+pub trait WKPreferences {
+
+    unsafe fn set_javascript_enabled(self, value: bool);
+    unsafe fn set_plugins_enabled(self, value: bool);
+}
+
+impl WKPreferences for id {
+
+    unsafe fn set_javascript_enabled(self, value: bool) {
+        msg_send![self, setJavaScriptEnabled:if value { YES } else { NO }];
+    }
+
+    unsafe fn set_plugins_enabled(self, value: bool) {
+        msg_send![self, setPlugInsEnabled:YES];
     }
 }
 

@@ -5,10 +5,9 @@ mod window;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use webkitten::ui::ApplicationUI;
+use webkitten::ui::{ApplicationUI,BrowserConfiguration};
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
-use cocoa_ext::foundation::{NSArray, NSString};
 use cocoa_ext::appkit::NSPasteboard;
 
 use cocoa::base::{id,nil};
@@ -41,7 +40,8 @@ impl CocoaUI {
 
     fn compile_content_extensions<F>(&self, completion: F)
         where F: Fn(bool) + 'static {
-        if let Some(mut file) = self.content_filter_path().and_then(|p| File::open(p).ok()) {
+        let filter_path = self.engine.config.content_filter_path();
+        if let Some(mut file) = filter_path.and_then(|p| File::open(p).ok()) {
             let mut contents = String::new();
             if let Some(_) = file.read_to_string(&mut contents).ok() {
                 unsafe {
@@ -54,12 +54,6 @@ impl CocoaUI {
                 }
             }
         }
-    }
-
-    fn content_filter_path(&self) -> Option<&str> {
-	    self.engine.config
-            .lookup("general.content-filter")
-            .and_then(|value| value.as_str())
     }
 }
 
@@ -75,7 +69,10 @@ impl ApplicationUI for CocoaUI {
 
     fn run(&self) {
         self.compile_content_extensions(|_| {});
-        self.open_window(self.engine.config.lookup_str("window.start-page"));
+        match self.engine.config.start_page() {
+            Some(page) => self.open_window(Some(page.as_str())),
+            None => self.open_window(None)
+        }
         application::start_run_loop();
     }
 
