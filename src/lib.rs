@@ -79,7 +79,7 @@ impl Engine {
 
 impl EventHandler for Engine {
 
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, text: &str)
         -> CommandOutput {
         let search_paths = self.command_search_paths();
         if let Some(command) = command::Command::parse(text, search_paths, self.command_aliases(), COMMAND_FILE_SUFFIX) {
@@ -89,6 +89,14 @@ impl EventHandler for Engine {
                     Err(err) => warn!("{}", err),
                     _ => ui.set_command_field_text(window_index, "")
                 }
+            }
+        } else if let Some(default) = self.config.lookup_str("commands.default") {
+            if !text.starts_with(default) {
+                let mut command = String::from(default);
+                command.push_str(" ");
+                command.push_str(text);
+                info!("Running the default command: {}", command);
+                self.execute_command(ui, window_index, &command);
             }
         }
         CommandOutput { error: None, message: None }

@@ -4,7 +4,7 @@ use libc::c_char;
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
 use cocoa::base::{id,nil,class,BOOL,YES};
-use webkitten::ui::EventHandler;
+use webkitten::ui::{ApplicationUI,EventHandler};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::CocoaUI;
@@ -71,7 +71,7 @@ pub fn declare_bar_delegates() {
 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
-        super::UI.engine.execute_command::<CocoaUI>(&super::UI, 0, 0, text);
+        super::UI.engine.execute_command::<CocoaUI>(&super::UI, super::UI.focused_window_index(), text);
     }
 }
 

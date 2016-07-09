@@ -122,7 +122,7 @@ pub struct AddressUpdateOutput {
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, text: &str)
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, text: &str)
         -> CommandOutput;
 
     /// Handle a Return key press within the address bar
