@@ -41,7 +41,9 @@ pub fn toggle(window_index: u8, visible: bool) {
 pub fn open(uri: Option<&str>) {
     unsafe {
         create_nswindow();
-        add_and_focus_webview(window_count() - 1);
+        if let Some(uri) = uri {
+            add_and_focus_webview(window_count() - 1, uri.to_owned());
+        }
     }
 }
 
@@ -101,7 +103,7 @@ pub fn window_count() -> u8 {
 
 pub fn open_webview(window_index: u8, uri: &str) {
     unsafe {
-        add_and_focus_webview(window_index);
+        add_and_focus_webview(window_index, uri.to_owned());
         if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
             webview::load_uri(webview, uri);
         }
@@ -224,8 +226,9 @@ unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
     msg_send![subviews, objectAtIndex:index]
 }
 
-unsafe fn add_and_focus_webview(window_index: u8) {
+unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
     let store = _WKUserContentExtensionStore::default_store(nil);
+
     let block = ConcreteBlock::new(move |filter: id, err: id| {
         if let Some(window) = window_for_index(window_index) {
             let container = subview(window, CocoaWindowSubview::WebViewContainer);
@@ -245,6 +248,7 @@ unsafe fn add_and_focus_webview(window_index: u8) {
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Left, container, NSLayoutAttribute::Left));
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Right, container, NSLayoutAttribute::Right));
+            webview.load_request(NSURLRequest(&uri));
         }
     });
     store.lookup_content_extension("filter", &block.copy());
