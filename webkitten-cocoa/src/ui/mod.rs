@@ -8,6 +8,8 @@ use std::io::Read;
 use webkitten::ui::ApplicationUI;
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
+use cocoa_ext::foundation::{NSArray, NSString};
+use cocoa_ext::appkit::NSPasteboard;
 
 use cocoa::base::{id,nil};
 use block::ConcreteBlock;
@@ -75,6 +77,12 @@ impl ApplicationUI for CocoaUI {
         self.compile_content_extensions(|_| {});
         self.open_window(self.engine.config.lookup_str("window.start-page"));
         application::start_run_loop();
+    }
+
+    fn copy(&self, text: &str) {
+        unsafe {
+            <id as NSPasteboard>::general_pasteboard().copy(text);
+        }
     }
 
     fn open_window(&self, uri: Option<&str>) {

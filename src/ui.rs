@@ -10,6 +10,9 @@ pub trait ApplicationUI: Sized {
     /// Initialize all needed UI functions
     fn run(&self);
 
+    /// Copy text to the system clipboard
+    fn copy(&self, text: &str);
+
 
     /// The index of the focused window
     fn focused_window_index(&self) -> u8;

@@ -52,20 +52,19 @@ pub mod foundation {
 
     pub trait NSString {
 
-        unsafe fn from_str(content: &str) -> id;
-        unsafe fn append(self, other: id) -> id;
-        unsafe fn utf8(self) -> *const libc::c_char;
-        unsafe fn len(self) -> usize;
-    }
-
-    impl NSString for id {
-
         unsafe fn from_str(content: &str) -> id {
             let string: id = msg_send![class("NSString"), alloc];
             msg_send![string, initWithBytes:content.as_ptr()
                                      length:content.len()
                                    encoding:UTF8_ENCODING as id]
         }
+
+        unsafe fn append(self, other: id) -> id;
+        unsafe fn utf8(self) -> *const libc::c_char;
+        unsafe fn len(self) -> usize;
+    }
+
+    impl NSString for id {
 
         unsafe fn append(self, other: id) -> id {
             msg_send![self, stringByAppendingString:other]
@@ -171,7 +170,35 @@ pub mod core_graphics {
 pub mod appkit {
     use cocoa::base::{class,id,nil,NO,YES,BOOL};
     use core_graphics::base::CGFloat;
-    use super::foundation::NSString;
+    use super::foundation::{NSString,NSMutableArray};
+
+    const NSPasteboardTypeString: &'static str = "public.utf8-plain-text";
+
+    pub trait NSPasteboard {
+
+        unsafe fn general_pasteboard() -> id {
+            msg_send![class("NSPasteboard"), generalPasteboard]
+        }
+
+        unsafe fn write_objects(self, objects: id);
+        unsafe fn copy(self, text: &str);
+    }
+
+    impl NSPasteboard for id {
+
+        unsafe fn write_objects(self, objects: id) {
+            msg_send![self, writeObjects:objects];
+        }
+
+        unsafe fn copy(self, text: &str) {
+            let raw = <id as NSString>::from_str(text);
+            let data_type = <id as NSString>::from_str(NSPasteboardTypeString);
+            let types: id = msg_send![class("NSMutableArray"), new];
+            types.add_object(data_type);
+            msg_send![self, declareTypes:types owner:nil];
+            msg_send![self, setString:raw forType:data_type];
+        }
+    }
 
     pub enum NSLayoutAttribute {
         Left          = 1,

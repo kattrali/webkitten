@@ -132,6 +132,9 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("log_debug", function1(|message: String| {
         debug!("lua: {}", message);
     }));
+    lua.set("copy", function1(|message: String| {
+        ui.copy(&message);
+    }));
     lua.set("window_count", function0(|| {
         ui.window_count()
     }));
