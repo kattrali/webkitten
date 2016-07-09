@@ -1,5 +1,6 @@
 extern crate toml;
 
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use self::toml::Value;
@@ -23,6 +24,8 @@ pub const WINDOW_START_PAGE: &'static str = "window.start-page";
 /// Placeholder used in webkitten configuration to represent the configuration
 /// property `general.config-dir`.
 const CONFIG_DIR: &'static str = "CONFIG_DIR";
+
+const HOME: &'static str = "HOME";
 
 pub struct Config {
     value: Value
@@ -79,8 +82,8 @@ impl Config {
             .and_then(|values| {
                 let mut resolved_paths = vec![];
                 for path in values {
-                    if let Some(path) = path.as_str().and_then(|p| self.parse_path(p)) {
-                        resolved_paths.push(path)
+                    if let Some(path) = path.as_str() {
+                        resolved_paths.push(self.parse_path(path))
                     }
                 }
                 Some(resolved_paths)
@@ -95,15 +98,29 @@ impl Config {
 
     pub fn lookup_path<'a>(&self, key: &'a str) -> Option<String> {
         self.lookup_str(key)
-            .and_then(|value| self.parse_path(&value))
+            .and_then(|value| Some(self.parse_path(&value)))
     }
 
-    pub fn parse_path<'a>(&self, value: &'a str) -> Option<String> {
-        if let Some(config_dir) = self.lookup_str("general.config-dir") {
-            Some(value.replace(CONFIG_DIR, &config_dir))
-        } else {
-            Some(String::from(value))
-        }
+    pub fn parse_path<'a>(&self, value: &'a str) -> String {
+        self.replace_config_dir(&self.replace_home(value))
+    }
+
+    fn replace_config_dir<'a>(&self, value: &'a str) -> String {
+        self.lookup_str("general.config-dir")
+            .and_then(|config_dir| Some(value.replace(CONFIG_DIR, &config_dir)))
+            .unwrap_or(String::from(value))
+    }
+
+    fn replace_home<'a>(&self, value: &'a str) -> String {
+        env::home_dir()
+            .and_then(|home| {
+                if let Some(home) = home.to_str() {
+                    Some(value.replace(HOME, &home))
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(String::from(value))
     }
 }
 
