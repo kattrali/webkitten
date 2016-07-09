@@ -5,9 +5,7 @@ use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
 use cocoa::base::{id,nil,class,BOOL,YES};
 use webkitten::ui::EventHandler;
-use cocoa::foundation::{NSString,NSInteger,NSUInteger,NSPoint};
-
-use cocoa_ext::foundation::{NSDictionary,NSNotification,NSNumber,NSArray,NSRange};
+use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::CocoaUI;
 
@@ -27,7 +25,7 @@ impl CommandBarDelegate {
 
 pub fn nsstring_as_str<'a>(nsstring: id) -> Option<&'a str> {
     let bytes = unsafe {
-        let bytes: *const c_char = nsstring.UTF8String();
+        let bytes: *const c_char = nsstring.utf8();
         let byte_str = bytes as *const u8;
         let len = nsstring.len();
         slice::from_raw_parts(byte_str, len)
@@ -82,7 +80,7 @@ extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {
             let completions = super::UI.engine.address_completions::<CocoaUI>(&super::UI, prefix);
-            <id as NSArray>::from_vec(completions, |item| NSString::alloc(nil).init_str(&item))
+            <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
         } else {
             words
         }
@@ -94,7 +92,7 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {
             let completions = super::UI.engine.command_completions::<CocoaUI>(&super::UI, prefix);
-            <id as NSArray>::from_vec(completions, |item| NSString::alloc(nil).init_str(&item))
+            <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
         } else {
             words
         }

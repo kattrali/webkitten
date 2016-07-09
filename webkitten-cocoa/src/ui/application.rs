@@ -1,8 +1,9 @@
 use cocoa::base::{selector,id,nil};
-use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo, NSString};
+use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo};
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
                     NSMenu, NSMenuItem, NSRunningApplication,
                     NSApplicationActivateIgnoringOtherApps};
+use cocoa_ext::foundation::NSString;
 
 pub fn start_run_loop() {
     unsafe {
@@ -21,12 +22,10 @@ unsafe fn create_menu() {
     menubar.addItem_(app_menu_item);
     nsapp().setMainMenu_(menubar);
     let app_menu = NSMenu::new(nil).autorelease();
-    let quit_prefix = NSString::alloc(nil).init_str("Quit");
-    let quit_title = quit_prefix.stringByAppendingString_(
-        NSProcessInfo::processInfo(nil).processName()
-    );
+    let quit_prefix = <id as NSString>::from_str("Quit ");
+    let quit_title = quit_prefix.append(NSProcessInfo::processInfo(nil).processName());
     let quit_action = selector("terminate:");
-    let quit_key = NSString::alloc(nil).init_str("q");
+    let quit_key = <id as NSString>::from_str("q");
     let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
         quit_title,
         quit_action,

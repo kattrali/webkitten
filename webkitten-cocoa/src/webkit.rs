@@ -3,7 +3,7 @@
 use std::ops::Deref;
 use cocoa::base::{class,id,nil,BOOL,NO};
 use core_graphics::geometry::CGRect;
-use cocoa::foundation::NSString;
+use cocoa_ext::foundation::NSString;
 use block::Block;
 
 #[link(name = "WebKit", kind = "framework")]
@@ -92,8 +92,8 @@ impl WKWebView for id {
     }
 
     unsafe fn load_html_string(self, contents: &str, base_url: &str) {
-        let contents_str = NSString::alloc(nil).init_str(contents);
-        let url_str = NSString::alloc(nil).init_str(base_url);
+        let contents_str = <id as NSString>::from_str(contents);
+        let url_str = <id as NSString>::from_str(base_url);
         msg_send![self, loadHTMLString:contents_str baseURL:url_str];
     }
 
@@ -110,7 +110,7 @@ impl WKWebView for id {
     }
 
     unsafe fn set_custom_user_agent(self, user_agent: &str) {
-        let ua_str = NSString::alloc(nil).init_str(user_agent);
+        let ua_str = <id as NSString>::from_str(user_agent);
         msg_send![self, setCustomUserAgent:ua_str];
     }
 
@@ -119,7 +119,7 @@ impl WKWebView for id {
     }
 
     unsafe fn evaluate_javascript(self, script: &str) {
-        let script_str = NSString::alloc(nil).init_str(script);
+        let script_str = <id as NSString>::from_str(script);
         msg_send![self, evaluateJavaScript:script_str completionHandler:nil];
     }
 }
@@ -144,7 +144,7 @@ impl WKUserContentController for id {
 pub trait _WKUserStyleSheet {
 
     unsafe fn init_source(styles: &str) -> id {
-        let source = NSString::alloc(nil).init_str(styles);
+        let source = <id as NSString>::from_str(styles);
         let sheet: id = msg_send![class("_WKUserStyleSheet"), alloc];
         let sheet: id = msg_send![sheet, initWithSource:source mainFrameOnly:NO];
         sheet
@@ -177,8 +177,8 @@ impl _WKUserContentExtensionStore for id {
                                         identifier: &str,
                                         extension: &str,
                                         block: &ContentExtensionCompletionHandler) {
-        let id_str = NSString::alloc(nil).init_str(identifier);
-        let ex_str = NSString::alloc(nil).init_str(extension);
+        let id_str = <id as NSString>::from_str(identifier);
+        let ex_str = <id as NSString>::from_str(extension);
         msg_send![self, compileContentExtensionForIdentifier:id_str
                                      encodedContentExtension:ex_str
                                            completionHandler:block.deref()];
@@ -187,7 +187,7 @@ impl _WKUserContentExtensionStore for id {
     unsafe fn lookup_content_extension(self,
                                        identifier: &str,
                                        block: &ContentExtensionCompletionHandler) {
-        let id_str = NSString::alloc(nil).init_str(identifier);
+        let id_str = <id as NSString>::from_str(identifier);
         msg_send![self, lookupContentExtensionForIdentifier:id_str
                                           completionHandler:block.deref()];
     }

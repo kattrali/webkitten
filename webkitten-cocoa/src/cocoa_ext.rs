@@ -1,7 +1,19 @@
 pub mod foundation {
     use objc::{Encode,Encoding};
+    use libc;
     use cocoa::base::{class,id,nil};
-    use cocoa::foundation::{NSString,NSUInteger,NSInteger};
+
+    const UTF8_ENCODING: usize = 4;
+
+    #[cfg(target_pointer_width = "32")]
+    pub type NSInteger = libc::c_int;
+    #[cfg(target_pointer_width = "32")]
+    pub type NSUInteger = libc::c_uint;
+
+    #[cfg(target_pointer_width = "64")]
+    pub type NSInteger = libc::c_long;
+    #[cfg(target_pointer_width = "64")]
+    pub type NSUInteger = libc::c_ulong;
 
     pub struct NSRange {
         location: NSUInteger,
@@ -18,7 +30,7 @@ pub mod foundation {
     }
 
     pub unsafe fn NSURL(url: &str) -> id {
-        let url_str = NSString::alloc(nil).init_str(url);
+        let url_str: id = <id as NSString>::from_str(url);
         msg_send![class("NSURL"), URLWithString:url_str]
     }
 
@@ -38,6 +50,36 @@ pub mod foundation {
         }
     }
 
+    pub trait NSString {
+
+        unsafe fn from_str(content: &str) -> id;
+        unsafe fn append(self, other: id) -> id;
+        unsafe fn utf8(self) -> *const libc::c_char;
+        unsafe fn len(self) -> usize;
+    }
+
+    impl NSString for id {
+
+        unsafe fn from_str(content: &str) -> id {
+            let string: id = msg_send![class("NSString"), alloc];
+            msg_send![string, initWithBytes:content.as_ptr()
+                                     length:content.len()
+                                   encoding:UTF8_ENCODING as id]
+        }
+
+        unsafe fn append(self, other: id) -> id {
+            msg_send![self, stringByAppendingString:other]
+        }
+
+        unsafe fn utf8(self) -> *const libc::c_char {
+            msg_send![self, UTF8String]
+        }
+
+        unsafe fn len(self) -> usize {
+            msg_send![self, lengthOfBytesUsingEncoding:UTF8_ENCODING]
+        }
+    }
+
     pub trait NSDictionary {
 
         unsafe fn object_for_key(self, key: &str) -> id;
@@ -46,7 +88,7 @@ pub mod foundation {
     impl NSDictionary for id {
 
         unsafe fn object_for_key(self, key: &str) -> id {
-            let key_str = NSString::alloc(nil).init_str(key);
+            let key_str = <id as NSString>::from_str(key);
             msg_send![self, objectForKey:key_str]
         }
     }
@@ -128,8 +170,8 @@ pub mod core_graphics {
 
 pub mod appkit {
     use cocoa::base::{class,id,nil,NO,YES,BOOL};
-    use cocoa::foundation::NSString;
     use core_graphics::base::CGFloat;
+    use super::foundation::NSString;
 
     pub enum NSLayoutAttribute {
         Left          = 1,
@@ -188,7 +230,7 @@ pub mod appkit {
         }
 
         unsafe fn set_string_value(self, value: &str) {
-            let value_str = NSString::alloc(nil).init_str(value);
+            let value_str: id = <id as NSString>::from_str(value);
             msg_send![self, setStringValue:value_str];
         }
     }

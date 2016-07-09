@@ -1,12 +1,12 @@
 use std::str;
 
 use cocoa::base::{id,nil,NO,YES,BOOL};
-use cocoa::foundation::{NSUInteger, NSRect, NSPoint, NSSize, NSFastEnumeration,
-                        NSAutoreleasePool, NSString};
+use cocoa::foundation::{NSRect, NSPoint, NSSize, NSFastEnumeration,
+                        NSAutoreleasePool};
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSBackingStoreBuffered};
-use cocoa_ext::foundation::{NSArray,NSURLRequest};
+use cocoa_ext::foundation::{NSArray,NSURLRequest,NSString,NSUInteger};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
                         NSTextField,NSView,NSControl};
@@ -86,7 +86,7 @@ pub fn title(window_index: u8) -> String {
 pub fn set_title(window_index: u8, title: &str) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            let title_str = NSString::alloc(nil).init_str(title);
+            let title_str = <id as NSString>::from_str(title);
             window.setTitle_(title_str);
         }
     }
@@ -267,7 +267,7 @@ unsafe fn create_nswindow() -> id {
     ).autorelease();
     window.cascadeTopLeftFromPoint_(NSPoint::new(20., 20.));
     window.center();
-    let title = NSString::alloc(nil).init_str(WEBKITTEN_TITLE);
+    let title = <id as NSString>::from_str(WEBKITTEN_TITLE);
     window.setTitle_(title);
     layout_window_subviews(window);
     window
