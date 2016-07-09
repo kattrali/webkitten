@@ -1,7 +1,7 @@
 pub mod foundation {
     use objc::{Encode,Encoding};
     use libc;
-    use cocoa::base::{class,id,nil};
+    use cocoa::base::{class,id};
 
     const UTF8_ENCODING: usize = 4;
 
@@ -172,7 +172,7 @@ pub mod appkit {
     use core_graphics::base::CGFloat;
     use super::foundation::{NSString,NSMutableArray};
 
-    const NSPasteboardTypeString: &'static str = "public.utf8-plain-text";
+    const NSPASTEBOARD_TYPE_STRING: &'static str = "public.utf8-plain-text";
 
     pub trait NSPasteboard {
 
@@ -192,7 +192,7 @@ pub mod appkit {
 
         unsafe fn copy(self, text: &str) {
             let raw = <id as NSString>::from_str(text);
-            let data_type = <id as NSString>::from_str(NSPasteboardTypeString);
+            let data_type = <id as NSString>::from_str(NSPASTEBOARD_TYPE_STRING);
             let types: id = msg_send![class("NSMutableArray"), new];
             types.add_object(data_type);
             msg_send![self, declareTypes:types owner:nil];

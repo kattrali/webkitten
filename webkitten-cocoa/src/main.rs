@@ -11,7 +11,6 @@ extern crate libc;
 extern crate log;
 #[macro_use]
 extern crate objc;
-extern crate url;
 extern crate webkitten;
 
 mod webkit;
@@ -20,7 +19,6 @@ mod ui;
 mod runtime;
 
 use webkitten::ui::ApplicationUI;
-use webkitten::Engine;
 
 
 fn main() {

@@ -3,7 +3,7 @@ use libc::c_char;
 
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
-use cocoa::base::{id,nil,class,BOOL,YES};
+use cocoa::base::{id,nil,class};
 use webkitten::ui::{ApplicationUI,EventHandler};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
@@ -75,7 +75,7 @@ extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     }
 }
 
-extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, range: NSRange, index: id) -> id {
+extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, _: NSRange, _: id) -> id {
     info!("requesting address bar completions",);
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {
@@ -87,7 +87,7 @@ extern fn address_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
     }
 }
 
-extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, range: NSRange, index: id) -> id {
+extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, _: NSRange, _: id) -> id {
     info!("requesting command bar completions");
     unsafe {
         if let Some(prefix) = nsstring_as_str(control.string_value()) {

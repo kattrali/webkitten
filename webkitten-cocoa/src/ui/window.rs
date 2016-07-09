@@ -13,9 +13,9 @@ use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
 use block::ConcreteBlock;
-use url::Url;
 
 use webkitten::WEBKITTEN_TITLE;
+use webkitten::ui::BrowserConfiguration;
 use webkit::*;
 use runtime::{AddressBarDelegate,CommandBarDelegate,log_error_description,nsstring_as_str};
 use super::webview;
@@ -227,26 +227,9 @@ unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
     msg_send![subviews, objectAtIndex:index]
 }
 
-fn block_storage(uri: &str) -> bool {
-    let mut block = true;
-    if let Some(mode) = super::UI.engine.config.lookup_bool("general.private-browsing") {
-        block = mode;
-    }
-    if let Ok(url) = Url::parse(&uri) {
-        if let Some(host) = url.host_str() {
-            let key = format!("sites.\"{}\".allow_storage", host);
-            let option = super::UI.engine.config.lookup_bool(&key);
-            if let Some(option) = option {
-                return !option;
-            }
-        }
-    }
-    return block;
-}
-
 unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
     let store = _WKUserContentExtensionStore::default_store(nil);
-    let block_storage = block_storage(&uri);
+    let private_browsing = super::UI.engine.config.use_private_browsing(&uri);
     let block = ConcreteBlock::new(move |filter: id, err: id| {
         if let Some(window) = window_for_index(window_index) {
             let container = subview(window, CocoaWindowSubview::WebViewContainer);
@@ -254,7 +237,7 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
                 view.set_hidden(true);
             }
             let config = <id as WKWebViewConfiguration>::new().autorelease();
-            if block_storage {
+            if private_browsing {
                 info!("blocking data storage in buffer");
                 config.set_website_data_store(<id as WKWebsiteDataStore>::nonpersistent_store());
             }
