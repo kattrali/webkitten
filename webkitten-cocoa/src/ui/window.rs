@@ -251,6 +251,7 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
             }
             let webview = WKWebView(CGRectZero(), config).autorelease();
             webview.disable_translates_autoresizing_mask_into_constraints();
+            webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");
             container.add_subview(webview);
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Top, container, NSLayoutAttribute::Top));
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
