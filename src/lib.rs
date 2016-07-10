@@ -75,7 +75,7 @@ impl EventHandler for Engine {
             if let Some(file) = command.file() {
                 match script::execute::<T>(file, command.arguments, ui) {
                     Err(err) => warn!("{}", err),
-                    _ => ui.set_command_field_text(window_index, "")
+                    Ok(success) => if success { ui.set_command_field_text(window_index, "") }
                 }
             }
         } else if let Some(default) = self.config.default_command() {

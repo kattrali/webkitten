@@ -75,6 +75,12 @@ pub trait ApplicationUI: Sized {
     /// Get the currently loaded URI or empty string
     fn uri(&self, window_index: u8, webview_index: u8) -> String;
 
+    /// Find a string within the selected web view
+    fn find_string(&self, window_index: u8, webview_index: u8, query: &str);
+
+    /// Hide results from a previous find invocation (if applicable)
+    fn hide_find_results(&self, window_index: u8, webview_index: u8);
+
     /// Get the title of the currently loaded URI or empty string
     fn webview_title(&self, window_index: u8, webview_index: u8) -> String;
 

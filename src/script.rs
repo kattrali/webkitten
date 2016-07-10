@@ -184,6 +184,12 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("webview_title", function2(|window_index: u8, webview_index: u8| {
         ui.webview_title(window_index, webview_index)
     }));
+    lua.set("find", function3(|window_index: u8, webview_index: u8, query: String| {
+        ui.find_string(window_index, webview_index, &query);
+    }));
+    lua.set("hide_find", function2(|window_index: u8, webview_index: u8| {
+        ui.hide_find_results(window_index, webview_index)
+    }));
     lua.set("run_javascript", function3(|window_index: u8, webview_index: u8, script: String| {
         ui.run_javascript(window_index, webview_index, &script);
     }));
