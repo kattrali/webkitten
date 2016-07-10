@@ -87,7 +87,11 @@ pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix
 
 fn coerce_lua_array(raw_value: AnyLuaValue) -> ScriptResult<Vec<String>> {
     if let AnyLuaValue::LuaString(value) = raw_value {
-        Ok(value.split(",").map(|v| String::from(v)).collect())
+        if value.len() == 0 {
+            Ok(vec![])
+        } else {
+            Ok(value.split(",").map(|v| String::from(v)).collect())
+        }
     } else {
         Err(ScriptError::new("Return type is not an string", None))
     }

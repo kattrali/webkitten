@@ -49,11 +49,23 @@ end
 
 -- Provide completions from the titles of bookmarks
 function complete_command()
-  if #arguments > 0 and arguments[1] == "open" then
-    query = string.format("buku -j -s '%s' | jq 'map(.title)[]'", prefix:gsub("buku open ", ""))
-    handle = io.popen(query)
-    text = handle:read("*a")
-    return text:gsub("\"", ""):gsub("\n", ",")
+  if #arguments > 0 then
+    if arguments[1] == "open" then
+      query = string.format("buku -j -s '%s' | jq 'map(.title)[]'", prefix:gsub("buku open ", ""))
+      handle = io.popen(query)
+      text = handle:read("*a")
+      return text:gsub("\"", ""):gsub("\n", ",")
+    else
+      return ""
+    end
+  elseif #arguments == 1 then
+    for i, item in ipairs({"open","save"}) do
+      if #item >= #arguments[1] then
+        if string.sub(item, 1, #arguments[1]) == arguments[1] then
+          return item
+        end
+      end
+    end
   end
-  return ""
+  return "open,save"
 end

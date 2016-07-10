@@ -1,8 +1,7 @@
 use cocoa::base::{id,nil,YES,NO};
-use cocoa_ext::foundation::{NSURLRequest,NSUInteger};
+use cocoa_ext::foundation::{NSURLRequest,NSUInteger,NSString};
 
 use webkit::*;
-use runtime;
 
 
 pub fn load_uri(webview: id, uri: &str) {
@@ -25,7 +24,7 @@ fn custom_user_agent(webview: id) -> String {
     unsafe {
         let user_agent = webview.custom_user_agent();
         if user_agent != nil {
-            if let Some(user_agent) = runtime::nsstring_as_str(user_agent) {
+            if let Some(user_agent) = user_agent.as_str() {
                 return String::from(user_agent);
             }
         }
@@ -74,7 +73,7 @@ pub fn uri(webview: id) -> String {
         let url = webview.url();
         if url != nil {
             let url: id = msg_send![url, absoluteString];
-            if let Some(url) = runtime::nsstring_as_str(url) {
+            if let Some(url) = url.as_str() {
                 return String::from(url);
             }
         }
@@ -86,7 +85,7 @@ pub fn title(webview: id) -> String {
     unsafe {
         let title = webview.title();
         if title != nil {
-            if let Some(title) = runtime::nsstring_as_str(title) {
+            if let Some(title) = title.as_str() {
                 return String::from(title);
             }
         }

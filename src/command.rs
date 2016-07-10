@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::fs::{File,metadata};
+use std::fs::{File,metadata,read_dir};
 
 use config::Config;
 use ui::BrowserConfiguration;
@@ -26,6 +26,28 @@ impl Command {
                     arguments: components.map(|arg| String::from(arg)).collect(),
                 })
             })
+    }
+
+    pub fn list_commands(prefix: &str, config: &Config) -> Vec<String> {
+        let mut entries: Vec<String> = vec![];
+        for search_path in config.command_search_paths() {
+            if let Ok(contents) = read_dir(search_path) {
+                for entry in contents {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(stem) = path.file_stem().and_then(|p| p.to_str()) {
+                                if stem.starts_with(prefix) {
+                                    entries.push(String::from(stem));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        entries.sort();
+        entries
     }
 
     /// A File handle to the command path

@@ -26,3 +26,18 @@ function run()
   end
   return true
 end
+
+function complete_command()
+  if #arguments == 0 then
+    return "oldest,rl,same,random"
+  elseif #arguments == 1 then
+    for i, item in ipairs({"oldest","rl","same","random"}) do
+      if #item >= #arguments[1] then
+        if string.sub(item, 1, #arguments[1]) == arguments[1] then
+          return item
+        end
+      end
+    end
+  end
+  return ""
+end

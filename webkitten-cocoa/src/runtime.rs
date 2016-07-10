@@ -1,6 +1,3 @@
-use std::{slice,str};
-use libc::c_char;
-
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
 use cocoa::base::{id,nil,class};
@@ -17,21 +14,11 @@ impl CommandBarDelegate {
     pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
 }
 
-pub fn nsstring_as_str<'a>(nsstring: id) -> Option<&'a str> {
-    let bytes = unsafe {
-        let bytes: *const c_char = nsstring.utf8();
-        let byte_str = bytes as *const u8;
-        let len = nsstring.len();
-        slice::from_raw_parts(byte_str, len)
-    };
-    str::from_utf8(bytes).ok()
-}
-
 pub fn log_error_description(err: id) {
     if err != nil {
         unsafe {
-            let desc = msg_send![err, description];
-            if let Some(desc) = nsstring_as_str(desc) {
+            let desc: id = msg_send![err, description];
+            if let Some(desc) = desc.as_str() {
                 error!("{}", desc);
             }
         }
@@ -62,7 +49,7 @@ extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
 extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, _: NSRange, _: id) -> id {
     info!("requesting command bar completions");
     unsafe {
-        if let Some(prefix) = nsstring_as_str(control.string_value()) {
+        if let Some(prefix) = control.string_value().as_str() {
             let completions = UI.engine.command_completions::<CocoaUI>(&UI, prefix);
             <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
         } else {
@@ -73,11 +60,10 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
 
 fn notification_object_text<'a>(notification: id) -> Option<&'a str> {
     if is_return_key_event(notification) {
-        let raw_text = unsafe {
+        unsafe {
             let control = notification.object();
-            control.string_value()
+            return control.string_value().as_str();
         };
-        return nsstring_as_str(raw_text);
     }
     None
 }
