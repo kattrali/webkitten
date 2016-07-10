@@ -5,7 +5,7 @@ use cocoa::foundation::{NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool};
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
-                    NSBackingStoreBuffered};
+                    NSFullSizeContentViewWindowMask, NSBackingStoreBuffered};
 use cocoa_ext::foundation::{NSArray,NSURLRequest,NSString,NSUInteger};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
@@ -257,6 +257,7 @@ unsafe fn create_nswindow() -> id {
     let mask = (NSTitledWindowMask as NSUInteger |
                 NSMiniaturizableWindowMask as NSUInteger |
                 NSResizableWindowMask as NSUInteger |
+                NSFullSizeContentViewWindowMask as NSUInteger |
                 NSClosableWindowMask as NSUInteger) as NSUInteger;
     let window = NSWindow::alloc(nil).initWithContentRect_styleMask_backing_defer_(
         NSRect::new(NSPoint::new(0., 0.), NSSize::new(700., 700.)),
