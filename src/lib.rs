@@ -44,22 +44,8 @@ impl Engine {
         self.config.load(&self.run_config.path)
     }
 
-    fn fetch_completions<T>(&self, ui: &T, prefix: &str) -> Vec<String>
-        where T: ApplicationUI {
-        if let Some(command) = command::Command::parse(prefix, &self.config, COMMAND_FILE_SUFFIX) {
-            info!("Found command match for completion: {}", prefix);
-            if let Some(file) = command.file() {
-                info!("Completing command text using {}", command.path);
-                return match script::autocomplete::<T>(file, command.arguments, prefix, ui) {
-                    Err(err) => {
-                        warn!("{}", err);
-                        vec![]
-                    },
-                    Ok(completions) => completions
-                }
-            }
-        }
-        vec![]
+    fn use_argument_completion(&self, prefix: &str) -> bool {
+        prefix.contains(" ")
     }
 }
 
@@ -96,7 +82,22 @@ impl EventHandler for Engine {
 
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str)
         -> Vec<String> {
-        self.fetch_completions(ui, prefix)
+        if self.use_argument_completion(prefix) {
+            if let Some(command) = command::Command::parse(prefix, &self.config, COMMAND_FILE_SUFFIX) {
+                info!("Found command match for completion: {}", prefix);
+                if let Some(file) = command.file() {
+                    info!("Completing command text using {}", command.path);
+                    return match script::autocomplete::<T>(file, command.arguments, prefix, ui) {
+                        Err(err) => {
+                            warn!("{}", err);
+                            vec![]
+                        },
+                        Ok(completions) => completions
+                    }
+                }
+            }
+        }
+        command::Command::list_commands(prefix, &self.config)
     }
 }
 
