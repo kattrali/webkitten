@@ -3,7 +3,7 @@
 use std::ops::Deref;
 use cocoa::base::{class,id,nil,BOOL,NO,YES};
 use core_graphics::geometry::CGRect;
-use cocoa_ext::foundation::NSString;
+use cocoa_ext::foundation::{NSString,NSUInteger};
 use block::Block;
 
 #[link(name = "WebKit", kind = "framework")]
@@ -63,6 +63,8 @@ pub trait WKWebView {
     unsafe fn set_custom_user_agent(self, user_agent: &str);
     unsafe fn custom_user_agent(self) -> id;
     unsafe fn evaluate_javascript(self, script: &str);
+    unsafe fn find_string(self, string: &str);
+    unsafe fn hide_find_results(self);
 }
 
 pub unsafe fn WKWebView(frame: CGRect, config: id) -> id {
@@ -138,6 +140,17 @@ impl WKWebView for id {
     unsafe fn evaluate_javascript(self, script: &str) {
         let script_str = <id as NSString>::from_str(script);
         msg_send![self, evaluateJavaScript:script_str completionHandler:nil];
+    }
+
+    unsafe fn find_string(self, query: &str) {
+        let raw_str = <id as NSString>::from_str(query);
+        msg_send![self, _findString:raw_str
+                            options: (1 << 0 | 1 << 4 | 1 << 6 | 1 << 7) as NSUInteger
+                           maxCount: 100 as NSUInteger];
+    }
+
+    unsafe fn hide_find_results(self) {
+        msg_send![self, _hideFindUI];
     }
 }
 
