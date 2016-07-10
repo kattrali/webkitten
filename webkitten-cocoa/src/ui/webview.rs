@@ -1,5 +1,5 @@
 use cocoa::base::{id,nil,YES,NO};
-use cocoa_ext::foundation::{NSURLRequest};
+use cocoa_ext::foundation::{NSURLRequest,NSUInteger};
 
 use webkit::*;
 use runtime;
@@ -59,6 +59,14 @@ pub fn reload(webview: id) {
 
 pub fn stop_loading(webview: id) {
     unsafe { webview.stop_loading(); }
+}
+
+pub fn hide_find_results(webview: id) {
+    unsafe { webview.hide_find_results(); }
+}
+
+pub fn find_string(webview: id, query: &str) {
+    unsafe { webview.find_string(query); }
 }
 
 pub fn uri(webview: id) -> String {

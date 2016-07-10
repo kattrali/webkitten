@@ -182,6 +182,18 @@ impl ApplicationUI for CocoaUI {
             .unwrap_or(String::new())
     }
 
+    fn find_string(&self, window_index: u8, webview_index: u8, query: &str) {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::find_string(webview, query)
+        }
+    }
+
+    fn hide_find_results(&self, window_index: u8, webview_index: u8) {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::hide_find_results(webview)
+        }
+    }
+
     fn run_javascript(&self, window_index: u8, webview_index: u8, script: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::run_javascript(webview, script)
