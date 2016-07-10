@@ -33,6 +33,36 @@ unsafe fn create_menu() {
     ).autorelease();
     app_menu.addItem_(quit_item);
     app_menu_item.setSubmenu_(app_menu);
+    let edit_menu_item = NSMenuItem::new(nil).autorelease();
+    menubar.addItem_(edit_menu_item);
+    let edit_menu = NSMenu::alloc(nil).initWithTitle_(<id as NSString>::from_str("Edit")).autorelease();
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Undo"),
+        selector("undo:"),
+        <id as NSString>::from_str("z")).autorelease());
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Redo"),
+        selector("redo:"),
+        <id as NSString>::from_str("Z")).autorelease());
+    edit_menu.addItem_(NSMenuItem::separatorItem(nil));
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Cut"),
+        selector("cut:"),
+        <id as NSString>::from_str("x")).autorelease());
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Copy"),
+        selector("copy:"),
+        <id as NSString>::from_str("c")).autorelease());
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Paste"),
+        selector("paste:"),
+        <id as NSString>::from_str("v")).autorelease());
+    edit_menu.addItem_(NSMenuItem::separatorItem(nil));
+    edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Select All"),
+        selector("selectAll:"),
+        <id as NSString>::from_str("a")).autorelease());
+    edit_menu_item.setSubmenu_(edit_menu);
 }
 
 pub unsafe fn nsapp() -> id {
