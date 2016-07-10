@@ -1,5 +1,3 @@
-use std::str;
-
 use cocoa::base::{id,nil,NO,YES,BOOL};
 use cocoa::foundation::{NSRect, NSPoint, NSSize, NSFastEnumeration,
                         NSAutoreleasePool};
@@ -17,7 +15,7 @@ use block::ConcreteBlock;
 use webkitten::WEBKITTEN_TITLE;
 use webkitten::ui::BrowserConfiguration;
 use webkit::*;
-use runtime::{CommandBarDelegate,log_error_description,nsstring_as_str};
+use runtime::{CommandBarDelegate,log_error_description};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
@@ -79,7 +77,10 @@ pub fn close(window_index: u8) {
 pub fn title(window_index: u8) -> String {
     unsafe {
         window_for_index(window_index)
-            .and_then(|win| nsstring_as_str(msg_send![win, title]))
+            .and_then(|win| {
+                let title: id = msg_send![win, title];
+                title.as_str()
+            })
             .and_then(|title| Some(String::from(title)))
             .unwrap_or(String::new())
     }
@@ -165,7 +166,7 @@ fn field_text(window_index: u8, view: CocoaWindowSubview) -> String {
             .and_then(|window| {
                 let field = subview(window, view);
                 let text: id = field.string_value();
-                nsstring_as_str(text) })
+                text.as_str() })
             .and_then(|text| Some(String::from(text)))
             .unwrap_or(String::new())
     }

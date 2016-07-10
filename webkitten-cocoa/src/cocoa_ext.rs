@@ -2,6 +2,7 @@ pub mod foundation {
     use objc::{Encode,Encoding};
     use libc;
     use cocoa::base::{class,id};
+    use std::{str,slice};
 
     const UTF8_ENCODING: usize = 4;
 
@@ -62,6 +63,7 @@ pub mod foundation {
         unsafe fn append(self, other: id) -> id;
         unsafe fn utf8(self) -> *const libc::c_char;
         unsafe fn len(self) -> usize;
+        unsafe fn as_str<'a>(self) -> Option<&'a str>;
     }
 
     impl NSString for id {
@@ -76,6 +78,15 @@ pub mod foundation {
 
         unsafe fn len(self) -> usize {
             msg_send![self, lengthOfBytesUsingEncoding:UTF8_ENCODING]
+        }
+
+        unsafe fn as_str<'a>(self) -> Option<&'a str> {
+            let bytes = {
+                let bytes = self.utf8();
+                let byte_str = bytes as *const u8;
+                slice::from_raw_parts(byte_str, self.len())
+            };
+            str::from_utf8(bytes).ok()
         }
     }
 
