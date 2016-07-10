@@ -56,7 +56,9 @@ impl EventHandler for Engine {
                                          window_index: u8,
                                          text: &str)
                                          -> CommandOutput {
-        if let Some(command) = command::Command::parse(text, &self.config, COMMAND_FILE_SUFFIX) {
+        if let Some(text) = self.config.command_matching_prefix(text) {
+            return self.execute_command(ui, window_index, &text);
+        } else if let Some(command) = command::Command::parse(text, &self.config, COMMAND_FILE_SUFFIX) {
             info!("Found command match: {}", command.path);
             if let Some(file) = command.file() {
                 match script::execute::<T>(file, command.arguments, ui) {
@@ -70,7 +72,7 @@ impl EventHandler for Engine {
                 command.push_str(" ");
                 command.push_str(text);
                 info!("Running the default command: {}", command);
-                self.execute_command(ui, window_index, &command);
+                return self.execute_command(ui, window_index, &command);
             }
         }
         CommandOutput { error: None, message: None }

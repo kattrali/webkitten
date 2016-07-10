@@ -144,6 +144,16 @@ pub trait BrowserConfiguration: Sized {
         if self.command_disabled(&command) { None } else { Some(command) }
     }
 
+    fn command_matching_prefix(&self, text: &str) -> Option<String> {
+        if text.len() > 0 {
+            let key = format!("commands.on-text-change.\"{}\"", &text[.. 1]);
+            if let Some(script) = self.lookup_str(&key) {
+                return Some(format!("{} {}", script, &text[1 ..]))
+            }
+        }
+        None
+    }
+
     /// Whether a command is disabled based on `commands.disabled`
     fn command_disabled(&self, name: &str) -> bool {
         if let Some(disabled) = self.lookup_str_vec("commands.disabled") {

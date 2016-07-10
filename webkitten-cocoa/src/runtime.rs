@@ -1,7 +1,7 @@
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
 use cocoa::base::{id,nil,class};
-use webkitten::ui::{ApplicationUI,EventHandler};
+use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::{CocoaUI,UI};
@@ -29,6 +29,8 @@ pub fn declare_bar_delegates() {
     if let Some(superclass) = Class::get("NSObject") {
         if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
             unsafe {
+                decl.add_method(sel!(controlTextDidChange:),
+                    command_bar_text_changed as extern fn(&Object, Sel, id));
                 decl.add_method(sel!(controlTextDidEndEditing:),
                     command_bar_did_end_editing as extern fn(&Object, Sel, id));
                 decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
@@ -41,8 +43,18 @@ pub fn declare_bar_delegates() {
 }
 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
+    if is_return_key_event(notification) {
+        if let Some(text) = notification_object_text(notification) {
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
+        }
+    }
+}
+
+extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: id) {
     if let Some(text) = notification_object_text(notification) {
-        UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
+        if let Some(command) = UI.engine.config.command_matching_prefix(text) {
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), &command);
+        }
     }
 }
 
@@ -59,13 +71,10 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, 
 }
 
 fn notification_object_text<'a>(notification: id) -> Option<&'a str> {
-    if is_return_key_event(notification) {
-        unsafe {
-            let control = notification.object();
-            return control.string_value().as_str();
-        };
-    }
-    None
+    unsafe {
+        let control = notification.object();
+        return control.string_value().as_str();
+    };
 }
 
 fn is_return_key_event(notification: id) -> bool {
