@@ -15,7 +15,7 @@ use block::ConcreteBlock;
 use webkitten::WEBKITTEN_TITLE;
 use webkitten::ui::BrowserConfiguration;
 use webkit::*;
-use runtime::{CommandBarDelegate,log_error_description};
+use runtime::{CommandBarDelegate,WebViewHistoryDelegate,log_error_description};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
@@ -204,9 +204,23 @@ pub fn webview_count(window_index: u8) -> u8 {
     }
 }
 
+pub fn reference_indices(webview: id) -> Option<(u8, u8)> {
+    let (mut webview_index, mut window_index) = (0, 0);
+    unsafe {
+        let window: id = msg_send![webview, window];
+        if window != nil {
+            let windows = super::application::windows();
+            window_index = windows.index_of_object(window) as u8;
+            let webviews = window_webviews(window);
+            webview_index = webviews.index_of_object(webview) as u8;
+            return Some((window_index, webview_index));
+        }
+    }
+    None
+}
+
 unsafe fn window_for_index(index: u8) -> Option<id> {
-    let windows: id = msg_send![super::application::nsapp(), windows];
-    windows.get(index as NSUInteger)
+    super::application::windows().get(index as NSUInteger)
 }
 
 unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
@@ -236,7 +250,8 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
             } else {
                 log_error_description(err);
             }
-            let webview = WKWebView(CGRectZero(), config).autorelease();
+            let webview = <id as WKWebView>::new(CGRectZero(), config).autorelease();
+            webview.set_navigation_delegate(WebViewHistoryDelegate::new());
             webview.disable_translates_autoresizing_mask_into_constraints();
             webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");
             container.add_subview(webview);
@@ -274,7 +289,7 @@ unsafe fn create_nswindow() -> id {
     window
 }
 
-unsafe fn layout_window_subviews(window: id) -> (id) {
+unsafe fn layout_window_subviews(window: id) {
     let container = <id as NSView>::new();
     let command_bar = <id as NSTextField>::new();
     window.contentView().add_subview(container);
@@ -290,7 +305,5 @@ unsafe fn layout_window_subviews(window: id) -> (id) {
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Left, window.contentView(), NSLayoutAttribute::Left));
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
     window.makeKeyAndOrderFront_(nil);
-    let command_bar_delegate: id = CommandBarDelegate::new();
-    command_bar.set_delegate(command_bar_delegate);
-    command_bar_delegate
+    command_bar.set_delegate(CommandBarDelegate::new());
 }

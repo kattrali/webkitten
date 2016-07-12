@@ -4,14 +4,21 @@ use cocoa::base::{id,nil,class};
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
-use ui::{CocoaUI,UI};
+use ui::{CocoaUI,UI,window};
+use webkit::WKNavigation;
 
 const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
+const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
 
-pub struct CommandBarDelegate {}
+pub struct CommandBarDelegate;
+pub struct WebViewHistoryDelegate;
 
 impl CommandBarDelegate {
     pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
+}
+
+impl WebViewHistoryDelegate {
+    pub unsafe fn new() -> id { msg_send![class(WVHDELEGATE_CLASS), new] }
 }
 
 pub fn log_error_description(err: id) {
@@ -25,19 +32,43 @@ pub fn log_error_description(err: id) {
     }
 }
 
-pub fn declare_bar_delegates() {
+pub fn declare_delegate_classes() {
     if let Some(superclass) = Class::get("NSObject") {
-        if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
-            unsafe {
-                decl.add_method(sel!(controlTextDidChange:),
-                    command_bar_text_changed as extern fn(&Object, Sel, id));
-                decl.add_method(sel!(controlTextDidEndEditing:),
-                    command_bar_did_end_editing as extern fn(&Object, Sel, id));
-                decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
-                    command_bar_get_completion as extern fn(&Object, Sel, id, id, id, NSRange, id) -> id);
-            }
+        declare_bar_delegate(&superclass);
+        declare_webview_delegates(&superclass);
+    }
+}
 
-            decl.register();
+fn declare_bar_delegate(superclass: &Class) {
+    if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
+        unsafe {
+            decl.add_method(sel!(controlTextDidChange:),
+                command_bar_text_changed as extern fn(&Object, Sel, id));
+            decl.add_method(sel!(controlTextDidEndEditing:),
+                command_bar_did_end_editing as extern fn(&Object, Sel, id));
+            decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
+                command_bar_get_completion as extern fn(&Object, Sel, id, id, id, NSRange, id) -> id);
+        }
+
+        decl.register();
+    }
+}
+
+fn declare_webview_delegates(superclass: &Class) {
+    if let Some(mut decl) = ClassDecl::new(WVHDELEGATE_CLASS, superclass) {
+        unsafe {
+            decl.add_method(sel!(webView:didStartProvisionalNavigation:),
+                webview_did_navigate as extern fn (&Object, Sel, id, id));
+        }
+        decl.register();
+    }
+}
+
+extern fn webview_did_navigate(_: &Object, _cmd: Sel, webview: id, navigation: id) {
+    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
+        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
+        if let Some(uri) = uri {
+            UI.engine.on_load_uri::<CocoaUI>(&UI, window_index, webview_index, uri);
         }
     }
 }

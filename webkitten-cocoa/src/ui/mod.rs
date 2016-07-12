@@ -1,6 +1,6 @@
-mod application;
-mod webview;
-mod window;
+pub mod application;
+pub mod webview;
+pub mod window;
 
 use std::env;
 use std::fs::File;

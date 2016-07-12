@@ -16,6 +16,10 @@ pub fn start_run_loop() {
     }
 }
 
+pub fn windows() -> id {
+    unsafe { msg_send![nsapp(), windows] }
+}
+
 unsafe fn create_menu() {
     let menubar = NSMenu::new(nil).autorelease();
     let app_menu_item = NSMenuItem::new(nil).autorelease();

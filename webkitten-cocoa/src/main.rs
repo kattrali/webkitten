@@ -23,6 +23,6 @@ use webkitten::ui::ApplicationUI;
 
 fn main() {
     env_logger::init().unwrap();
-    runtime::declare_bar_delegates();
+    runtime::declare_delegate_classes();
     ui::UI.run();
 }

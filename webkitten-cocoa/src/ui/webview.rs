@@ -70,7 +70,7 @@ pub fn find_string(webview: id, query: &str) {
 
 pub fn uri(webview: id) -> String {
     unsafe {
-        let url = webview.url();
+        let url = <id as WKWebView>::url(webview);
         if url != nil {
             let url: id = msg_send![url, absoluteString];
             if let Some(url) = url.as_str() {
@@ -99,7 +99,7 @@ pub fn run_javascript(webview: id, script: &str) {
 
 pub fn apply_styles(webview: id, styles: &str) {
     unsafe {
-        let sheet = <id as _WKUserStyleSheet>::init_source(styles);
+        let sheet = <id as _WKUserStyleSheet>::init_source(styles, None);
         webview.configuration().user_content_controller().add_user_style_sheet(sheet);
     }
 }

@@ -3,11 +3,23 @@
 use std::ops::Deref;
 use cocoa::base::{class,id,nil,BOOL,NO,YES};
 use core_graphics::geometry::CGRect;
-use cocoa_ext::foundation::{NSString,NSUInteger};
+use cocoa_ext::foundation::{NSString,NSUInteger,NSURL};
 use block::Block;
 
 #[link(name = "WebKit", kind = "framework")]
 extern {}
+
+pub trait WKNavigation {
+
+    unsafe fn request(self) -> id;
+}
+
+impl WKNavigation for id {
+
+    unsafe fn request(self) -> id {
+        msg_send![self, _request]
+    }
+}
 
 pub trait WKWebViewConfiguration {
 
@@ -43,10 +55,15 @@ impl WKWebViewConfiguration for id {
 
 pub trait WKWebView {
 
-    unsafe fn alloc(_: Self) -> id {
-        msg_send![class("WKWebView"), alloc]
+    unsafe fn new(frame: CGRect, config: id) -> id {
+        let webview: id = msg_send![class("WKWebView"), alloc];
+        let webview: id = msg_send![webview, initWithFrame:frame
+                                             configuration:config];
+        webview
     }
 
+    unsafe fn set_history_delegate(self, delegate: id);
+    unsafe fn set_navigation_delegate(self, delegate: id);
     unsafe fn load_request(self, request: id /* NSURLRequest */);
     unsafe fn configuration(self) -> id;
     unsafe fn go_back(self);
@@ -54,6 +71,7 @@ pub trait WKWebView {
     unsafe fn go_forward(self);
     unsafe fn can_go_forward(self) -> BOOL;
     unsafe fn reload(self);
+    unsafe fn reload_without_content_blockers(self);
     unsafe fn stop_loading(self);
     unsafe fn has_only_secure_content(self) -> BOOL;
     unsafe fn load_html_string(self, contents: &str, base_url: &str);
@@ -67,15 +85,18 @@ pub trait WKWebView {
     unsafe fn hide_find_results(self);
 }
 
-pub unsafe fn WKWebView(frame: CGRect, config: id) -> id {
-    let webview = WKWebView::alloc(nil);
-    msg_send![webview, initWithFrame:frame configuration:config]
-}
-
 impl WKWebView for id {
 
     unsafe fn load_request(self, request: id) {
         msg_send![self, loadRequest:request];
+    }
+
+    unsafe fn set_history_delegate(self, delegate: id) {
+        msg_send![self, _setHistoryDelegate:delegate];
+    }
+
+    unsafe fn set_navigation_delegate(self, delegate: id) {
+        msg_send![self, setNavigationDelegate:delegate];
     }
 
     unsafe fn configuration(self) -> id {
@@ -100,6 +121,10 @@ impl WKWebView for id {
 
     unsafe fn reload(self) {
         msg_send![self, reload:nil];
+    }
+
+    unsafe fn reload_without_content_blockers(self) {
+        msg_send![self, _reloadWithoutContentBlockers];
     }
 
     unsafe fn stop_loading(self) {
@@ -157,7 +182,7 @@ impl WKWebView for id {
 pub trait WKUserContentController {
 
     unsafe fn add_user_content_filter(self, filter: id /* _WKUserContentFilter */);
-    unsafe fn add_user_style_sheet(self, stylsheet: id /* _WKUserStyleSheet */);
+    unsafe fn add_user_style_sheet(self, stylesheet: id /* _WKUserStyleSheet */);
 }
 
 impl WKUserContentController for id {
@@ -190,10 +215,20 @@ impl WKPreferences for id {
 
 pub trait _WKUserStyleSheet {
 
-    unsafe fn init_source(styles: &str) -> id {
+    unsafe fn init_source(styles: &str, base_url: Option<&str>) -> id {
         let source = <id as NSString>::from_str(styles);
+        let base = match base_url {
+            Some(base) => NSURL(base),
+            None => nil
+        };
+        let world: id = msg_send![class("_WKUserContentWorld"), normalWorld];
         let sheet: id = msg_send![class("_WKUserStyleSheet"), alloc];
-        let sheet: id = msg_send![sheet, initWithSource:source mainFrameOnly:NO];
+        let sheet: id = msg_send![sheet, initWithSource:source
+                                       forMainFrameOnly:NO
+                                        legacyWhitelist:nil
+                                        legacyBlacklist:nil
+                                                baseURL:base
+                                       userContentWorld:world];
         sheet
     }
 }

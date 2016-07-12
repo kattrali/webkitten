@@ -7,7 +7,7 @@ use std::fmt;
 use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
-use super::ui::ApplicationUI;
+use super::ui::{ApplicationUI,BrowserConfiguration,EventHandler};
 
 const INVALID_RESULT: u8 = 247;
 
@@ -85,6 +85,23 @@ pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix
     }
 }
 
+pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webview_index: u8, uri: &str) -> ScriptResult<bool> {
+    let mut lua = create_runtime::<T>(ui);
+    lua.set("requested_uri", uri);
+    lua.set("webview_index", webview_index);
+    lua.set("window_index", window_index);
+    if let Err(err) = lua.execute_from_reader::<(), _>(file) {
+        Err(ScriptError::new("script parsing failed", Some(err)))
+    } else {
+        let func: Option<LuaFunction<_>> = lua.get("on_load_uri");
+        if let Some(mut func) = func {
+            resolve_script_output::<bool>(func.call())
+        } else {
+            Err(ScriptError::new("'on_load_uri' method missing", None))
+        }
+    }
+}
+
 fn coerce_lua_array(raw_value: AnyLuaValue) -> ScriptResult<Vec<String>> {
     if let AnyLuaValue::LuaString(value) = raw_value {
         if value.len() == 0 {
@@ -98,16 +115,28 @@ fn coerce_lua_array(raw_value: AnyLuaValue) -> ScriptResult<Vec<String>> {
 }
 
 fn resolve_script_output<T>(output: Result<T, LuaError>) -> ScriptResult<T> {
-    match output {
-        Err(err) => Err(ScriptError::new("script failed to execute", Some(err))),
-        Ok(value) => Ok(value)
-    }
+    output.map_err(|err| ScriptError::new("script failed to execute", Some(err)))
 }
 
 fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     let mut lua = Lua::new();
     lua.openlibs();
     lua.set("INVALID_RESULT", INVALID_RESULT);
+    lua.set("log_info", function1(|message: String| {
+        info!("lua: {}", message);
+    }));
+    lua.set("log_debug", function1(|message: String| {
+        debug!("lua: {}", message);
+    }));
+    lua.set("copy", function1(|message: String| {
+        ui.copy(&message);
+    }));
+    lua.set("config_bool", function1(|key: String| {
+        ui.event_handler().config.lookup_bool(&key).unwrap_or(false)
+    }));
+    lua.set("config_str", function1(|key: String| {
+        ui.event_handler().config.lookup_str(&key).unwrap_or(String::new())
+    }));
     lua.set("focus_window", function1(|index: u8| {
         ui.focus_window(index);
     }));
@@ -120,15 +149,6 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("close_window", function1(|window_index: u8| {
         ui.close_window(window_index);
-    }));
-    lua.set("log_info", function1(|message: String| {
-        info!("lua: {}", message);
-    }));
-    lua.set("log_debug", function1(|message: String| {
-        debug!("lua: {}", message);
-    }));
-    lua.set("copy", function1(|message: String| {
-        ui.copy(&message);
     }));
     lua.set("window_count", function0(|| {
         ui.window_count()

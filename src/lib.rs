@@ -101,5 +101,18 @@ impl EventHandler for Engine {
         }
         command::Command::list_commands(prefix, &self.config)
     }
+
+    fn on_load_uri<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, uri: &str) {
+        for name in self.config.on_load_uri_commands() {
+            if let Some(command) = command::Command::parse(&name, &self.config, COMMAND_FILE_SUFFIX) {
+                if let Some(file) = command.file() {
+                    match script::on_load_uri::<T>(file, ui, window_index, webview_index, uri) {
+                        Err(err) => warn!("{}", err),
+                        Ok(_) => (),
+                    }
+                }
+            }
+        }
+    }
 }
 

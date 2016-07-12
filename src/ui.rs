@@ -118,6 +118,9 @@ pub trait EventHandler {
 
     /// Get available commands and/or arguments given a prefix
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
+
+    /// Handle a URI loading
+    fn on_load_uri<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, uri: &str);
 }
 
 pub trait BrowserConfiguration: Sized {
@@ -202,6 +205,11 @@ pub trait BrowserConfiguration: Sized {
     /// option `commands.default`
     fn default_command(&self) -> Option<String> {
         self.lookup_str("commands.default")
+    }
+
+    /// Commands run just before a URI is loaded in a web view
+    fn on_load_uri_commands(&self) -> Vec<String> {
+        self.lookup_str_vec("commands.on-load-uri").unwrap_or(vec![])
     }
 
 
