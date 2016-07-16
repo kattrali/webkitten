@@ -1,6 +1,6 @@
 # webkitten
 
-A hacker's browser toolkit inspired by luakit and written in Rust
+A browser toolkit inspired by luakit and written in Rust
 
 ## Goals
 
@@ -15,17 +15,23 @@ A hacker's browser toolkit inspired by luakit and written in Rust
 
 ## Usage
 
-Webkitten depends on **Lua 5.2**, which must be present to link and run. Using
-the webkitten toolkit requires implementing the `ui` module and starting the
-application with an implementation of `ui::ApplicationUI`:
+Using the webkitten toolkit requires implementing the `ui` module and starting
+the application with an implementation of `ui::ApplicationUI`:
 
 ```rust
 // Create runtime configuration
-let run_config = RunConfiguration { path: path_to_config_toml, start_pages: vec![] };
+let run_config = RunConfiguration {
+  path: path_to_config_toml,
+  start_pages: vec!["https://example.com"]
+};
+
 // Create engine
 let engine = Engine::new(run_config);
+
 // Create UI
 let mut ui = UI::new(engine);
+
+// Go go go
 ui.run();
 ```
 
