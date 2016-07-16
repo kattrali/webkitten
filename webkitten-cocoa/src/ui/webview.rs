@@ -5,7 +5,11 @@ use webkit::*;
 
 
 pub fn load_uri(webview: id, uri: &str) {
-    unsafe { webview.load_request(NSURLRequest(uri)); }
+    let mut target = String::from(uri);
+    if !target.contains("://") {
+        target = format!("http://{}", target);
+    }
+    unsafe { webview.load_request(NSURLRequest(&target)); }
 }
 
 pub fn load_html_string(webview: id, contents: &str) {
