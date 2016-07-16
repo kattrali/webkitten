@@ -2,7 +2,7 @@ function description()
   return "Coerces all URLs to HTTPS"
 end
 
-function on_load_uri()
+function on_request_uri()
   target = requested_uri
   log_info("Checking URI")
   if string.find(target, "http://") then

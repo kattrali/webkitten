@@ -107,6 +107,13 @@ pub struct CommandOutput {
     pub message: Option<String>,
 }
 
+#[derive(Debug,Copy,Clone)]
+pub enum URIEvent {
+    Fail,
+    Load,
+    Request,
+}
+
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
@@ -119,8 +126,20 @@ pub trait EventHandler {
     /// Get available commands and/or arguments given a prefix
     fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
 
-    /// Handle a URI loading
-    fn on_load_uri<T: ApplicationUI>(&self, ui: &T, window_index: u8, webview_index: u8, uri: &str);
+    /// Handle a document load event in a webview.
+    ///
+    /// ## Events
+    ///
+    /// * `URIEvent::Request`: Invoke before document begins loading
+    /// * `URIEvent::Load`: Invoke after document finishes loading but not
+    ///   necessarily after subresources load
+    /// * `URIEvent::Fail`: Invoke after a document fails to load
+    fn on_uri_event<T: ApplicationUI>(&self,
+                                      ui: &T,
+                                      window_index: u8,
+                                      webview_index: u8,
+                                      uri: &str,
+                                      event: URIEvent);
 }
 
 pub trait BrowserConfiguration: Sized {
@@ -207,9 +226,20 @@ pub trait BrowserConfiguration: Sized {
         self.lookup_str("commands.default")
     }
 
-    /// Commands run just before a URI is loaded in a web view
-    fn on_load_uri_commands(&self) -> Vec<String> {
-        self.lookup_str_vec("commands.on-load-uri").unwrap_or(vec![])
+    /// Commands triggered by a URI load event
+    ///
+    /// ## Events
+    ///
+    /// * `Load`: invokes all commands listed in `commands.on-load-uri`
+    /// * `Request`: invokes all commands listed in `commands.on-request-uri`
+    /// * `Fail`: invokes all commands listed in `commands.on-fail-uri`
+    fn on_uri_event_commands(&self, event: URIEvent) -> Vec<String> {
+        let key = match event {
+            URIEvent::Load => "commands.on-load-uri",
+            URIEvent::Request => "commands.on-request-uri",
+            URIEvent::Fail => "commands.on-fail-uri",
+        };
+        self.lookup_str_vec(key).unwrap_or(vec![])
     }
 
     /// Look up the bool value of a configuration option matching key

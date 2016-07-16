@@ -1,7 +1,7 @@
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
 use cocoa::base::{id,nil,class};
-use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration};
+use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::{CocoaUI,UI,window};
@@ -57,18 +57,40 @@ fn declare_bar_delegate(superclass: &Class) {
 fn declare_webview_delegates(superclass: &Class) {
     if let Some(mut decl) = ClassDecl::new(WVHDELEGATE_CLASS, superclass) {
         unsafe {
-            decl.add_method(sel!(webView:didCommitNavigation:),
-                webview_did_navigate as extern fn (&Object, Sel, id, id));
+            decl.add_method(sel!(webView:didStartProvisionalNavigation:),
+                webview_will_load as extern fn (&Object, Sel, id, id));
+            decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
+                webview_did_load as extern fn (&Object, Sel, id, id));
+            decl.add_method(sel!(webView:didFailNavigation:),
+                webview_did_load as extern fn (&Object, Sel, id, id));
         }
         decl.register();
     }
 }
 
-extern fn webview_did_navigate(_: &Object, _cmd: Sel, webview: id, navigation: id) {
+extern fn webview_will_load(_: &Object, _cmd: Sel, webview: id, navigation: id) {
     if let Some((window_index, webview_index)) = window::reference_indices(webview) {
         let uri = unsafe { navigation.request().url().absolute_string().as_str() };
         if let Some(uri) = uri {
-            UI.engine.on_load_uri::<CocoaUI>(&UI, window_index, webview_index, uri);
+            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Request);
+        }
+    }
+}
+
+extern fn webview_load_failed(_: &Object, _cmd: Sel, webview: id, navigation: id) {
+    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
+        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
+        if let Some(uri) = uri {
+            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Fail);
+        }
+    }
+}
+
+extern fn webview_did_load(_: &Object, _cmd: Sel, webview: id, navigation: id) {
+    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
+        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
+        if let Some(uri) = uri {
+            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Load);
         }
     }
 }

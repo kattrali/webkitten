@@ -7,11 +7,11 @@ use std::fmt;
 use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
-use super::ui::{ApplicationUI,BrowserConfiguration,EventHandler};
+use super::ui::{ApplicationUI,BrowserConfiguration,EventHandler,URIEvent};
 use super::config::Config;
 
-const INVALID_RESULT: u8 = 247;
 
+const INVALID_RESULT: u8 = 247;
 
 pub type ScriptResult<T> = Result<T, ScriptError>;
 
@@ -86,7 +86,12 @@ pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix
     }
 }
 
-pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webview_index: u8, uri: &str) -> ScriptResult<()> {
+pub fn on_uri_event<T: ApplicationUI>(file: File,
+                                      ui: &T,
+                                      window_index: u8,
+                                      webview_index: u8,
+                                      uri: &str,
+                                      event: URIEvent) -> ScriptResult<()> {
     let mut lua = create_runtime::<T>(ui);
     lua.set("requested_uri", uri);
     lua.set("webview_index", webview_index);
@@ -94,11 +99,15 @@ pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webvi
     if let Err(err) = lua.execute_from_reader::<(), _>(file) {
         Err(ScriptError::new("script parsing failed", Some(err)))
     } else {
-        let func: Option<LuaFunction<_>> = lua.get("on_load_uri");
+        let func: Option<LuaFunction<_>> = match event {
+            URIEvent::Load => lua.get("on_load_uri"),
+            URIEvent::Request => lua.get("on_request_uri"),
+            URIEvent::Fail => lua.get("on_fail_uri"),
+        };
         if let Some(mut func) = func {
             resolve_script_output::<()>(func.call())
         } else {
-            Err(ScriptError::new("'on_load_uri' method missing", None))
+            Err(ScriptError::new(&format!("{:?} event method missing", event), None))
         }
     }
 }
