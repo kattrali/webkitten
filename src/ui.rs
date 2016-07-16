@@ -212,7 +212,6 @@ pub trait BrowserConfiguration: Sized {
         self.lookup_str_vec("commands.on-load-uri").unwrap_or(vec![])
     }
 
-
     /// Look up the bool value of a configuration option matching key
     fn lookup_bool<'a>(&'a self, key: &'a str) -> Option<bool>;
 

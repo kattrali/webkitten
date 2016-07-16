@@ -147,9 +147,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {
-        info!("Setting URI");
         if let Some(webview) = window::webview(window_index, webview_index) {
-            info!("Loading URI: {}", uri);
             webview::load_uri(webview, uri);
         }
     }
