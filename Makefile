@@ -1,21 +1,29 @@
-PROJECT=webkitten
 # Target installation directory
 DESTDIR := /usr/local
+# Subdirectory within $(DESTDIR) for installing the binaries
+DESTBIN := $(DESTDIR)/bin
 # Command to create a directory, default is BSD-style install
 INSTALLDIRCMD := install -d
 # Command to install file
 INSTALLCMD := install -C
+
+ifeq ($(shell uname),Darwin)
+PROJECT=webkitten-cocoa
+CARGO=cd $(PROJECT) && cargo
+else
+PROJECT=webkitten-gtk
 # Libraries required to build
 LIBS=webkit2gtk-4.0 gtk+-3.0
 # Linking flags for required libraries. The spaces are added for cargo compat.
 CFLAGS:= $(subst -L/,-L /,$(subst  -l, -l ,$(shell pkg-config --libs $(LIBS))))
 # Cargo build manager
-CARGO=CFLAGS='$(CFLAGS)' cargo
+CARGO=cd $(PROJECT) && CFLAGS='$(CFLAGS)' cargo
+endif
 
-SRC_FILES=$(shell ls src/*.rs) build.rs Cargo.toml
-DEV_FILE=target/debug/$(PROJECT)
-PROD_FILE=target/release/$(PROJECT)
-INSTALL_FILE=$(DESTDIR)/bin/$(PROJECT)
+SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/**.rs) build.rs Cargo.toml
+DEV_FILE=$(PROJECT)/target/debug/$(PROJECT)
+PROD_FILE=$(PROJECT)/target/release/$(PROJECT)
+INSTALL_FILE=$(DESTBIN)/$(PROJECT)
 
 all: build
 
@@ -24,6 +32,11 @@ $(DEV_FILE): $(SRC_FILES)
 
 $(PROD_FILE): $(SRC_FILES)
 	@$(CARGO) build --release
+
+# Create the target directory for installing tool binaries if it does not
+# exist
+$(DESTBIN):
+	@$(INSTALLDIRCMD) $(DESTBIN)
 
 .PHONY: build
 
@@ -48,7 +61,7 @@ clean: ## Clean the build environment
 	@$(CARGO) clean
 
 run: ## Run webkitten in development mode
-	@$(CARGO) run
+	@RUST_LOG='info' $(CARGO) run
 
 test: ## Run the webkitten test suite
 	@$(CARGO) test
