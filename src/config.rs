@@ -57,11 +57,13 @@ impl BrowserConfiguration for Config {
         self.lookup(key)
             .and_then(|value| value.as_slice())
             .and_then(|values| {
-                Some(values.iter()
-                    .map(|path| path.as_str())
-                    .filter(|path| path.is_some())
-                    .map(|path| self.parse_path(path.unwrap()))
-                    .collect())
+                let mut str_values: Vec<String> = vec![];
+                for value in values {
+                    if let Some(value) = value.as_str() {
+                        str_values.push(self.parse_path(value))
+                    }
+                }
+                Some(str_values)
             })
     }
 

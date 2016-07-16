@@ -10,7 +10,7 @@ pub mod ui;
 pub mod optparse;
 mod script;
 
-use ui::{ApplicationUI,EventHandler,CommandOutput,BrowserConfiguration};
+use ui::*;
 
 /// Application identifier for apps built with webkitten core
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
@@ -100,6 +100,24 @@ impl EventHandler for Engine {
             }
         }
         command::Command::list_commands(prefix, &self.config)
+    }
+
+    fn on_uri_event<T: ApplicationUI>(&self,
+                                      ui: &T,
+                                      window_index: u8,
+                                      webview_index: u8,
+                                      uri: &str,
+                                      event: URIEvent) {
+        for name in self.config.on_uri_event_commands(event) {
+            if let Some(command) = command::Command::parse(&name, &self.config, COMMAND_FILE_SUFFIX) {
+                if let Some(file) = command.file() {
+                    match script::on_uri_event::<T>(file, ui, window_index, webview_index, uri, event) {
+                        Err(err) => warn!("{}", err),
+                        Ok(_) => (),
+                    }
+                }
+            }
+        }
     }
 }
 

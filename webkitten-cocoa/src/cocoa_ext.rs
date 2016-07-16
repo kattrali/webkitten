@@ -35,8 +35,32 @@ pub mod foundation {
         msg_send![class("NSURL"), URLWithString:url_str]
     }
 
+    pub trait NSURL {
+
+        unsafe fn absolute_string(self) -> id;
+    }
+
+    impl NSURL for id {
+
+        unsafe fn absolute_string(self) -> id {
+            msg_send![self, absoluteString]
+        }
+    }
+
     pub unsafe fn NSURLRequest(url: &str) -> id {
         msg_send![class("NSURLRequest"), requestWithURL:NSURL(url)]
+    }
+
+    pub trait NSURLRequest {
+
+        unsafe fn url(self) -> id;
+    }
+
+    impl NSURLRequest for id {
+
+        unsafe fn url(self) -> id {
+            msg_send![self, URL]
+        }
     }
 
     pub trait NSNumber {
@@ -115,6 +139,7 @@ pub mod foundation {
         }
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id;
+        unsafe fn index_of_object(self, object: id) -> NSUInteger;
         unsafe fn get(self, index: NSUInteger) -> Option<id>;
         unsafe fn count(self) -> NSUInteger;
     }
@@ -123,6 +148,10 @@ pub mod foundation {
 
         unsafe fn object_at_index(self, index: NSUInteger) -> id {
             msg_send![self, objectAtIndex:index]
+        }
+
+        unsafe fn index_of_object(self, object: id) -> NSUInteger {
+            msg_send![self, indexOfObject:object]
         }
 
         unsafe fn get(self, index: NSUInteger) -> Option<id> {
