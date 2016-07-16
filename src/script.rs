@@ -85,7 +85,7 @@ pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix
     }
 }
 
-pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webview_index: u8, uri: &str) -> ScriptResult<bool> {
+pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webview_index: u8, uri: &str) -> ScriptResult<()> {
     let mut lua = create_runtime::<T>(ui);
     lua.set("requested_uri", uri);
     lua.set("webview_index", webview_index);
@@ -95,7 +95,7 @@ pub fn on_load_uri<T: ApplicationUI>(file: File, ui: &T, window_index: u8, webvi
     } else {
         let func: Option<LuaFunction<_>> = lua.get("on_load_uri");
         if let Some(mut func) = func {
-            resolve_script_output::<bool>(func.call())
+            resolve_script_output::<()>(func.call())
         } else {
             Err(ScriptError::new("'on_load_uri' method missing", None))
         }
