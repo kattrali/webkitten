@@ -48,7 +48,7 @@ WebKit-based. An implementation using Servo could be of particular interest.
 
 ### Building
 
-To build, run `make`. To run the reference implementations, use `cargo run`.
+To build, run `make`. To run the reference implementations, use `make run`.
 
 ### Installation
 
