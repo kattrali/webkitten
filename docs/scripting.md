@@ -36,13 +36,28 @@ function description()
 end
 ```
 
+### `on_fail_uri()`
+
+Invoked when a URI fails to load. The current scope includes a `webview_index`
+and `window_index` indicating which view is active, as well as `requested_uri`
+indicating what URI was requested.
+
+This hook is only invoked if the command name is included in the configuration
+option `commands.on-fail-uri`.
+
+```lua
+function on_fail_uri()
+  log_debug("Failed to load " .. requested_uri)
+end
+```
+
 ### `on_load_uri()`
 
 Invoked when a URI is loaded in a webview. The current scope includes a
 `webview_index` and `window_index` indicating which view is active.
 
 This hook is only invoked if the command name is included in the configuration
-option `commands.on-load-uri`
+option `commands.on-load-uri`.
 
 ```lua
 function on_load_uri()
@@ -54,15 +69,14 @@ end
 
 Invoked when a URI will be loaded in a webview. The current scope includes a
 `webview_index` and `window_index` indicating which view is active, as well
-as `requested_uri` indicating what URI was requested. Should return a string
-which is the URI which should be loaded.
+as `requested_uri` indicating what URI was requested.
 
 This hook is only invoked if the command name is included in the
-configuration option `commands.on-request-uri`
+configuration option `commands.on-request-uri`.
 
 ```lua
 function on_request_uri()
-  requested_uri
+  log_debug("Requested to load " .. requested_uri)
 end
 ```
 
@@ -88,15 +102,19 @@ following global methods are provided for use within hooks.
 
 ### Configuration
 
-* `config_str(string)`: Gets a string value from the user's configuration file
-  using the argument as a key
-* `config_bool(string)`: Gets a bool value from the user's configuration file
+* `lookup_strings(string)`: Gets a table of strings from the user's
+  configuration file using the argument as a key
+* `lookup_string(string)`: Gets a string value from the user's configuration
+  file using the argument as a key
+* `lookup_bool(string)`: Gets a bool value from the user's configuration file
   using the argument as a key
 
 ### Logging
 
-* `log_debug(string)`: Write text to the application log with a severity level of debug
-* `log_info(string)`: Write text to the application log with a severity level of info
+* `log_debug(string)`: Write text to the application log with a severity level
+  of debug
+* `log_info(string)`: Write text to the application log with a severity level of
+  info
 
 ### Native functions
 
@@ -117,9 +135,9 @@ following global methods are provided for use within hooks.
 
 ### Webview management
 
-* `add_styles(int, int, string)`
+* `add_styles(int, int, string)`: inject CSS from a string into a webview
 * `close_webview(int, int)`
-* `find(int, int, string)`
+* `find(int, int, string)`: Find and highlight text in a webview
 * `focus_webview(int, int)`
 * `focused_webview_index(int)`
 * `go_back(int, int)`
