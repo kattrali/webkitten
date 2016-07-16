@@ -1,7 +1,7 @@
 //! Bindings to WebKit.framework on macOS
 
 use std::ops::Deref;
-use cocoa::base::{class,id,nil,BOOL,NO,YES};
+use cocoa::base::{class,id,nil,BOOL,NO,YES,selector};
 use core_graphics::geometry::CGRect;
 use cocoa_ext::foundation::{NSString,NSUInteger,NSURL};
 use block::Block;
@@ -183,6 +183,7 @@ pub trait WKUserContentController {
 
     unsafe fn add_user_content_filter(self, filter: id /* _WKUserContentFilter */);
     unsafe fn add_user_style_sheet(self, stylesheet: id /* _WKUserStyleSheet */);
+    unsafe fn can_add_user_style_sheet(self) -> bool;
 }
 
 impl WKUserContentController for id {
@@ -193,6 +194,11 @@ impl WKUserContentController for id {
 
     unsafe fn add_user_style_sheet(self, stylesheet: id) {
         msg_send![self, _addUserStyleSheet:stylesheet];
+    }
+
+    unsafe fn can_add_user_style_sheet(self) -> bool {
+        let responds: BOOL = msg_send![self, respondsToSelector:selector("_addUserStyleSheet:")];
+        responds == YES
     }
 }
 
@@ -215,20 +221,11 @@ impl WKPreferences for id {
 
 pub trait _WKUserStyleSheet {
 
-    unsafe fn init_source(styles: &str, base_url: Option<&str>) -> id {
+    unsafe fn init_source(styles: &str) -> id {
         let source = <id as NSString>::from_str(styles);
-        let base = match base_url {
-            Some(base) => NSURL(base),
-            None => nil
-        };
-        let world: id = msg_send![class("_WKUserContentWorld"), normalWorld];
         let sheet: id = msg_send![class("_WKUserStyleSheet"), alloc];
         let sheet: id = msg_send![sheet, initWithSource:source
-                                       forMainFrameOnly:NO
-                                        legacyWhitelist:nil
-                                        legacyBlacklist:nil
-                                                baseURL:base
-                                       userContentWorld:world];
+                                       forMainFrameOnly:YES];
         sheet
     }
 }

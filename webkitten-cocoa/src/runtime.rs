@@ -57,7 +57,7 @@ fn declare_bar_delegate(superclass: &Class) {
 fn declare_webview_delegates(superclass: &Class) {
     if let Some(mut decl) = ClassDecl::new(WVHDELEGATE_CLASS, superclass) {
         unsafe {
-            decl.add_method(sel!(webView:didStartProvisionalNavigation:),
+            decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
                 webview_did_navigate as extern fn (&Object, Sel, id, id));
         }
         decl.register();

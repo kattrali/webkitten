@@ -83,7 +83,7 @@ pub fn uri(webview: id) -> String {
 
 pub fn title(webview: id) -> String {
     unsafe {
-        let title = webview.title();
+        let title = <id as WKWebView>::title(webview);
         if title != nil {
             if let Some(title) = title.as_str() {
                 return String::from(title);
@@ -99,7 +99,22 @@ pub fn run_javascript(webview: id, script: &str) {
 
 pub fn apply_styles(webview: id, styles: &str) {
     unsafe {
-        let sheet = <id as _WKUserStyleSheet>::init_source(styles, None);
-        webview.configuration().user_content_controller().add_user_style_sheet(sheet);
+        let controller = webview.configuration().user_content_controller();
+        if controller.can_add_user_style_sheet() {
+            let sheet = <id as _WKUserStyleSheet>::init_source(styles);
+            controller.add_user_style_sheet(sheet);
+        } else {
+            info!("Using fallback stylesheet");
+            let formatted_style = styles.replace("\"", "\\\"").replace("\n", "");
+            let script = format!(r#"
+                var head = document.getElementsByTagName('head')[0],
+                    style = document.createElement('style'),
+                    content = document.createTextNode('{}');
+                style.appendChild(content);
+                if (head != undefined) {{
+                    head.appendChild(style);
+                    }}"#, formatted_style);
+            run_javascript(webview, &script);
+        }
     }
 }
