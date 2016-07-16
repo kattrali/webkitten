@@ -8,6 +8,7 @@ use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
 use super::ui::{ApplicationUI,BrowserConfiguration,EventHandler};
+use super::config::Config;
 
 const INVALID_RESULT: u8 = 247;
 
@@ -132,13 +133,27 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("copy");
         ui.copy(&message);
     }));
-    lua.set("config_bool", function1(|key: String| {
-        info!("config_bool: {}", key);
-        ui.event_handler().config.lookup_bool(&key).unwrap_or(false)
+    lua.set("config_file_path", ui.event_handler().run_config.path.clone());
+    lua.set("lookup_bool", function2(|config_path: String, key: String| {
+        info!("lookup_bool ({}): {}", config_path, key);
+        if let Some(config) = Config::parse_file(&config_path) {
+            return config.lookup_bool(&key).unwrap_or(false)
+        }
+        false
     }));
-    lua.set("config_str", function1(|key: String| {
-        info!("config_str: {}", key);
-        ui.event_handler().config.lookup_str(&key).unwrap_or(String::new())
+    lua.set("lookup_strings", function2(|config_path: String, key: String| {
+        info!("lookup_str ({}): {}", config_path, key);
+        if let Some(config) = Config::parse_file(&config_path) {
+            return config.lookup_str_vec(&key).unwrap_or(vec![])
+        }
+        vec![]
+    }));
+    lua.set("lookup_string", function2(|config_path: String, key: String| {
+        info!("lookup_str ({}): {}", config_path, key);
+        if let Some(config) = Config::parse_file(&config_path) {
+            return config.lookup_str(&key).unwrap_or(String::new())
+        }
+        String::new()
     }));
     lua.set("focus_window", function1(|index: u8| {
         info!("focus_window: {}", index);
