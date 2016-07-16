@@ -224,6 +224,10 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("close_webview: ({}, {})", window_index, webview_index);
         ui.close_webview(window_index, webview_index);
     }));
+    lua.set("reload_webview", function3(|window_index: u8, webview_index: u8, disable_filters: bool| {
+        info!("reload_webview: ({}, {})", window_index, webview_index);
+        ui.reload_webview(window_index, webview_index, disable_filters);
+    }));
     lua.set("focus_webview", function2(|window_index: u8, webview_index: u8| {
         info!("focus_webview: ({}, {})", window_index, webview_index);
         ui.focus_webview(window_index, webview_index);

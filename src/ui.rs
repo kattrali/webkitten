@@ -63,6 +63,9 @@ pub trait ApplicationUI: Sized {
     /// Focus a webview in a specified window, hiding the current webview
     fn focus_webview(&self, window_index: u8, webview_index: u8);
 
+    /// Reload a webview in a specified window
+    fn reload_webview(&self, window_index: u8, webview_index: u8, disable_filters: bool);
+
     /// Load a URI in a webview
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str);
 
