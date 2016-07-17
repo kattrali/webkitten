@@ -146,6 +146,12 @@ impl ApplicationUI for CocoaUI {
         window::focus_webview(window_index, webview_index);
     }
 
+    fn reload_webview(&self, window_index: u8, webview_index: u8, disable_filters: bool) {
+        if let Some(webview) = window::webview(window_index, webview_index) {
+            webview::reload(webview, disable_filters);
+        }
+    }
+
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::load_uri(webview, uri);

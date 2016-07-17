@@ -63,6 +63,9 @@ pub trait ApplicationUI: Sized {
     /// Focus a webview in a specified window, hiding the current webview
     fn focus_webview(&self, window_index: u8, webview_index: u8);
 
+    /// Reload a webview in a specified window
+    fn reload_webview(&self, window_index: u8, webview_index: u8, disable_filters: bool);
+
     /// Load a URI in a webview
     fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str);
 
@@ -188,6 +191,16 @@ pub trait BrowserConfiguration: Sized {
     /// `general.content-filter`
     fn content_filter_path(&self) -> Option<String> {
         self.lookup_str("general.content-filter")
+    }
+
+    /// Whether to skip content filtering based on the site-specific option
+    /// `sites."[HOST]".skip-content-filter`.
+    fn skip_content_filter(&self, uri: &str) -> bool {
+        if self.content_filter_path().is_some() {
+            self.lookup_site_bool(uri, "skip-content-filter").unwrap_or(false)
+        } else {
+            true
+        }
     }
 
     /// Whether to enable private browsing based on the global option

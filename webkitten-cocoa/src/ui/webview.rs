@@ -56,8 +56,13 @@ pub fn go_forward(webview: id) -> bool {
     true
 }
 
-pub fn reload(webview: id) {
-    unsafe { webview.reload(); }
+pub fn reload(webview: id, disable_filters: bool) {
+    unsafe {
+        match disable_filters {
+            true  => webview.reload_without_content_blockers(),
+            false => webview.reload()
+        }
+    }
 }
 
 pub fn stop_loading(webview: id) {

@@ -124,7 +124,12 @@ impl WKWebView for id {
     }
 
     unsafe fn reload_without_content_blockers(self) {
-        msg_send![self, _reloadWithoutContentBlockers];
+        let responds: BOOL = msg_send![self, respondsToSelector:selector("_reloadWithoutContentBlockers")];
+        if responds == YES {
+            msg_send![self, _reloadWithoutContentBlockers];
+        } else {
+            info!("This version of OS X does not support reloading without content blockers");
+        }
     }
 
     unsafe fn stop_loading(self) {
