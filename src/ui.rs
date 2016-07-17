@@ -290,6 +290,9 @@ pub trait BrowserConfiguration: Sized {
     /// replacing string variables where possible
     fn lookup_str<'a>(&'a self, key: &'a str) -> Option<String>;
 
+    /// Look up the integer value of a configuration option matching key
+    fn lookup_integer<'a>(&'a self, key: &'a str) -> Option<i64>;
+
     /// Look up the string value of a configuration option without any
     /// substitutions
     fn lookup_raw_str<'a>(&'a self, key: &'a str) -> Option<String>;
