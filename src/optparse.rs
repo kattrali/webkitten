@@ -1,5 +1,6 @@
 use std::{env,fs};
 use std::io::Write;
+use std::path::Path;
 use getopts::Options;
 use super::config;
 
@@ -36,8 +37,21 @@ fn print_usage(program: &str, opts: Options) {
 /// Check if the given config path exists, creating if not required to already
 /// exist
 fn validate_config_path(config_path: &str) {
+    if let Some(parent) = Path::new(config_path).parent() {
+        let metadata = fs::metadata(parent);
+        if metadata.is_err() || !metadata.unwrap().is_dir() {
+            write_config_dir(parent);
+        }
+    }
     if !fs::metadata(config_path).is_ok() {
         write_default_config(config_path);
+    }
+}
+
+fn write_config_dir(path: &Path) {
+    match fs::create_dir_all(path) {
+        Ok(()) => (),
+        Err(e) => panic!("Unable to create config dir ({}): {}", path.display(), e)
     }
 }
 
