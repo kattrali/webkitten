@@ -179,6 +179,17 @@ pub trait BrowserConfiguration: Sized {
         if self.command_disabled(&command) { None } else { Some(command) }
     }
 
+    /// Font to use in the command bar
+    fn bar_font(&self) -> Option<(String, i64)> {
+        if let Some(family) = self.lookup_str("general.bar-font.family") {
+            if let Some(size) = self.lookup_integer("general.bar-font.size") {
+                return Some((family, size));
+            }
+        }
+        None
+    }
+
+    /// Find the command to automatically run for a given text prefix
     fn command_matching_prefix(&self, text: &str) -> Option<String> {
         if text.len() > 0 {
             let key = format!("commands.on-text-change.\"{}\"", &text[.. 1]);
@@ -289,6 +300,9 @@ pub trait BrowserConfiguration: Sized {
     /// Look up the string value of a configuration option matching key,
     /// replacing string variables where possible
     fn lookup_str<'a>(&'a self, key: &'a str) -> Option<String>;
+
+    /// Look up the integer value of a configuration option matching key
+    fn lookup_integer<'a>(&'a self, key: &'a str) -> Option<i64>;
 
     /// Look up the string value of a configuration option without any
     /// substitutions

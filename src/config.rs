@@ -54,6 +54,11 @@ impl BrowserConfiguration for Config {
             .and_then(|value| Some(self.parse_path(&value)))
     }
 
+    fn lookup_integer<'a>(&'a self, key: &'a str) -> Option<i64> {
+        self.lookup(key)
+            .and_then(|value| value.as_integer())
+    }
+
     fn lookup_str_table(&self, key: &str) -> Option<HashMap<String, String>> {
         if let Some(table) = self.lookup(key).and_then(|value| value.as_table()) {
             let mut map: HashMap<String, String> = HashMap::new();
