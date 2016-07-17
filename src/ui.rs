@@ -188,7 +188,7 @@ pub trait BrowserConfiguration: Sized {
             for (command, binding) in bindings {
                 match keybinding::parse(&binding) {
                     Ok((key, modifier)) => {
-                        if let Some(old_value) = table.insert(command.to_owned(), (key, modifier)) {
+                        if let Some(_) = table.insert(command.to_owned(), (key, modifier)) {
                             warn!("Overriding keybinding ({}) for '{}'", binding, command);
                         }
                     },
