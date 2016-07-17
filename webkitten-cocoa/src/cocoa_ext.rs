@@ -288,6 +288,7 @@ pub mod appkit {
 
         unsafe fn string_value(self) -> id;
         unsafe fn set_string_value(self, value: &str);
+        unsafe fn set_font(self, family: &str, size: i64);
     }
 
     impl NSControl for id {
@@ -299,6 +300,17 @@ pub mod appkit {
         unsafe fn set_string_value(self, value: &str) {
             let value_str: id = <id as NSString>::from_str(value);
             msg_send![self, setStringValue:value_str];
+        }
+
+        unsafe fn set_font(self, family: &str, size: i64) {
+            let name = <id as NSString>::from_str(family);
+            let font: id = msg_send![class("NSFont"), fontWithName:name
+                                                              size:size as CGFloat];
+            if font != nil {
+                msg_send![self, setFont:font];
+            } else {
+                warn!("Unable to find font on system: {}", family);
+            }
         }
     }
 

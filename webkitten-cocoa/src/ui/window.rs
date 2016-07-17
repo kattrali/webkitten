@@ -313,6 +313,7 @@ unsafe fn create_nswindow() -> id {
 unsafe fn layout_window_subviews(window: id) {
     let container = WebViewContainerView::new();
     let command_bar = <id as NSTextField>::new();
+    let ref config = super::UI.engine.config;
     window.contentView().add_subview(container);
     window.contentView().add_subview(command_bar);
     command_bar.disable_translates_autoresizing_mask_into_constraints();
@@ -327,4 +328,7 @@ unsafe fn layout_window_subviews(window: id) {
     window.contentView().add_constraint(<id as NSLayoutConstraint>::bind(container, NSLayoutAttribute::Right, window.contentView(), NSLayoutAttribute::Right));
     window.makeKeyAndOrderFront_(nil);
     command_bar.set_delegate(CommandBarDelegate::new());
+    if let Some((family, size)) = config.bar_font() {
+        command_bar.set_font(&family, size);
+    }
 }
