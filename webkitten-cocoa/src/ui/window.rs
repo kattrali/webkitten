@@ -230,8 +230,10 @@ unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
 
 unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
     let store = _WKUserContentExtensionStore::default_store(nil);
-    let private_browsing = super::UI.engine.config.use_private_browsing(&uri);
-    let use_plugins = super::UI.engine.config.use_plugins(&uri);
+    let ref config = super::UI.engine.config;
+    let private_browsing = config.use_private_browsing(&uri);
+    let use_plugins = config.use_plugins(&uri);
+    let skip_content_filter = config.skip_content_filter(&uri);
     let block = ConcreteBlock::new(move |filter: id, err: id| {
         if let Some(window) = window_for_index(window_index) {
             let container = subview(window, CocoaWindowSubview::WebViewContainer);
@@ -245,9 +247,9 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
             }
             info!("setting plugins option to {}", use_plugins);
             config.preferences().set_plugins_enabled(use_plugins);
-            if err == nil {
+            if filter != nil && err == nil {
                 config.user_content_controller().add_user_content_filter(filter);
-            } else {
+            } else if err == nil {
                 log_error_description(err);
             }
             let webview = <id as WKWebView>::new(CGRectZero(), config).autorelease();
@@ -262,7 +264,12 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
             webview.load_request(NSURLRequest(&uri));
         }
     });
-    store.lookup_content_extension("filter", &block.copy());
+    if skip_content_filter {
+        let block = block.copy();
+        block.call((nil, nil));
+    } else {
+        store.lookup_content_extension("filter", &block.copy());
+    }
 }
 
 unsafe fn window_webviews(window: id) -> id {

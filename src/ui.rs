@@ -193,6 +193,16 @@ pub trait BrowserConfiguration: Sized {
         self.lookup_str("general.content-filter")
     }
 
+    /// Whether to skip content filtering based on the site-specific option
+    /// `sites."[HOST]".skip-content-filter`.
+    fn skip_content_filter(&self, uri: &str) -> bool {
+        if self.content_filter_path().is_some() {
+            self.lookup_site_bool(uri, "skip-content-filter").unwrap_or(false)
+        } else {
+            true
+        }
+    }
+
     /// Whether to enable private browsing based on the global option
     /// `general.private-browsing` and site-specific option
     /// `sites."[HOST]".private-browsing`. Defaults to `false`.
