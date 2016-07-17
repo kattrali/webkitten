@@ -9,6 +9,7 @@ pub mod config;
 pub mod ui;
 pub mod optparse;
 mod script;
+mod keybinding;
 
 use ui::*;
 

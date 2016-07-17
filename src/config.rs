@@ -1,6 +1,7 @@
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use std::collections::HashMap;
 
 use toml::Value;
 use url::Url;
@@ -51,6 +52,19 @@ impl BrowserConfiguration for Config {
     fn lookup_str<'a>(&'a self, key: &'a str) -> Option<String> {
         self.lookup_raw_str(key)
             .and_then(|value| Some(self.parse_path(&value)))
+    }
+
+    fn lookup_str_table(&self, key: &str) -> Option<HashMap<String, String>> {
+        if let Some(table) = self.lookup(key).and_then(|value| value.as_table()) {
+            let mut map: HashMap<String, String> = HashMap::new();
+            for (key, raw_value) in table {
+                if let Some(value) = raw_value.as_str() {
+                    map.insert(key.to_owned(), value.to_owned());
+                }
+            }
+            return Some(map);
+        }
+        None
     }
 
     fn lookup_str_vec(&self, key: &str) -> Option<Vec<String>> {

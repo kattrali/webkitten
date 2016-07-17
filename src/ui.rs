@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use keybinding;
 
 pub trait ApplicationUI: Sized {
 
@@ -179,6 +181,24 @@ pub trait BrowserConfiguration: Sized {
         None
     }
 
+    /// Mapping of commands to keybindings by name to key and modifier mask
+    fn command_keybindings(&self) -> HashMap<String, (char, usize)> {
+        let mut table = HashMap::new();
+        if let Some(bindings) = self.lookup_str_table("commands.keybindings") {
+            for (command, binding) in bindings {
+                match keybinding::parse(&binding) {
+                    Ok((key, modifier)) => {
+                        if let Some(old_value) = table.insert(command.to_owned(), (key, modifier)) {
+                            warn!("Overriding keybinding ({}) for '{}'", binding, command);
+                        }
+                    },
+                    Err(err) => error!("Failed to parse keybinding: {}", err)
+                }
+            }
+        }
+        table
+    }
+
     /// Whether a command is disabled based on `commands.disabled`
     fn command_disabled(&self, name: &str) -> bool {
         if let Some(disabled) = self.lookup_str_vec("commands.disabled") {
@@ -268,6 +288,9 @@ pub trait BrowserConfiguration: Sized {
 
     /// Look up the string vector value of a configuration option matching key
     fn lookup_str_vec(&self, key: &str) -> Option<Vec<String>>;
+
+    /// Look up the string table value of a configuration option matching key
+    fn lookup_str_table(&self, key: &str) -> Option<HashMap<String, String>>;
 
     /// Look up the bool value of a configuration option matching key
     /// formatted as `sites."[HOST]".[key]`
