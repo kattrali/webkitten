@@ -5,7 +5,7 @@ pub mod window;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use webkitten::ui::{ApplicationUI,BrowserConfiguration};
+use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
 use cocoa_ext::appkit::NSPasteboard;
@@ -96,6 +96,10 @@ impl ApplicationUI for CocoaUI {
 
     fn focus_window(&self, index: u8) {
         window::focus(index);
+    }
+
+    fn focus_window_area(&self, index: u8, area: WindowArea) {
+        window::focus_area(index, area);
     }
 
     fn window_count(&self) -> u8 {
