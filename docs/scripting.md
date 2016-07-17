@@ -147,5 +147,7 @@ following global methods are provided for use within hooks.
 * `open_webview(int, string)`
 * `run_javascript(int, int, string)`
 * `webview_count(int)`
+* `reload_webview(int, int, bool)`: Reload a webview, optionally skipping
+  content filters
 * `webview_title(int, int)`
 * `webview_uri(int, int)`
