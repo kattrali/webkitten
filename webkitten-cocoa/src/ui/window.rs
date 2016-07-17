@@ -15,7 +15,7 @@ use block::ConcreteBlock;
 use webkitten::WEBKITTEN_TITLE;
 use webkitten::ui::{BrowserConfiguration, WindowArea};
 use webkit::*;
-use runtime::{CommandBarDelegate,WebViewHistoryDelegate,log_error_description};
+use runtime::{CommandBarDelegate,WebViewHistoryDelegate,WebViewContainerView,log_error_description};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
@@ -311,7 +311,7 @@ unsafe fn create_nswindow() -> id {
 }
 
 unsafe fn layout_window_subviews(window: id) {
-    let container = <id as NSView>::new();
+    let container = WebViewContainerView::new();
     let command_bar = <id as NSTextField>::new();
     window.contentView().add_subview(container);
     window.contentView().add_subview(command_bar);

@@ -1,6 +1,6 @@
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
-use cocoa::base::{id,nil,class};
+use cocoa::base::{id,nil,class,BOOL,YES};
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
@@ -11,9 +11,11 @@ use webkit::WKNavigation;
 const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
 const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
+const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
 
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
+pub struct WebViewContainerView;
 pub struct KeyInputDelegate;
 
 impl CommandBarDelegate {
@@ -22,6 +24,10 @@ impl CommandBarDelegate {
 
 impl WebViewHistoryDelegate {
     pub unsafe fn new() -> id { msg_send![class(WVHDELEGATE_CLASS), new] }
+}
+
+impl WebViewContainerView {
+    pub unsafe fn new() -> id { msg_send![class(WVCONTAINER_CLASS), new] }
 }
 
 impl KeyInputDelegate {
@@ -45,6 +51,17 @@ pub fn log_error_description(err: id) {
 }
 
 pub fn declare_delegate_classes() {
+    if let Some(superclass) = Class::get("NSView") {
+        if let Some(mut decl) = ClassDecl::new(WVCONTAINER_CLASS, superclass) {
+            unsafe {
+                decl.add_method(sel!(acceptsFirstResponder),
+                    container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
+                decl.add_method(sel!(keyDown:),
+                    container_key_down as extern fn (&Object, Sel, id));
+            }
+            decl.register();
+        }
+    }
     if let Some(superclass) = Class::get("NSObject") {
         declare_app_delegates(&superclass);
         declare_bar_delegate(&superclass);
@@ -89,6 +106,23 @@ fn declare_webview_delegates(superclass: &Class) {
                 webview_load_failed as extern fn (&Object, Sel, id, id));
         }
         decl.register();
+    }
+}
+
+extern fn container_accepts_first_responder(_: &Object, _cmd: Sel) -> BOOL {
+    YES
+}
+
+extern fn container_key_down(this: &Object, _cmd: Sel, event: id) {
+    unsafe {
+        let flags: NSUInteger = msg_send![event, modifierFlags];
+        if flags == 0 || flags == 256 {
+            return;
+        }
+        let superview: id = msg_send![this, superview];
+        if superview != nil {
+            msg_send![superview, keyDown:event];
+        }
     }
 }
 
