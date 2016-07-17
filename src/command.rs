@@ -79,6 +79,8 @@ fn join_paths(dir: &str, file_name: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use config::Config;
+    use ui::BrowserConfiguration;
     use std::env::temp_dir;
     use std::fs::{File,remove_file};
     use std::io::Write;
@@ -86,8 +88,8 @@ mod tests {
 
     #[test]
     #[allow(unused_must_use)]
-    fn test_resolve_by_filename() {
-        let (path, result) = create_command("hello",
+    fn resolve_by_filename() {
+        let (path, result) = create_command("hello.lua",
                                             b"print(\"hello world\");",
                                             "hello world");
         remove_file(Path::new(path.as_str().clone()));
@@ -106,7 +108,11 @@ mod tests {
         let mut file = File::create(file_path.as_path()).ok().unwrap();
         assert!(file.write(content).is_ok());
         file.flush();
-        let result = Command::parse(invocation, vec![&search_path]);
+        let config = Config::parse(&format!(r#"
+            [commands]
+            search-paths = ["{}"]
+        "#, search_path)).unwrap();
+        let result = Command::parse(invocation, &config, "lua");
         return (String::from(file_path.to_str().unwrap()), result);
     }
 }

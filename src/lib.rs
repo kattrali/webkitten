@@ -9,6 +9,7 @@ pub mod config;
 pub mod ui;
 pub mod optparse;
 mod script;
+mod keybinding;
 
 use ui::*;
 
@@ -78,7 +79,7 @@ impl EventHandler for Engine {
         CommandOutput { error: None, message: None }
     }
 
-    fn close<T: ApplicationUI>(&self, ui: &T) {
+    fn close<T: ApplicationUI>(&self, _: &T) {
         unimplemented!()
     }
 

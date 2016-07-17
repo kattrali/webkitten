@@ -7,7 +7,7 @@ use std::fmt;
 use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
-use super::ui::{ApplicationUI,BrowserConfiguration,EventHandler,URIEvent};
+use super::ui::{ApplicationUI,BrowserConfiguration,URIEvent};
 use super::config::Config;
 
 
