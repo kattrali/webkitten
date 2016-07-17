@@ -3,7 +3,7 @@
 use std::ops::Deref;
 use cocoa::base::{class,id,nil,BOOL,NO,YES,selector};
 use core_graphics::geometry::CGRect;
-use cocoa_ext::foundation::{NSString,NSUInteger,NSURL};
+use cocoa_ext::foundation::{NSString,NSUInteger};
 use block::Block;
 
 #[link(name = "WebKit", kind = "framework")]
@@ -220,7 +220,7 @@ impl WKPreferences for id {
     }
 
     unsafe fn set_plugins_enabled(self, value: bool) {
-        msg_send![self, setPlugInsEnabled:YES];
+        msg_send![self, setPlugInsEnabled:if value { YES} else { NO }];
     }
 }
 
@@ -310,7 +310,7 @@ mod test {
     #[test]
     pub fn test_config() {
         unsafe {
-            let config: id = WKWebViewConfiguration::new(nil);
+            let config: id = <id as WKWebViewConfiguration>::new();
             assert!(config.user_content_controller() != nil);
         }
     }
@@ -318,12 +318,13 @@ mod test {
     #[test]
     pub fn test_webview() {
         unsafe {
-            let config: id = WKWebViewConfiguration::new(nil);
+            let config: id = <id as WKWebViewConfiguration>::new();
             let frame: CGRect = CGRect {
                 origin: CGPoint { x: 0.0, y: 0.0 },
                 size: CGSize { width: 200.0, height: 400.0 }
             };
-            let webview = WKWebView::alloc(nil).init_frame_configuration(frame, config);
+
+            let webview = <id as WKWebView>::new(frame, config);
             assert!(webview != nil);
         }
     }

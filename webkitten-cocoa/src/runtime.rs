@@ -7,11 +7,14 @@ use cocoa_ext::appkit::NSControl;
 use ui::{CocoaUI,UI,window};
 use webkit::WKNavigation;
 
+
 const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
+const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
 
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
+pub struct KeyInputDelegate;
 
 impl CommandBarDelegate {
     pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
@@ -19,6 +22,15 @@ impl CommandBarDelegate {
 
 impl WebViewHistoryDelegate {
     pub unsafe fn new() -> id { msg_send![class(WVHDELEGATE_CLASS), new] }
+}
+
+impl KeyInputDelegate {
+    pub unsafe fn new(command: &str) -> id {
+        let delegate: id = msg_send![class(KEY_DELEGATE_CLASS), new];
+        let obj = &mut *(delegate as *mut _ as *mut Object);
+        obj.set_ivar("_command", <id as NSString>::from_str(command));
+        obj
+    }
 }
 
 pub fn log_error_description(err: id) {
@@ -34,8 +46,20 @@ pub fn log_error_description(err: id) {
 
 pub fn declare_delegate_classes() {
     if let Some(superclass) = Class::get("NSObject") {
+        declare_app_delegates(&superclass);
         declare_bar_delegate(&superclass);
         declare_webview_delegates(&superclass);
+    }
+}
+
+fn declare_app_delegates(superclass: &Class) {
+    if let Some(mut delegate_class) = ClassDecl::new(KEY_DELEGATE_CLASS, superclass) {
+        delegate_class.add_ivar::<id>("_command");
+        unsafe {
+            delegate_class.add_method(sel!(runKeybindingCommand),
+                run_keybinding_command as extern fn(&Object, Sel));
+        }
+        delegate_class.register();
     }
 }
 
@@ -62,9 +86,19 @@ fn declare_webview_delegates(superclass: &Class) {
             decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
                 webview_did_load as extern fn (&Object, Sel, id, id));
             decl.add_method(sel!(webView:didFailNavigation:),
-                webview_did_load as extern fn (&Object, Sel, id, id));
+                webview_load_failed as extern fn (&Object, Sel, id, id));
         }
         decl.register();
+    }
+}
+
+extern fn run_keybinding_command(this: &Object, _cmd: Sel) {
+    unsafe {
+        let command: id = *this.get_ivar("_command");
+        if let Some(command) = command.as_str() {
+            let window_index = UI.focused_window_index();
+            UI.engine.execute_command::<CocoaUI>(&UI, window_index, command);
+        }
     }
 }
 

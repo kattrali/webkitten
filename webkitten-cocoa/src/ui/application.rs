@@ -2,8 +2,12 @@ use cocoa::base::{selector,id,nil};
 use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo};
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
                     NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps};
-use cocoa_ext::foundation::NSString;
+                    NSApplicationActivateIgnoringOtherApps,
+                    NSEventModifierFlags};
+use webkitten::ui::BrowserConfiguration;
+use cocoa_ext::foundation::{NSString,NSUInteger};
+use runtime::KeyInputDelegate;
+
 
 pub fn start_run_loop() {
     unsafe {
@@ -25,6 +29,16 @@ unsafe fn create_menu() {
     let app_menu_item = NSMenuItem::new(nil).autorelease();
     menubar.addItem_(app_menu_item);
     nsapp().setMainMenu_(menubar);
+    app_menu_item.setSubmenu_(create_app_menu());
+    let edit_menu_item = NSMenuItem::new(nil).autorelease();
+    menubar.addItem_(edit_menu_item);
+    edit_menu_item.setSubmenu_(create_edit_menu());
+    let cmd_menu_item = NSMenuItem::new(nil).autorelease();
+    menubar.addItem_(cmd_menu_item);
+    cmd_menu_item.setSubmenu_(create_command_menu());
+}
+
+unsafe fn create_app_menu() -> id {
     let app_menu = NSMenu::new(nil).autorelease();
     let quit_prefix = <id as NSString>::from_str("Quit ");
     let quit_title = quit_prefix.append(NSProcessInfo::processInfo(nil).processName());
@@ -36,9 +50,10 @@ unsafe fn create_menu() {
         quit_key
     ).autorelease();
     app_menu.addItem_(quit_item);
-    app_menu_item.setSubmenu_(app_menu);
-    let edit_menu_item = NSMenuItem::new(nil).autorelease();
-    menubar.addItem_(edit_menu_item);
+    app_menu
+}
+
+unsafe fn create_edit_menu() -> id {
     let edit_menu = NSMenu::alloc(nil).initWithTitle_(<id as NSString>::from_str("Edit")).autorelease();
     edit_menu.addItem_(NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
         <id as NSString>::from_str("Undo"),
@@ -66,7 +81,24 @@ unsafe fn create_menu() {
         <id as NSString>::from_str("Select All"),
         selector("selectAll:"),
         <id as NSString>::from_str("a")).autorelease());
-    edit_menu_item.setSubmenu_(edit_menu);
+    edit_menu
+}
+
+unsafe fn create_command_menu() -> id {
+    let cmd_menu = NSMenu::alloc(nil).initWithTitle_(<id as NSString>::from_str("Command")).autorelease();
+    for (command_name, (keychar, modifier)) in super::UI.engine.config.command_keybindings() {
+        let mut key = String::new();
+        key.push(keychar);
+        let mask = NSEventModifierFlags::from_bits(modifier as NSUInteger).unwrap();
+        let item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            <id as NSString>::from_str(&command_name),
+            sel!(runKeybindingCommand),
+            <id as NSString>::from_str(&key)).autorelease();
+        item.setKeyEquivalentModifierMask_(mask);
+        msg_send![item, setTarget:KeyInputDelegate::new(&command_name)];
+        cmd_menu.addItem_(item);
+    }
+    cmd_menu
 }
 
 pub unsafe fn nsapp() -> id {

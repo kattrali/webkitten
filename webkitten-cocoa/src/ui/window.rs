@@ -205,14 +205,13 @@ pub fn webview_count(window_index: u8) -> u8 {
 }
 
 pub fn reference_indices(webview: id) -> Option<(u8, u8)> {
-    let (mut webview_index, mut window_index) = (0, 0);
     unsafe {
         let window: id = msg_send![webview, window];
         if window != nil {
             let windows = super::application::windows();
-            window_index = windows.index_of_object(window) as u8;
+            let window_index = windows.index_of_object(window) as u8;
             let webviews = window_webviews(window);
-            webview_index = webviews.index_of_object(webview) as u8;
+            let webview_index = webviews.index_of_object(webview) as u8;
             return Some((window_index, webview_index));
         }
     }

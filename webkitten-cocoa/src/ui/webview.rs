@@ -1,5 +1,5 @@
 use cocoa::base::{id,nil,YES,NO};
-use cocoa_ext::foundation::{NSURLRequest,NSUInteger,NSString};
+use cocoa_ext::foundation::{NSURLRequest,NSString};
 
 use webkit::*;
 
