@@ -10,6 +10,7 @@ INSTALLCMD := install -C
 ifeq ($(shell uname),Darwin)
 PROJECT=webkitten-cocoa
 CARGO=cd $(PROJECT) && cargo
+CARGO_TEST=cargo
 else
 PROJECT=webkitten-gtk
 # Libraries required to build
@@ -18,6 +19,7 @@ LIBS=webkit2gtk-4.0 gtk+-3.0
 CFLAGS:= $(subst -L/,-L /,$(subst  -l, -l ,$(shell pkg-config --libs $(LIBS))))
 # Cargo build manager
 CARGO=cd $(PROJECT) && CFLAGS='$(CFLAGS)' cargo
+CARGO_TEST=CFLAGS='$(CFLAGS)' cargo
 endif
 
 SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/**.rs) build.rs Cargo.toml
@@ -64,6 +66,7 @@ run: ## Run webkitten in development mode
 	@RUST_LOG='info' $(CARGO) run
 
 test: ## Run the webkitten test suite
+	@$(CARGO_TEST) test
 	@$(CARGO) test
 
 help: ## Show help text
