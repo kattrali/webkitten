@@ -13,17 +13,12 @@ use core_graphics::base::CGFloat;
 use block::ConcreteBlock;
 
 use webkitten::WEBKITTEN_TITLE;
-use webkitten::ui::BrowserConfiguration;
+use webkitten::ui::{BrowserConfiguration, WindowArea};
 use webkit::*;
 use runtime::{CommandBarDelegate,WebViewHistoryDelegate,log_error_description};
 use super::webview;
 
 const BAR_HEIGHT: usize = 24;
-
-pub enum CocoaWindowSubview {
-    WebViewContainer = 0,
-    CommandBar       = 1,
-}
 
 pub fn toggle(window_index: u8, visible: bool) {
     unsafe {
@@ -49,6 +44,22 @@ pub fn focus(window_index: u8) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             window.makeKeyAndOrderFront_(nil);
+        }
+    }
+}
+
+pub fn focus_area(window_index: u8, area: WindowArea) {
+    match area {
+        WindowArea::WebView => unsafe {
+            if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
+               msg_send![webview, becomeFirstResponder];
+            }
+        },
+        WindowArea::CommandBar => unsafe {
+            if let Some(window) = window_for_index(window_index) {
+                let bar: id = subview(window, area);
+                msg_send![bar, becomeFirstResponder];
+            }
         }
     }
 }
@@ -114,7 +125,7 @@ pub fn open_webview(window_index: u8, uri: &str) {
 pub fn close_webview(window_index: u8, index: u8) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            let container = subview(window, CocoaWindowSubview::WebViewContainer);
+            let container = subview(window, WindowArea::WebView);
             if container.subviews().count() > (index as NSUInteger) {
                 container.subviews().object_at_index(index as NSUInteger).remove_from_superview();
             }
@@ -157,10 +168,10 @@ pub fn resize(window_index: u8, width: u32, height: u32) {
 }
 
 pub fn command_field_text(window_index: u8) -> String {
-    field_text(window_index, CocoaWindowSubview::CommandBar)
+    field_text(window_index, WindowArea::CommandBar)
 }
 
-fn field_text(window_index: u8, view: CocoaWindowSubview) -> String {
+fn field_text(window_index: u8, view: WindowArea) -> String {
     unsafe {
         window_for_index(window_index)
             .and_then(|window| {
@@ -175,7 +186,7 @@ fn field_text(window_index: u8, view: CocoaWindowSubview) -> String {
 pub fn set_command_field_text(window_index: u8, text: &str) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            let bar = subview(window, CocoaWindowSubview::CommandBar);
+            let bar = subview(window, WindowArea::CommandBar);
             bar.set_string_value(text);
         }
     }
@@ -222,7 +233,11 @@ unsafe fn window_for_index(index: u8) -> Option<id> {
     super::application::windows().get(index as NSUInteger)
 }
 
-unsafe fn subview(window: id, index: CocoaWindowSubview) -> id {
+unsafe fn subview(window: id, area: WindowArea) -> id {
+    let index = match area {
+        WindowArea::WebView => 0,
+        WindowArea::CommandBar => 1
+    };
     let subviews = window.contentView().subviews();
     msg_send![subviews, objectAtIndex:index]
 }
@@ -235,7 +250,7 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
     let skip_content_filter = config.skip_content_filter(&uri);
     let block = ConcreteBlock::new(move |filter: id, err: id| {
         if let Some(window) = window_for_index(window_index) {
-            let container = subview(window, CocoaWindowSubview::WebViewContainer);
+            let container = subview(window, WindowArea::WebView);
             for view in container.subviews().iter() {
                 view.set_hidden(true);
             }
@@ -272,7 +287,7 @@ unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
 }
 
 unsafe fn window_webviews(window: id) -> id {
-    subview(window, CocoaWindowSubview::WebViewContainer).subviews()
+    subview(window, WindowArea::WebView).subviews()
 }
 
 unsafe fn create_nswindow() -> id {
