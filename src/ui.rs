@@ -31,6 +31,9 @@ pub trait ApplicationUI: Sized {
     /// Focus window at index
     fn focus_window(&self, index: u8);
 
+    /// Capture keyboard input in given area
+    fn focus_window_area(&self, index: u8, area: WindowArea);
+
     /// Set window visibility
     fn toggle_window(&self, index: u8, visible: bool);
 
@@ -94,6 +97,11 @@ pub trait ApplicationUI: Sized {
 
     /// Apply a stylesheet to a webview
     fn apply_styles(&self, window_index: u8, webview_index: u8, styles: &str);
+}
+
+pub enum WindowArea {
+    CommandBar,
+    WebView,
 }
 
 pub enum CommandError {

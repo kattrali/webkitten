@@ -7,7 +7,7 @@ use std::fmt;
 use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
-use super::ui::{ApplicationUI,BrowserConfiguration,URIEvent};
+use super::ui::{ApplicationUI,BrowserConfiguration,URIEvent,WindowArea};
 use super::config::Config;
 
 
@@ -167,6 +167,14 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("focus_window", function1(|index: u8| {
         info!("focus_window: {}", index);
         ui.focus_window(index);
+    }));
+    lua.set("focus_webview_in_window", function1(|index: u8| {
+        info!("focus_webview_in_window: {}", index);
+        ui.focus_window_area(index, WindowArea::WebView);
+    }));
+    lua.set("focus_commandbar_in_window", function1(|index: u8| {
+        info!("focus_commandbar_in_window: {}", index);
+        ui.focus_window_area(index, WindowArea::CommandBar);
     }));
     lua.set("open_window", function1(|uri: String| {
         info!("open_window");
