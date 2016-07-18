@@ -6,7 +6,7 @@ function run()
   windex = focused_window_index()
   webview_index = focused_webview_index(windex)
   if #arguments > 0 then
-    owner, repo = string.match(arguments[1], "(%w+)/(%w+)")
+    owner, repo = string.match(arguments[1], "([%w-]+)/([%w-]+)")
     if owner ~= nil then
       target = string.format("https://github.com/%s/%s", owner, repo)
       load_uri(windex, webview_index, target)
