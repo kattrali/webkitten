@@ -10,6 +10,7 @@ use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSTextField,NSView,NSControl};
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
+use objc::runtime::Object;
 use block::ConcreteBlock;
 
 use webkitten::WEBKITTEN_TITLE;
@@ -35,7 +36,6 @@ pub fn open<T: Into<String>>(uri: Option<T>) -> id {
     unsafe {
         let window = create_nswindow();
         let index = index_for_window(window) as u32;
-        println!("Opened window with index: {}", index);
         if let Some(uri) = uri {
             add_and_focus_webview(index, uri.into());
         }
@@ -73,7 +73,7 @@ pub fn focused_index() -> u32 {
         for (index, window) in windows.iter().enumerate() {
             let key: BOOL = msg_send![window, isKeyWindow];
             if key == YES {
-                return index as u32;
+                return index_for_window(window);
             }
         }
         0
@@ -118,20 +118,32 @@ pub fn window_count() -> u32 {
 
 pub fn open_webview<T: Into<String>>(window_index: u32, uri: T) {
     unsafe {
-        let uri = uri.into();
-        add_and_focus_webview(window_index, uri.clone());
-        if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
-            webview::load_uri(webview, &uri);
-        }
+        add_and_focus_webview(window_index, uri.into());
     }
 }
 
 pub fn close_webview(window_index: u32, index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            let container = subview(window, WindowArea::WebView);
-            if container.subviews().count() > (index as NSUInteger) {
-                container.subviews().object_at_index(index as NSUInteger).remove_from_superview();
+            let webviews = window_webviews(window);
+            let is_focused = focused_webview_index(window_index) == index;
+            info!("Closing 1 webview of {}", webviews.count());
+            let mut removed_view: Option<id> = None;
+            for view in webviews.iter() {
+                if index_for_webview(view) == index {
+                    removed_view = Some(view);
+                    break;
+                }
+            }
+            if let Some(view) = removed_view {
+                view.remove_from_superview();
+                if is_focused {
+                    if index as usize >= webviews.count() as usize {
+                        focus_webview(window_index, 0);
+                    } else {
+                        focus_webview(window_index, index);
+                    }
+                }
             }
         }
     }
@@ -140,10 +152,17 @@ pub fn close_webview(window_index: u32, index: u32) {
 pub fn focus_webview(window_index: u32, webview_index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            println!("Focusing webview {} in window {}", webview_index, window_index);
-            let expected_index = webview_index as u32;
-            for (index, view) in window_webviews(window).iter().enumerate() {
-                view.set_hidden((index as u32) == expected_index);
+            info!("Focusing webview {} in window {}", webview_index, window_index);
+            let container = subview(window, WindowArea::WebView);
+            let subviews = container.subviews();
+            if webview_index as usize >= subviews.count() as usize {
+                return
+            }
+            for view in subviews.iter() {
+                let index = index_for_webview(view);
+                let hidden = webview_index != index;
+                view.set_hidden(hidden);
+                info!("Set webview #{} hidden: {}", index, hidden);
             }
         }
     }
@@ -199,9 +218,9 @@ pub fn set_command_field_text(window_index: u32, text: &str) {
 pub fn focused_webview_index(window_index: u32) -> u32 {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            for (index, view) in window_webviews(window).iter().enumerate() {
+            for view in window_webviews(window).iter() {
                 if view.hidden() == NO {
-                    return index as u32;
+                    return index_for_webview(view)
                 }
             }
         }
@@ -223,10 +242,8 @@ pub fn reference_indices(webview: id) -> Option<(u32, u32)> {
     unsafe {
         let window: id = msg_send![webview, window];
         if window != nil {
-            let windows = super::application::windows();
-            let window_index: u32 = index_for_window(window);
-            let webviews = window_webviews(window);
-            let webview_index = webviews.index_of_object(webview) as u32;
+            let window_index  = index_for_window(window);
+            let webview_index = index_for_webview(webview);
             return Some((window_index, webview_index));
         }
     }
@@ -245,7 +262,7 @@ unsafe fn window_for_index(index: u32) -> Option<id> {
         if (index as usize) < indices.len() {
             let converted_index = indices[index as usize];
             if converted_index != index {
-                warn!("Loading window with fallback index");
+                debug!("Loading window with fallback index");
                 return window_for_index(converted_index);
             }
         }
@@ -257,6 +274,17 @@ unsafe fn window_for_index(index: u32) -> Option<id> {
 unsafe fn index_for_window(window: id) -> u32 {
     let index: u32 = msg_send![window, windowNumber];
     index
+}
+
+unsafe fn index_for_webview(webview: id) -> u32 {
+    let window: id = msg_send![webview, window];
+    let webviews = window_webviews(window);
+    for (index, view) in webviews.iter().enumerate() {
+        if view == webview {
+            return index as u32;
+        }
+    }
+    return 0u32;
 }
 
 unsafe fn window_indices() -> Vec<u32> {
@@ -301,7 +329,7 @@ unsafe fn add_and_focus_webview(window_index: u32, uri: String) {
             } else if err == nil {
                 log_error_description(err);
             }
-            let webview = <id as WKWebView>::new(CGRectZero(), config).autorelease();
+            let webview = <id as WKWebView>::new(CGRectZero(), config, webview_count(window_index)).autorelease();
             webview.set_navigation_delegate(WebViewHistoryDelegate::new());
             webview.disable_translates_autoresizing_mask_into_constraints();
             webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");

@@ -12,10 +12,12 @@ const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
 const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
 const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
+pub const WV_CLASS: &'static str = "WebkittenWebView";
 
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
 pub struct WebViewContainerView;
+pub struct WebkittenWebView;
 pub struct KeyInputDelegate;
 
 impl CommandBarDelegate {
@@ -51,6 +53,20 @@ pub fn log_error_description(err: id) {
 }
 
 pub fn declare_delegate_classes() {
+    declare_view_classes();
+    if let Some(superclass) = Class::get("NSObject") {
+        declare_app_delegates(&superclass);
+        declare_bar_delegate(&superclass);
+        declare_webview_delegates(&superclass);
+    }
+}
+
+fn declare_view_classes() {
+    if let Some(superclass) = Class::get("WKWebView") {
+        if let Some(mut decl) = ClassDecl::new(WV_CLASS, superclass) {
+            decl.register();
+        }
+    }
     if let Some(superclass) = Class::get("NSView") {
         if let Some(mut decl) = ClassDecl::new(WVCONTAINER_CLASS, superclass) {
             unsafe {
@@ -61,11 +77,6 @@ pub fn declare_delegate_classes() {
             }
             decl.register();
         }
-    }
-    if let Some(superclass) = Class::get("NSObject") {
-        declare_app_delegates(&superclass);
-        declare_bar_delegate(&superclass);
-        declare_webview_delegates(&superclass);
     }
 }
 

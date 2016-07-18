@@ -1,10 +1,12 @@
 //! Bindings to WebKit.framework on macOS
 
 use std::ops::Deref;
+use objc::runtime::Object;
 use cocoa::base::{class,id,nil,BOOL,NO,YES,selector};
 use core_graphics::geometry::CGRect;
 use cocoa_ext::foundation::{NSString,NSUInteger};
 use block::Block;
+use runtime;
 
 #[link(name = "WebKit", kind = "framework")]
 extern {}
@@ -55,8 +57,8 @@ impl WKWebViewConfiguration for id {
 
 pub trait WKWebView {
 
-    unsafe fn new(frame: CGRect, config: id) -> id {
-        let webview: id = msg_send![class("WKWebView"), alloc];
+    unsafe fn new(frame: CGRect, config: id, index: u32) -> id {
+        let webview: id = msg_send![class(runtime::WV_CLASS), alloc];
         let webview: id = msg_send![webview, initWithFrame:frame
                                              configuration:config];
         webview
