@@ -310,7 +310,7 @@ unsafe fn add_and_focus_webview(window_index: u32, uri: String) {
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Bottom, container, NSLayoutAttribute::Bottom));
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Left, container, NSLayoutAttribute::Left));
             container.add_constraint(<id as NSLayoutConstraint>::bind(webview, NSLayoutAttribute::Right, container, NSLayoutAttribute::Right));
-            webview.load_request(NSURLRequest(&uri));
+            webview::load_uri(webview, &uri);
         }
     });
     if skip_content_filter {
