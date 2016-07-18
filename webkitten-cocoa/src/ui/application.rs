@@ -8,12 +8,16 @@ use webkitten::ui::BrowserConfiguration;
 use cocoa_ext::foundation::{NSString,NSUInteger};
 use runtime::KeyInputDelegate;
 
-
-pub fn start_run_loop() {
+pub fn initialize_app_env() {
     unsafe {
         let _pool = NSAutoreleasePool::new(nil);
         nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
         create_menu();
+    }
+}
+
+pub fn start_run_loop() {
+    unsafe {
         msg_send![nsapp(), activateIgnoringOtherApps:YES];
         nsapp().run();
     }

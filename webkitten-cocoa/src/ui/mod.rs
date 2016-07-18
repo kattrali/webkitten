@@ -55,6 +55,18 @@ impl CocoaUI {
             }
         }
     }
+
+    fn open_first_window(&self) {
+        if !self.engine.initial_pages().is_empty() {
+            for page in self.engine.initial_pages() {
+                self.open_window(Some(page.as_str()));
+            }
+        } else if let Some(page) = self.engine.config.start_page() {
+            self.open_window(Some(&page))
+        } else {
+            self.open_window(None);
+        }
+    }
 }
 
 impl ApplicationUI for CocoaUI {
@@ -69,15 +81,8 @@ impl ApplicationUI for CocoaUI {
 
     fn run(&self) {
         self.compile_content_extensions(|_| {});
-        if !self.engine.initial_pages().is_empty() {
-            for page in self.engine.initial_pages() {
-                self.open_window(Some(page.as_str()));
-            }
-        } else if let Some(page) = self.engine.config.start_page() {
-            self.open_window(Some(&page))
-        } else {
-            self.open_window(None);
-        }
+        application::initialize_app_env();
+        self.open_first_window();
         application::start_run_loop();
     }
 
