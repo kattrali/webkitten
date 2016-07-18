@@ -22,7 +22,7 @@ CARGO=cd $(PROJECT) && CFLAGS='$(CFLAGS)' cargo
 CARGO_TEST=CFLAGS='$(CFLAGS)' cargo
 endif
 
-SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/**.rs) build.rs Cargo.toml
+SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/{**/,}*.rs) build.rs Cargo.toml
 DEV_FILE=$(PROJECT)/target/debug/$(PROJECT)
 PROD_FILE=$(PROJECT)/target/release/$(PROJECT)
 INSTALL_FILE=$(DESTBIN)/$(PROJECT)
