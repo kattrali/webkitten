@@ -4,7 +4,7 @@ use cocoa::foundation::{NSRect, NSPoint, NSSize, NSFastEnumeration,
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSFullSizeContentViewWindowMask, NSBackingStoreBuffered};
-use cocoa_ext::foundation::{NSArray,NSURLRequest,NSString,NSUInteger};
+use cocoa_ext::foundation::{NSArray,NSURLRequest,NSString,NSUInteger,NSInteger};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
                         NSTextField,NSView,NSControl};
@@ -20,7 +20,7 @@ use super::webview;
 
 const BAR_HEIGHT: usize = 24;
 
-pub fn toggle(window_index: u8, visible: bool) {
+pub fn toggle(window_index: u32, visible: bool) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             match visible {
@@ -31,16 +31,19 @@ pub fn toggle(window_index: u8, visible: bool) {
     }
 }
 
-pub fn open<T: Into<String>>(uri: Option<T>) {
+pub fn open<T: Into<String>>(uri: Option<T>) -> id {
     unsafe {
-        create_nswindow();
+        let window = create_nswindow();
+        let index = index_for_window(window) as u32;
+        println!("Opened window with index: {}", index);
         if let Some(uri) = uri {
-            add_and_focus_webview(window_count() - 1, uri.into());
+            add_and_focus_webview(index, uri.into());
         }
+        window
     }
 }
 
-pub fn focus(window_index: u8) {
+pub fn focus(window_index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             window.makeKeyAndOrderFront_(nil);
@@ -48,7 +51,7 @@ pub fn focus(window_index: u8) {
     }
 }
 
-pub fn focus_area(window_index: u8, area: WindowArea) {
+pub fn focus_area(window_index: u32, area: WindowArea) {
     match area {
         WindowArea::WebView => unsafe {
             if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
@@ -64,20 +67,20 @@ pub fn focus_area(window_index: u8, area: WindowArea) {
     }
 }
 
-pub fn focused_index() -> u8 {
+pub fn focused_index() -> u32 {
     unsafe {
         let windows: id = msg_send![super::application::nsapp(), windows];
         for (index, window) in windows.iter().enumerate() {
             let key: BOOL = msg_send![window, isKeyWindow];
             if key == YES {
-                return index as u8;
+                return index as u32;
             }
         }
         0
     }
 }
 
-pub fn close(window_index: u8) {
+pub fn close(window_index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             window.close();
@@ -85,7 +88,7 @@ pub fn close(window_index: u8) {
     }
 }
 
-pub fn title(window_index: u8) -> String {
+pub fn title(window_index: u32) -> String {
     unsafe {
         window_for_index(window_index)
             .and_then(|win| {
@@ -97,7 +100,7 @@ pub fn title(window_index: u8) -> String {
     }
 }
 
-pub fn set_title(window_index: u8, title: &str) {
+pub fn set_title(window_index: u32, title: &str) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             let title_str = <id as NSString>::from_str(title);
@@ -106,14 +109,14 @@ pub fn set_title(window_index: u8, title: &str) {
     }
 }
 
-pub fn window_count() -> u8 {
+pub fn window_count() -> u32 {
     unsafe {
         let windows: id = msg_send![super::application::nsapp(), windows];
-        windows.count() as u8
+        windows.count() as u32
     }
 }
 
-pub fn open_webview<T: Into<String>>(window_index: u8, uri: T) {
+pub fn open_webview<T: Into<String>>(window_index: u32, uri: T) {
     unsafe {
         let uri = uri.into();
         add_and_focus_webview(window_index, uri.clone());
@@ -123,7 +126,7 @@ pub fn open_webview<T: Into<String>>(window_index: u8, uri: T) {
     }
 }
 
-pub fn close_webview(window_index: u8, index: u8) {
+pub fn close_webview(window_index: u32, index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             let container = subview(window, WindowArea::WebView);
@@ -134,19 +137,19 @@ pub fn close_webview(window_index: u8, index: u8) {
     }
 }
 
-pub fn focus_webview(window_index: u8, webview_index: u8) {
+pub fn focus_webview(window_index: u32, webview_index: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             println!("Focusing webview {} in window {}", webview_index, window_index);
-            let expected_index = webview_index as usize;
+            let expected_index = webview_index as u32;
             for (index, view) in window_webviews(window).iter().enumerate() {
-                view.set_hidden(index == expected_index);
+                view.set_hidden((index as u32) == expected_index);
             }
         }
     }
 }
 
-pub fn webview(window_index: u8, webview_index: u8) -> Option<id> {
+pub fn webview(window_index: u32, webview_index: u32) -> Option<id> {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             window_webviews(window).get(webview_index as NSUInteger)
@@ -156,7 +159,7 @@ pub fn webview(window_index: u8, webview_index: u8) -> Option<id> {
     }
 }
 
-pub fn resize(window_index: u8, width: u32, height: u32) {
+pub fn resize(window_index: u32, width: u32, height: u32) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             let frame = NSRect {
@@ -168,11 +171,11 @@ pub fn resize(window_index: u8, width: u32, height: u32) {
     }
 }
 
-pub fn command_field_text(window_index: u8) -> String {
+pub fn command_field_text(window_index: u32) -> String {
     field_text(window_index, WindowArea::CommandBar)
 }
 
-fn field_text(window_index: u8, view: WindowArea) -> String {
+fn field_text(window_index: u32, view: WindowArea) -> String {
     unsafe {
         window_for_index(window_index)
             .and_then(|window| {
@@ -184,7 +187,7 @@ fn field_text(window_index: u8, view: WindowArea) -> String {
     }
 }
 
-pub fn set_command_field_text(window_index: u8, text: &str) {
+pub fn set_command_field_text(window_index: u32, text: &str) {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             let bar = subview(window, WindowArea::CommandBar);
@@ -193,12 +196,12 @@ pub fn set_command_field_text(window_index: u8, text: &str) {
     }
 }
 
-pub fn focused_webview_index(window_index: u8) -> u8 {
+pub fn focused_webview_index(window_index: u32) -> u32 {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
             for (index, view) in window_webviews(window).iter().enumerate() {
                 if view.hidden() == NO {
-                    return index as u8;
+                    return index as u32;
                 }
             }
         }
@@ -206,32 +209,63 @@ pub fn focused_webview_index(window_index: u8) -> u8 {
     0
 }
 
-pub fn webview_count(window_index: u8) -> u8 {
+pub fn webview_count(window_index: u32) -> u32 {
     unsafe {
         if let Some(window) = window_for_index(window_index) {
-            window_webviews(window).count() as u8
+            window_webviews(window).count() as u32
         } else {
             0
         }
     }
 }
 
-pub fn reference_indices(webview: id) -> Option<(u8, u8)> {
+pub fn reference_indices(webview: id) -> Option<(u32, u32)> {
     unsafe {
         let window: id = msg_send![webview, window];
         if window != nil {
             let windows = super::application::windows();
-            let window_index = windows.index_of_object(window) as u8;
+            let window_index: u32 = index_for_window(window);
             let webviews = window_webviews(window);
-            let webview_index = webviews.index_of_object(webview) as u8;
+            let webview_index = webviews.index_of_object(webview) as u32;
             return Some((window_index, webview_index));
         }
     }
     None
 }
 
-unsafe fn window_for_index(index: u8) -> Option<id> {
-    super::application::windows().get(index as NSUInteger)
+unsafe fn window_for_index(index: u32) -> Option<id> {
+    info!("Looking up window for index: {}", index);
+    let window: id = unsafe {
+        msg_send![super::application::nsapp(), windowWithWindowNumber:index as NSInteger]
+    };
+    if window != nil {
+        Some(window)
+    } else {
+        let indices = window_indices();
+        if (index as usize) < indices.len() {
+            let converted_index = indices[index as usize];
+            if converted_index != index {
+                warn!("Loading window with fallback index");
+                return window_for_index(converted_index);
+            }
+        }
+        warn!("No window found for index");
+        None
+    }
+}
+
+unsafe fn index_for_window(window: id) -> u32 {
+    let index: u32 = msg_send![window, windowNumber];
+    index
+}
+
+unsafe fn window_indices() -> Vec<u32> {
+    let windows: id = msg_send![super::application::nsapp(), windows];
+    let mut indices: Vec<u32> = vec![];
+    for window in windows.iter() {
+        indices.push(index_for_window(window));
+    }
+    indices
 }
 
 unsafe fn subview(window: id, area: WindowArea) -> id {
@@ -243,7 +277,7 @@ unsafe fn subview(window: id, area: WindowArea) -> id {
     msg_send![subviews, objectAtIndex:index]
 }
 
-unsafe fn add_and_focus_webview(window_index: u8, uri: String) {
+unsafe fn add_and_focus_webview(window_index: u32, uri: String) {
     let store = _WKUserContentExtensionStore::default_store(nil);
     let ref config = super::UI.engine.config;
     let private_browsing = config.use_private_browsing(&uri);

@@ -1,4 +1,4 @@
-use cocoa::base::{selector,id,nil};
+use cocoa::base::{selector,id,nil,YES};
 use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo};
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
                     NSMenu, NSMenuItem, NSRunningApplication,
@@ -14,8 +14,7 @@ pub fn start_run_loop() {
         let _pool = NSAutoreleasePool::new(nil);
         nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
         create_menu();
-        let current_app = NSRunningApplication::currentApplication(nil);
-        current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps);
+        msg_send![nsapp(), activateIgnoringOtherApps:YES];
         nsapp().run();
     }
 }
@@ -36,6 +35,15 @@ unsafe fn create_menu() {
     let cmd_menu_item = NSMenuItem::new(nil).autorelease();
     menubar.addItem_(cmd_menu_item);
     cmd_menu_item.setSubmenu_(create_command_menu());
+    let window_menu_item = NSMenuItem::new(nil).autorelease();
+    menubar.addItem_(window_menu_item);
+    window_menu_item.setSubmenu_(create_window_menu());
+}
+
+unsafe fn create_window_menu() -> id {
+    let menu = NSMenu::alloc(nil).initWithTitle_(<id as NSString>::from_str("Window")).autorelease();
+    msg_send![nsapp(), setWindowsMenu:menu];
+    menu
 }
 
 unsafe fn create_app_menu() -> id {

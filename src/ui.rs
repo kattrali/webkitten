@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use keybinding;
 
+
 pub trait ApplicationUI: Sized {
 
     /// Create a new UI
@@ -17,86 +18,86 @@ pub trait ApplicationUI: Sized {
 
 
     /// The index of the focused window
-    fn focused_window_index(&self) -> u8;
+    fn focused_window_index(&self) -> u32;
 
     /// Number of open windows
-    fn window_count(&self) -> u8;
+    fn window_count(&self) -> u32;
 
     /// Open a new window
     fn open_window(&self, uri: Option<&str>);
 
     /// Close a window
-    fn close_window(&self, index: u8);
+    fn close_window(&self, index: u32);
 
     /// Focus window at index
-    fn focus_window(&self, index: u8);
+    fn focus_window(&self, index: u32);
 
     /// Capture keyboard input in given area
-    fn focus_window_area(&self, index: u8, area: WindowArea);
+    fn focus_window_area(&self, index: u32, area: WindowArea);
 
     /// Set window visibility
-    fn toggle_window(&self, index: u8, visible: bool);
+    fn toggle_window(&self, index: u32, visible: bool);
 
     /// Change the dimensions of a specified window
-    fn resize_window(&self, window_index: u8, width: u32, height: u32);
+    fn resize_window(&self, window_index: u32, width: u32, height: u32);
 
     /// Text in the command bar of a specified window
-    fn command_field_text(&self, window_index: u8) -> String;
+    fn command_field_text(&self, window_index: u32) -> String;
 
     /// Set the text in the command bar of a specified window
-    fn set_command_field_text(&self, window_index: u8, text: &str);
+    fn set_command_field_text(&self, window_index: u32, text: &str);
 
     /// Title of a specified window
-    fn window_title(&self, window_index: u8) -> String;
+    fn window_title(&self, window_index: u32) -> String;
 
     /// Set the title of a specified window
-    fn set_window_title(&self, window_index: u8, title: &str);
+    fn set_window_title(&self, window_index: u32, title: &str);
 
 
     /// Index of the webview currently visible in a specified window
-    fn focused_webview_index(&self, window_index: u8) -> u8;
+    fn focused_webview_index(&self, window_index: u32) -> u32;
 
     /// Number of webviews in a window
-    fn webview_count(&self, window_index: u8) -> u8;
+    fn webview_count(&self, window_index: u32) -> u32;
 
     /// Open a new webview in a specified window
-    fn open_webview(&self, window_index: u8, uri: Option<&str>);
+    fn open_webview(&self, window_index: u32, uri: Option<&str>);
 
     /// Close a webview in a specified window
-    fn close_webview(&self, window_index: u8, webview_index: u8);
+    fn close_webview(&self, window_index: u32, webview_index: u32);
 
     /// Focus a webview in a specified window, hiding the current webview
-    fn focus_webview(&self, window_index: u8, webview_index: u8);
+    fn focus_webview(&self, window_index: u32, webview_index: u32);
 
     /// Reload a webview in a specified window
-    fn reload_webview(&self, window_index: u8, webview_index: u8, disable_filters: bool);
+    fn reload_webview(&self, window_index: u32, webview_index: u32, disable_filters: bool);
 
     /// Load a URI in a webview
-    fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str);
+    fn set_uri(&self, window_index: u32, webview_index: u32, uri: &str);
 
     /// Go back to the previously loaded resource in a webview
-    fn go_back(&self, window_index: u8, webview_index: u8) -> bool;
+    fn go_back(&self, window_index: u32, webview_index: u32) -> bool;
 
     /// Go forward to the next loaded resource in a webview
-    fn go_forward(&self, window_index: u8, webview_index: u8) -> bool;
+    fn go_forward(&self, window_index: u32, webview_index: u32) -> bool;
 
     /// Get the currently loaded URI or empty string
-    fn uri(&self, window_index: u8, webview_index: u8) -> String;
+    fn uri(&self, window_index: u32, webview_index: u32) -> String;
 
     /// Find a string within the selected web view
-    fn find_string(&self, window_index: u8, webview_index: u8, query: &str);
+    fn find_string(&self, window_index: u32, webview_index: u32, query: &str);
 
     /// Hide results from a previous find invocation (if applicable)
-    fn hide_find_results(&self, window_index: u8, webview_index: u8);
+    fn hide_find_results(&self, window_index: u32, webview_index: u32);
 
     /// Get the title of the currently loaded URI or empty string
-    fn webview_title(&self, window_index: u8, webview_index: u8) -> String;
+    fn webview_title(&self, window_index: u32, webview_index: u32) -> String;
 
     /// Run a JavaScript snippet in a webview
-    fn run_javascript(&self, window_index: u8, webview_index: u8, script: &str);
+    fn run_javascript(&self, window_index: u32, webview_index: u32, script: &str);
 
     /// Apply a stylesheet to a webview
-    fn apply_styles(&self, window_index: u8, webview_index: u8, styles: &str);
+    fn apply_styles(&self, window_index: u32, webview_index: u32, styles: &str);
 }
 
 pub enum WindowArea {
@@ -130,7 +131,7 @@ pub enum URIEvent {
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u8, text: &str)
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u32, text: &str)
         -> CommandOutput;
 
     /// Close the application
@@ -149,8 +150,8 @@ pub trait EventHandler {
     /// * `URIEvent::Fail`: Invoke after a document fails to load
     fn on_uri_event<T: ApplicationUI>(&self,
                                       ui: &T,
-                                      window_index: u8,
-                                      webview_index: u8,
+                                      window_index: u32,
+                                      webview_index: u32,
                                       uri: &str,
                                       event: URIEvent);
 }

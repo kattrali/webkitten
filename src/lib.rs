@@ -59,7 +59,7 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self,
                                          ui: &T,
-                                         window_index: u8,
+                                         window_index: u32,
                                          text: &str)
                                          -> CommandOutput {
         if let Some(text) = self.config.command_matching_prefix(text) {
@@ -110,8 +110,8 @@ impl EventHandler for Engine {
 
     fn on_uri_event<T: ApplicationUI>(&self,
                                       ui: &T,
-                                      window_index: u8,
-                                      webview_index: u8,
+                                      window_index: u32,
+                                      webview_index: u32,
                                       uri: &str,
                                       event: URIEvent) {
         for name in self.config.on_uri_event_commands(event) {

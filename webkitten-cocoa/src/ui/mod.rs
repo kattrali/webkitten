@@ -70,7 +70,9 @@ impl ApplicationUI for CocoaUI {
     fn run(&self) {
         self.compile_content_extensions(|_| {});
         if !self.engine.initial_pages().is_empty() {
-            self.open_window(Some(self.engine.initial_pages()[0].as_str()));
+            for page in self.engine.initial_pages() {
+                self.open_window(Some(page.as_str()));
+            }
         } else if let Some(page) = self.engine.config.start_page() {
             self.open_window(Some(&page))
         } else {
@@ -87,65 +89,65 @@ impl ApplicationUI for CocoaUI {
 
     fn open_window(&self, uri: Option<&str>) {
         if uri.is_some() {
-            window::open(uri);
+            window::open(uri)
         } else {
-            window::open(self.engine.config.start_page());
-        }
+            window::open(self.engine.config.start_page())
+        };
     }
 
-    fn close_window(&self, index: u8) {
+    fn close_window(&self, index: u32) {
         window::close(index);
     }
 
-    fn focused_window_index(&self) -> u8 {
+    fn focused_window_index(&self) -> u32 {
         window::focused_index()
     }
 
-    fn focus_window(&self, index: u8) {
+    fn focus_window(&self, index: u32) {
         window::focus(index);
     }
 
-    fn focus_window_area(&self, index: u8, area: WindowArea) {
+    fn focus_window_area(&self, index: u32, area: WindowArea) {
         window::focus_area(index, area);
     }
 
-    fn window_count(&self) -> u8 {
+    fn window_count(&self) -> u32 {
         window::window_count()
     }
 
-    fn toggle_window(&self, window_index: u8, visible: bool) {
+    fn toggle_window(&self, window_index: u32, visible: bool) {
         window::toggle(window_index, visible);
     }
 
-    fn resize_window(&self, window_index: u8, width: u32, height: u32) {
+    fn resize_window(&self, window_index: u32, width: u32, height: u32) {
         window::resize(window_index, width, height);
     }
 
-    fn command_field_text(&self, window_index: u8) -> String {
+    fn command_field_text(&self, window_index: u32) -> String {
         window::command_field_text(window_index)
     }
 
-    fn set_command_field_text(&self, window_index: u8, text: &str) {
+    fn set_command_field_text(&self, window_index: u32, text: &str) {
         window::set_command_field_text(window_index, text);
     }
 
-    fn window_title(&self, window_index: u8) -> String {
+    fn window_title(&self, window_index: u32) -> String {
         window::title(window_index)
     }
 
-    fn set_window_title(&self, window_index: u8, title: &str) {
+    fn set_window_title(&self, window_index: u32, title: &str) {
         window::set_title(window_index, title);
     }
 
-    fn focused_webview_index(&self, window_index: u8) -> u8 {
+    fn focused_webview_index(&self, window_index: u32) -> u32 {
         window::focused_webview_index(window_index)
     }
 
-    fn webview_count(&self, window_index: u8) -> u8 {
+    fn webview_count(&self, window_index: u32) -> u32 {
         window::webview_count(window_index)
     }
 
-    fn open_webview(&self, window_index: u8, uri: Option<&str>) {
+    fn open_webview(&self, window_index: u32, uri: Option<&str>) {
         if let Some(uri) = uri {
             window::open_webview(window_index, uri);
         } else if let Some(uri) = self.engine.config.start_page() {
@@ -153,27 +155,27 @@ impl ApplicationUI for CocoaUI {
         }
     }
 
-    fn close_webview(&self, window_index: u8, webview_index: u8) {
+    fn close_webview(&self, window_index: u32, webview_index: u32) {
         window::close_webview(window_index, webview_index);
     }
 
-    fn focus_webview(&self, window_index: u8, webview_index: u8) {
+    fn focus_webview(&self, window_index: u32, webview_index: u32) {
         window::focus_webview(window_index, webview_index);
     }
 
-    fn reload_webview(&self, window_index: u8, webview_index: u8, disable_filters: bool) {
+    fn reload_webview(&self, window_index: u32, webview_index: u32, disable_filters: bool) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::reload(webview, disable_filters);
         }
     }
 
-    fn set_uri(&self, window_index: u8, webview_index: u8, uri: &str) {
+    fn set_uri(&self, window_index: u32, webview_index: u32, uri: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::load_uri(webview, uri);
         }
     }
 
-    fn go_back(&self, window_index: u8, webview_index: u8) -> bool {
+    fn go_back(&self, window_index: u32, webview_index: u32) -> bool {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::go_back(webview)
         } else {
@@ -181,7 +183,7 @@ impl ApplicationUI for CocoaUI {
         }
     }
 
-    fn go_forward(&self, window_index: u8, webview_index: u8) -> bool {
+    fn go_forward(&self, window_index: u32, webview_index: u32) -> bool {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::go_forward(webview)
         } else {
@@ -189,37 +191,37 @@ impl ApplicationUI for CocoaUI {
         }
     }
 
-    fn uri(&self, window_index: u8, webview_index: u8) -> String {
+    fn uri(&self, window_index: u32, webview_index: u32) -> String {
         window::webview(window_index, webview_index)
             .and_then(|webview| Some(webview::uri(webview)))
             .unwrap_or(String::new())
     }
 
-    fn webview_title(&self, window_index: u8, webview_index: u8) -> String {
+    fn webview_title(&self, window_index: u32, webview_index: u32) -> String {
         window::webview(window_index, webview_index)
             .and_then(|webview| Some(webview::title(webview)))
             .unwrap_or(String::new())
     }
 
-    fn find_string(&self, window_index: u8, webview_index: u8, query: &str) {
+    fn find_string(&self, window_index: u32, webview_index: u32, query: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::find_string(webview, query)
         }
     }
 
-    fn hide_find_results(&self, window_index: u8, webview_index: u8) {
+    fn hide_find_results(&self, window_index: u32, webview_index: u32) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::hide_find_results(webview)
         }
     }
 
-    fn run_javascript(&self, window_index: u8, webview_index: u8, script: &str) {
+    fn run_javascript(&self, window_index: u32, webview_index: u32, script: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::run_javascript(webview, script)
         }
     }
 
-    fn apply_styles(&self, window_index: u8, webview_index: u8, styles: &str) {
+    fn apply_styles(&self, window_index: u32, webview_index: u32, styles: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
             webview::apply_styles(webview, styles);
         }
