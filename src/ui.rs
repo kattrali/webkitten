@@ -60,7 +60,7 @@ pub trait ApplicationUI: Sized {
     fn webview_count(&self, window_index: u8) -> u8;
 
     /// Open a new webview in a specified window
-    fn open_webview(&self, window_index: u8, uri: &str);
+    fn open_webview(&self, window_index: u8, uri: Option<&str>);
 
     /// Close a webview in a specified window
     fn close_webview(&self, window_index: u8, webview_index: u8);

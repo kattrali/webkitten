@@ -31,11 +31,11 @@ pub fn toggle(window_index: u8, visible: bool) {
     }
 }
 
-pub fn open(uri: Option<&str>) {
+pub fn open<T: Into<String>>(uri: Option<T>) {
     unsafe {
         create_nswindow();
         if let Some(uri) = uri {
-            add_and_focus_webview(window_count() - 1, uri.to_owned());
+            add_and_focus_webview(window_count() - 1, uri.into());
         }
     }
 }
@@ -113,11 +113,12 @@ pub fn window_count() -> u8 {
     }
 }
 
-pub fn open_webview(window_index: u8, uri: &str) {
+pub fn open_webview<T: Into<String>>(window_index: u8, uri: T) {
     unsafe {
-        add_and_focus_webview(window_index, uri.to_owned());
+        let uri = uri.into();
+        add_and_focus_webview(window_index, uri.clone());
         if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
-            webview::load_uri(webview, uri);
+            webview::load_uri(webview, &uri);
         }
     }
 }

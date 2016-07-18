@@ -69,9 +69,12 @@ impl ApplicationUI for CocoaUI {
 
     fn run(&self) {
         self.compile_content_extensions(|_| {});
-        match self.engine.config.start_page() {
-            Some(page) => self.open_window(Some(page.as_str())),
-            None => self.open_window(None)
+        if !self.engine.initial_pages().is_empty() {
+            self.open_window(Some(self.engine.initial_pages()[0].as_str()));
+        } else if let Some(page) = self.engine.config.start_page() {
+            self.open_window(Some(&page))
+        } else {
+            self.open_window(None);
         }
         application::start_run_loop();
     }
@@ -83,7 +86,11 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn open_window(&self, uri: Option<&str>) {
-        window::open(uri);
+        if uri.is_some() {
+            window::open(uri);
+        } else {
+            window::open(self.engine.config.start_page());
+        }
     }
 
     fn close_window(&self, index: u8) {
@@ -138,8 +145,12 @@ impl ApplicationUI for CocoaUI {
         window::webview_count(window_index)
     }
 
-    fn open_webview(&self, window_index: u8, uri: &str) {
-        window::open_webview(window_index, uri);
+    fn open_webview(&self, window_index: u8, uri: Option<&str>) {
+        if let Some(uri) = uri {
+            window::open_webview(window_index, uri);
+        } else if let Some(uri) = self.engine.config.start_page() {
+            window::open_webview(window_index, uri);
+        }
     }
 
     fn close_webview(&self, window_index: u8, webview_index: u8) {

@@ -206,7 +206,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_webview", function2(|window_index: u8, uri: String| {
         info!("open_webview: {}", window_index);
-        ui.open_webview(window_index, &uri);
+        ui.open_webview(window_index, if uri.is_empty() { None } else { Some(&uri) });
     }));
     lua.set("webview_count", function1(|window_index: u8| {
         info!("get webview_count: {}", window_index);

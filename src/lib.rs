@@ -40,6 +40,11 @@ impl Engine {
         })
     }
 
+    /// Any arguments specified at launch to be opened
+    pub fn initial_pages<'a>(&'a self) -> &'a Vec<String> {
+        &self.run_config.start_pages
+    }
+
     /// Reload configuration from path
     pub fn reload(&mut self) -> bool {
         self.config.load(&self.run_config.path)
