@@ -26,6 +26,8 @@ SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/{**/,}*.rs) build.rs Cargo.toml
 DEV_FILE=$(PROJECT)/target/debug/$(PROJECT)
 PROD_FILE=$(PROJECT)/target/release/$(PROJECT)
 INSTALL_FILE=$(DESTBIN)/$(PROJECT)
+COCOA_APP=webkitten-cocoa/build/Release/Webkitten.app
+COCOA_SRC=webkitten-cocoa/app/main.swift
 
 all: build
 
@@ -34,6 +36,10 @@ $(DEV_FILE): $(SRC_FILES)
 
 $(PROD_FILE): $(SRC_FILES)
 	@$(CARGO) build --release
+
+$(COCOA_APP): $(PROD_FILE) $(COCOA_SRC)
+	@cd webkitten-cocoa && xcodebuild
+	@echo Generated $(COCOA_APP)
 
 # Create the target directory for installing tool binaries if it does not
 # exist
@@ -49,6 +55,11 @@ doc: ## Generate user/development documentation
 	$(MAKE) -C docs html
 
 build: $(DEV_FILE) ## Build the webkitten binary
+
+cocoa: $(COCOA_APP) ## Build the Cocoa application wrapper
+
+cocoa-clean:
+	@rm -r $(COCOA_APP)
 
 release: $(PROD_FILE) ## Build the webkitten binary in release mode
 
