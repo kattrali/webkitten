@@ -70,7 +70,7 @@ install: $(PROD_FILE) ## Install webkitten into $DESTDIR/bin
 uninstall: ## Remove webkitten from $DESTDIR/bin
 	@rm $(INSTALL_FILE)
 
-clean: ## Clean the build environment
+clean: cocoa-clean ## Clean the build environment
 	@$(CARGO) clean
 
 run: ## Run webkitten in development mode
