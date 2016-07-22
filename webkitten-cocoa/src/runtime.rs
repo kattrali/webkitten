@@ -19,6 +19,10 @@ const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
 const WK_APP_DELEGATE: &'static str = "WebkittenAppDelegate";
 pub const WV_CLASS: &'static str = "WebkittenWebView";
 
+const INTERNET_EVENT_CLASS: u32 = 1196773964;
+const GET_URL_EVENT_ID: u32 = 1196773964;
+const URL_KEYWORD: u32 = 757935405;
+
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
 pub struct WebViewContainerView;
@@ -165,8 +169,8 @@ extern fn app_will_finish_launching(this: &Object, _cmd: Sel, note: id) {
         let manager: id = msg_send![class("NSAppleEventManager"), sharedAppleEventManager];
         msg_send![manager, setEventHandler:this
                                andSelector:sel!(handleGetURLEvent:withReplyEvent:)
-                             forEventClass:1196773964 as u32
-                                andEventID:1196773964 as u32];
+                             forEventClass:INTERNET_EVENT_CLASS
+                                andEventID:GET_URL_EVENT_ID];
     }
 }
 
@@ -175,7 +179,7 @@ extern fn app_finished_launching(_: &Object, _cmd: Sel, note: id) {
 
 extern fn handle_get_url(_: &Object, _cmd: Sel, event: id, _reply_event: id) {
     unsafe {
-        let descriptor: id = msg_send![event, paramDescriptorForKeyword:757935405 as u32];
+        let descriptor: id = msg_send![event, paramDescriptorForKeyword:URL_KEYWORD];
         let url: id = msg_send![descriptor, stringValue];
         if let Some(url) = url.as_str() {
             UI.open_webview(UI.focused_window_index(), Some(url));
