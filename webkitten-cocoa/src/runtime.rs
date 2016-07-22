@@ -114,6 +114,8 @@ fn declare_app_delegates(superclass: &Class) {
                 app_will_finish_launching as extern fn (&Object, Sel, id));
             delegate_class.add_method(sel!(applicationDidFinishLaunching:),
                 app_finished_launching as extern fn (&Object, Sel, id));
+            delegate_class.add_method(sel!(application:openFile:),
+                open_file as extern fn (&Object, Sel, id, id) -> BOOL);
             delegate_class.add_method(sel!(setAsDefaultBrowser),
                 set_as_default_browser as extern fn (&Object, Sel));
             delegate_class.add_method(sel!(handleGetURLEvent:withReplyEvent:),
@@ -162,6 +164,17 @@ extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
         LSSetDefaultHandlerForURLScheme(http.as_concrete_TypeRef(),
                                         bundle_id.as_concrete_TypeRef());
     }
+}
+
+extern fn open_file(_: &Object, _cmd: Sel, _app: id, path: id) -> BOOL {
+    unsafe {
+        if let Some(path) = path.as_str() {
+            let mut protocol = String::from("file://");
+            protocol.push_str(path);
+            UI.open_webview(UI.focused_window_index(), Some(&protocol));
+        }
+    }
+    YES
 }
 
 extern fn app_will_finish_launching(this: &Object, _cmd: Sel, note: id) {
