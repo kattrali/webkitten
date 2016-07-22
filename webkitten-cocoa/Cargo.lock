@@ -4,6 +4,8 @@ version = "0.1.0"
 dependencies = [
  "block 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "cocoa 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "core-foundation 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "core-foundation-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-graphics 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",

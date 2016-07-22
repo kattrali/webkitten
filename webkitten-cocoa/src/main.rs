@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 
 extern crate cocoa;
+extern crate core_foundation_sys;
+extern crate core_foundation;
 extern crate core_graphics;
 extern crate block;
 #[macro_use]

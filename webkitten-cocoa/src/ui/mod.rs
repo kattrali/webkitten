@@ -81,9 +81,9 @@ impl ApplicationUI for CocoaUI {
 
     fn run(&self) {
         self.compile_content_extensions(|_| {});
-        application::initialize_app_env();
+        let delegate = application::initialize_app_env();
         self.open_first_window();
-        application::start_run_loop();
+        application::start_run_loop(delegate);
     }
 
     fn copy(&self, text: &str) {

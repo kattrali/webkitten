@@ -14,7 +14,7 @@ mod keybinding;
 use ui::*;
 
 /// Application identifier for apps built with webkitten core
-pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.webkitten";
+pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.Webkitten";
 /// Application title for apps built with webkitten core
 pub const WEBKITTEN_TITLE: &'static str = "webkitten";
 /// File extension used by command files
