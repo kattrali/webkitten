@@ -26,6 +26,8 @@ SRC_FILES=$(shell ls src/*.rs $(PROJECT)/src/{**/,}*.rs) build.rs Cargo.toml
 DEV_FILE=$(PROJECT)/target/debug/$(PROJECT)
 PROD_FILE=$(PROJECT)/target/release/$(PROJECT)
 INSTALL_FILE=$(DESTBIN)/$(PROJECT)
+COCOA_APP=webkitten-cocoa/build/Release/Webkitten.app
+COCOA_SRC=webkitten-cocoa/app/main.swift
 
 all: build
 
@@ -34,6 +36,10 @@ $(DEV_FILE): $(SRC_FILES)
 
 $(PROD_FILE): $(SRC_FILES)
 	@$(CARGO) build --release
+
+$(COCOA_APP): $(PROD_FILE) $(COCOA_SRC)
+	@cd webkitten-cocoa && xcodebuild
+	@echo Generated $(COCOA_APP)
 
 # Create the target directory for installing tool binaries if it does not
 # exist
@@ -50,6 +56,11 @@ doc: ## Generate user/development documentation
 
 build: $(DEV_FILE) ## Build the webkitten binary
 
+cocoa: $(COCOA_APP) ## Build the Cocoa application wrapper
+
+cocoa-clean:
+	@rm -r $(COCOA_APP)
+
 release: $(PROD_FILE) ## Build the webkitten binary in release mode
 
 install: $(PROD_FILE) ## Install webkitten into $DESTDIR/bin
@@ -59,7 +70,7 @@ install: $(PROD_FILE) ## Install webkitten into $DESTDIR/bin
 uninstall: ## Remove webkitten from $DESTDIR/bin
 	@rm $(INSTALL_FILE)
 
-clean: ## Clean the build environment
+clean: cocoa-clean ## Clean the build environment
 	@$(CARGO) clean
 
 run: ## Run webkitten in development mode

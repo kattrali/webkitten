@@ -12,18 +12,22 @@ pub fn load_uri(webview: id, uri: &str) {
     unsafe { webview.load_request(NSURLRequest(&target)); }
 }
 
+#[allow(dead_code)]
 pub fn load_html_string(webview: id, contents: &str) {
     unsafe { webview.load_html_string(contents, ""); }
 }
 
+#[allow(dead_code)]
 pub fn is_loading(webview: id) -> bool {
     unsafe { webview.is_loading() == YES }
 }
 
+#[allow(dead_code)]
 fn set_custom_user_agent(webview: id, user_agent: &str) {
     unsafe { webview.set_custom_user_agent(user_agent) }
 }
 
+#[allow(dead_code)]
 fn custom_user_agent(webview: id) -> String {
     unsafe {
         let user_agent = webview.custom_user_agent();
@@ -65,6 +69,7 @@ pub fn reload(webview: id, disable_filters: bool) {
     }
 }
 
+#[allow(dead_code)]
 pub fn stop_loading(webview: id) {
     unsafe { webview.stop_loading(); }
 }

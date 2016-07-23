@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 
 extern crate cocoa;
+extern crate core_foundation_sys;
+extern crate core_foundation;
 extern crate core_graphics;
 extern crate block;
 #[macro_use]
@@ -36,10 +38,13 @@ impl log::Log for SimpleLogger {
 }
 
 fn main() {
-	log::set_logger(|max_log_level| {
+	let log_result = log::set_logger(|max_log_level| {
         max_log_level.set(LogLevelFilter::Info);
         Box::new(SimpleLogger)
     });
+    if let Err(err) = log_result {
+        println!("Failed to initialize logger: {}", err);
+    }
     runtime::declare_delegate_classes();
     ui::UI.run();
 }

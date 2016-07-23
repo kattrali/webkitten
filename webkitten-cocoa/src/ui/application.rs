@@ -1,38 +1,36 @@
-use cocoa::base::{selector,id,nil,YES};
+use cocoa::base::{selector,id,nil,YES,NO};
 use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo};
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
-                    NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps,
-                    NSEventModifierFlags};
+                    NSMenu, NSMenuItem, NSEventModifierFlags};
 use webkitten::ui::BrowserConfiguration;
 use cocoa_ext::foundation::{NSString,NSUInteger};
-use runtime::KeyInputDelegate;
+use runtime::{KeyInputDelegate,AppDelegate};
 
-pub fn initialize_app_env() {
+
+pub fn initialize_app_env() -> id {
     unsafe {
         let _pool = NSAutoreleasePool::new(nil);
         nsapp().setActivationPolicy_(NSApplicationActivationPolicyRegular);
-        create_menu();
+        let delegate = AppDelegate::new();
+        create_menu(delegate);
+        delegate
     }
 }
 
-pub fn start_run_loop() {
+pub fn start_run_loop(delegate: id) {
     unsafe {
         msg_send![nsapp(), activateIgnoringOtherApps:YES];
+        msg_send![nsapp(), setDelegate:delegate];
         nsapp().run();
     }
 }
 
-pub fn windows() -> id {
-    unsafe { msg_send![nsapp(), windows] }
-}
-
-unsafe fn create_menu() {
+unsafe fn create_menu(delegate: id) {
     let menubar = NSMenu::new(nil).autorelease();
     let app_menu_item = NSMenuItem::new(nil).autorelease();
     menubar.addItem_(app_menu_item);
     nsapp().setMainMenu_(menubar);
-    app_menu_item.setSubmenu_(create_app_menu());
+    app_menu_item.setSubmenu_(create_app_menu(delegate));
     let edit_menu_item = NSMenuItem::new(nil).autorelease();
     menubar.addItem_(edit_menu_item);
     edit_menu_item.setSubmenu_(create_edit_menu());
@@ -50,16 +48,22 @@ unsafe fn create_window_menu() -> id {
     menu
 }
 
-unsafe fn create_app_menu() -> id {
+unsafe fn create_app_menu(delegate: id) -> id {
     let app_menu = NSMenu::new(nil).autorelease();
+    msg_send![app_menu, setAutoenablesItems:NO];
+    let default_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+        <id as NSString>::from_str("Set as default Web Browser"),
+        selector("setAsDefaultBrowser"),
+        <id as NSString>::from_str("")
+    ).autorelease();
+    msg_send![default_item, setTarget:delegate];
+    app_menu.addItem_(default_item);
     let quit_prefix = <id as NSString>::from_str("Quit ");
     let quit_title = quit_prefix.append(NSProcessInfo::processInfo(nil).processName());
-    let quit_action = selector("terminate:");
-    let quit_key = <id as NSString>::from_str("q");
     let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
         quit_title,
-        quit_action,
-        quit_key
+        selector("terminate:"),
+        <id as NSString>::from_str("q")
     ).autorelease();
     app_menu.addItem_(quit_item);
     app_menu

@@ -4,13 +4,12 @@ use cocoa::foundation::{NSRect, NSPoint, NSSize, NSFastEnumeration,
 use cocoa::appkit::{NSWindow, NSTitledWindowMask, NSResizableWindowMask,
                     NSMiniaturizableWindowMask, NSClosableWindowMask,
                     NSFullSizeContentViewWindowMask, NSBackingStoreBuffered};
-use cocoa_ext::foundation::{NSArray,NSURLRequest,NSString,NSUInteger,NSInteger};
+use cocoa_ext::foundation::{NSArray,NSString,NSUInteger,NSInteger};
 use cocoa_ext::appkit::{NSLayoutConstraint,NSLayoutAttribute,
                         NSConstraintBasedLayoutInstallingConstraints,
                         NSTextField,NSView,NSControl};
 use cocoa_ext::core_graphics::CGRectZero;
 use core_graphics::base::CGFloat;
-use objc::runtime::Object;
 use block::ConcreteBlock;
 
 use webkitten::WEBKITTEN_TITLE;
@@ -70,7 +69,7 @@ pub fn focus_area(window_index: u32, area: WindowArea) {
 pub fn focused_index() -> u32 {
     unsafe {
         let windows: id = msg_send![super::application::nsapp(), windows];
-        for (index, window) in windows.iter().enumerate() {
+        for window in windows.iter() {
             let key: BOOL = msg_send![window, isKeyWindow];
             if key == YES {
                 return index_for_window(window);
@@ -252,9 +251,8 @@ pub fn reference_indices(webview: id) -> Option<(u32, u32)> {
 
 unsafe fn window_for_index(index: u32) -> Option<id> {
     info!("Looking up window for index: {}", index);
-    let window: id = unsafe {
-        msg_send![super::application::nsapp(), windowWithWindowNumber:index as NSInteger]
-    };
+    let window: id =
+        msg_send![super::application::nsapp(), windowWithWindowNumber:index as NSInteger];
     if window != nil {
         Some(window)
     } else {
@@ -329,7 +327,7 @@ unsafe fn add_and_focus_webview(window_index: u32, uri: String) {
             } else if err == nil {
                 log_error_description(err);
             }
-            let webview = <id as WKWebView>::new(CGRectZero(), config, webview_count(window_index)).autorelease();
+            let webview = <id as WKWebView>::new(CGRectZero(), config).autorelease();
             webview.set_navigation_delegate(WebViewHistoryDelegate::new());
             webview.disable_translates_autoresizing_mask_into_constraints();
             webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");

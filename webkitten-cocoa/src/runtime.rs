@@ -1,7 +1,11 @@
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
+use core_foundation_sys::string::CFStringRef;
+use core_foundation::string::CFString;
+use core_foundation::base::TCFType;
 use cocoa::base::{id,nil,class,BOOL,YES};
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
+use webkitten::WEBKITTEN_APP_ID;
 use cocoa_ext::foundation::*;
 use cocoa_ext::appkit::NSControl;
 use ui::{CocoaUI,UI,window};
@@ -12,13 +16,17 @@ const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
 const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
 const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
 const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
-pub const WV_CLASS: &'static str = "WebkittenWebView";
+const WK_APP_DELEGATE: &'static str = "WebkittenAppDelegate";
+
+const INTERNET_EVENT_CLASS: u32 = 1196773964;
+const GET_URL_EVENT_ID: u32 = 1196773964;
+const URL_KEYWORD: u32 = 757935405;
 
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
 pub struct WebViewContainerView;
-pub struct WebkittenWebView;
 pub struct KeyInputDelegate;
+pub struct AppDelegate;
 
 impl CommandBarDelegate {
     pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
@@ -26,6 +34,10 @@ impl CommandBarDelegate {
 
 impl WebViewHistoryDelegate {
     pub unsafe fn new() -> id { msg_send![class(WVHDELEGATE_CLASS), new] }
+}
+
+impl AppDelegate {
+    pub unsafe fn new() -> id { msg_send![class(WK_APP_DELEGATE), new] }
 }
 
 impl WebViewContainerView {
@@ -39,6 +51,11 @@ impl KeyInputDelegate {
         obj.set_ivar("_command", <id as NSString>::from_str(command));
         obj
     }
+}
+
+#[link(name = "CoreServices", kind = "framework")]
+extern {
+    fn LSSetDefaultHandlerForURLScheme(scheme: CFStringRef, bundle_id:CFStringRef);
 }
 
 pub fn log_error_description(err: id) {
@@ -62,11 +79,6 @@ pub fn declare_delegate_classes() {
 }
 
 fn declare_view_classes() {
-    if let Some(superclass) = Class::get("WKWebView") {
-        if let Some(mut decl) = ClassDecl::new(WV_CLASS, superclass) {
-            decl.register();
-        }
-    }
     if let Some(superclass) = Class::get("NSView") {
         if let Some(mut decl) = ClassDecl::new(WVCONTAINER_CLASS, superclass) {
             unsafe {
@@ -86,6 +98,21 @@ fn declare_app_delegates(superclass: &Class) {
         unsafe {
             delegate_class.add_method(sel!(runKeybindingCommand),
                 run_keybinding_command as extern fn(&Object, Sel));
+        }
+        delegate_class.register();
+    }
+    if let Some(mut delegate_class) = ClassDecl::new(WK_APP_DELEGATE, superclass) {
+        unsafe {
+            delegate_class.add_method(sel!(applicationWillFinishLaunching:),
+                app_will_finish_launching as extern fn (&Object, Sel, id));
+            delegate_class.add_method(sel!(applicationDidFinishLaunching:),
+                app_finished_launching as extern fn (&Object, Sel, id));
+            delegate_class.add_method(sel!(application:openFile:),
+                open_file as extern fn (&Object, Sel, id, id) -> BOOL);
+            delegate_class.add_method(sel!(setAsDefaultBrowser),
+                set_as_default_browser as extern fn (&Object, Sel));
+            delegate_class.add_method(sel!(handleGetURLEvent:withReplyEvent:),
+                handle_get_url as extern fn (&Object, Sel, id, id));
         }
         delegate_class.register();
     }
@@ -117,6 +144,54 @@ fn declare_webview_delegates(superclass: &Class) {
                 webview_load_failed as extern fn (&Object, Sel, id, id));
         }
         decl.register();
+    }
+}
+
+extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
+    unsafe {
+        let http = CFString::new("http");
+        let https = CFString::new("https");
+        let bundle_id = CFString::new(WEBKITTEN_APP_ID);
+        LSSetDefaultHandlerForURLScheme(https.as_concrete_TypeRef(),
+                                        bundle_id.as_concrete_TypeRef());
+        LSSetDefaultHandlerForURLScheme(http.as_concrete_TypeRef(),
+                                        bundle_id.as_concrete_TypeRef());
+    }
+}
+
+extern fn open_file(_: &Object, _cmd: Sel, _app: id, path: id) -> BOOL {
+    unsafe {
+        if let Some(path) = path.as_str() {
+            let window_index = UI.focused_window_index();
+            UI.focus_window(window_index);
+            let mut protocol = String::from("file://");
+            protocol.push_str(path);
+            UI.open_webview(window_index, Some(&protocol));
+        }
+    }
+    YES
+}
+
+extern fn app_will_finish_launching(this: &Object, _cmd: Sel, _note: id) {
+    unsafe {
+        let manager: id = msg_send![class("NSAppleEventManager"), sharedAppleEventManager];
+        msg_send![manager, setEventHandler:this
+                               andSelector:sel!(handleGetURLEvent:withReplyEvent:)
+                             forEventClass:INTERNET_EVENT_CLASS
+                                andEventID:GET_URL_EVENT_ID];
+    }
+}
+
+extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: id) {
+}
+
+extern fn handle_get_url(_: &Object, _cmd: Sel, event: id, _reply_event: id) {
+    unsafe {
+        let descriptor: id = msg_send![event, paramDescriptorForKeyword:URL_KEYWORD];
+        let url: id = msg_send![descriptor, stringValue];
+        if let Some(url) = url.as_str() {
+            UI.open_webview(UI.focused_window_index(), Some(url));
+        }
     }
 }
 
