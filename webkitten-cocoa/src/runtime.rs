@@ -169,9 +169,11 @@ extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
 extern fn open_file(_: &Object, _cmd: Sel, _app: id, path: id) -> BOOL {
     unsafe {
         if let Some(path) = path.as_str() {
+            let window_index = UI.focused_window_index();
+            UI.focus_window(window_index);
             let mut protocol = String::from("file://");
             protocol.push_str(path);
-            UI.open_webview(UI.focused_window_index(), Some(&protocol));
+            UI.open_webview(window_index, Some(&protocol));
         }
     }
     YES
