@@ -16,6 +16,7 @@ pub mod foundation {
     #[cfg(target_pointer_width = "64")]
     pub type NSUInteger = libc::c_ulong;
 
+    #[allow(dead_code)]
     pub struct NSRange {
         location: NSUInteger,
         length: NSUInteger,
@@ -240,6 +241,7 @@ pub mod appkit {
         }
     }
 
+    #[allow(dead_code)]
     pub enum NSLayoutAttribute {
         Left          = 1,
         Right         = 2,
@@ -257,6 +259,7 @@ pub mod appkit {
         NotAnAttribute = 0
     }
 
+    #[allow(dead_code)]
     pub enum NSLayoutRelation {
         LessThanOrEqual   = -1,
         Equal              = 0,
@@ -335,6 +338,7 @@ pub mod appkit {
 
     pub trait NSView {
 
+        #[allow(dead_code)]
         unsafe fn new() -> id {
             msg_send![class("NSView"), new]
         }

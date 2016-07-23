@@ -1,11 +1,8 @@
-use cocoa::base::{selector,id,nil,YES,NO,class};
+use cocoa::base::{selector,id,nil,YES,NO};
 use cocoa::foundation::{NSAutoreleasePool, NSProcessInfo};
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicyRegular,
-                    NSMenu, NSMenuItem, NSRunningApplication,
-                    NSApplicationActivateIgnoringOtherApps,
-                    NSEventModifierFlags};
+                    NSMenu, NSMenuItem, NSEventModifierFlags};
 use webkitten::ui::BrowserConfiguration;
-use webkitten::WEBKITTEN_APP_ID;
 use cocoa_ext::foundation::{NSString,NSUInteger};
 use runtime::{KeyInputDelegate,AppDelegate};
 
@@ -23,14 +20,9 @@ pub fn initialize_app_env() -> id {
 pub fn start_run_loop(delegate: id) {
     unsafe {
         msg_send![nsapp(), activateIgnoringOtherApps:YES];
-        let bundle_id = <id as NSString>::from_str(WEBKITTEN_APP_ID);
         msg_send![nsapp(), setDelegate:delegate];
         nsapp().run();
     }
-}
-
-pub fn windows() -> id {
-    unsafe { msg_send![nsapp(), windows] }
 }
 
 unsafe fn create_menu(delegate: id) {

@@ -17,7 +17,6 @@ const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
 const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
 const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
 const WK_APP_DELEGATE: &'static str = "WebkittenAppDelegate";
-pub const WV_CLASS: &'static str = "WebkittenWebView";
 
 const INTERNET_EVENT_CLASS: u32 = 1196773964;
 const GET_URL_EVENT_ID: u32 = 1196773964;
@@ -26,7 +25,6 @@ const URL_KEYWORD: u32 = 757935405;
 pub struct CommandBarDelegate;
 pub struct WebViewHistoryDelegate;
 pub struct WebViewContainerView;
-pub struct WebkittenWebView;
 pub struct KeyInputDelegate;
 pub struct AppDelegate;
 
@@ -81,11 +79,6 @@ pub fn declare_delegate_classes() {
 }
 
 fn declare_view_classes() {
-    if let Some(superclass) = Class::get("WKWebView") {
-        if let Some(mut decl) = ClassDecl::new(WV_CLASS, superclass) {
-            decl.register();
-        }
-    }
     if let Some(superclass) = Class::get("NSView") {
         if let Some(mut decl) = ClassDecl::new(WVCONTAINER_CLASS, superclass) {
             unsafe {
@@ -179,7 +172,7 @@ extern fn open_file(_: &Object, _cmd: Sel, _app: id, path: id) -> BOOL {
     YES
 }
 
-extern fn app_will_finish_launching(this: &Object, _cmd: Sel, note: id) {
+extern fn app_will_finish_launching(this: &Object, _cmd: Sel, _note: id) {
     unsafe {
         let manager: id = msg_send![class("NSAppleEventManager"), sharedAppleEventManager];
         msg_send![manager, setEventHandler:this
@@ -189,7 +182,7 @@ extern fn app_will_finish_launching(this: &Object, _cmd: Sel, note: id) {
     }
 }
 
-extern fn app_finished_launching(_: &Object, _cmd: Sel, note: id) {
+extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: id) {
 }
 
 extern fn handle_get_url(_: &Object, _cmd: Sel, event: id, _reply_event: id) {
