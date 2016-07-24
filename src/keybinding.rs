@@ -2,7 +2,7 @@ use std::error;
 use std::fmt;
 
 pub enum KeyMask {
-    Shift     = 1 << 16,
+    Shift     = 1 << 17,
     Control   = 1 << 18,
     Alternate = 1 << 19,
     Super     = 1 << 20,
