@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use url::Url;
+
 use keybinding;
 
 
@@ -234,37 +236,26 @@ pub trait BrowserConfiguration: Sized {
     }
 
     /// Whether to skip content filtering based on the site-specific option
-    /// `sites."[HOST]".skip-content-filter`.
+    /// `sites."[HOST]".skip-content-filter`. Defaults to `false`.
     fn skip_content_filter(&self, uri: &str) -> bool {
-        if self.content_filter_path().is_some() {
-            self.lookup_site_bool(uri, "skip-content-filter").unwrap_or(false)
-        } else {
-            true
-        }
+        self.lookup_site_bool(uri, "general.skip-content-filter")
+            .unwrap_or(false)
     }
 
     /// Whether to enable private browsing based on the global option
     /// `general.private-browsing` and site-specific option
     /// `sites."[HOST]".private-browsing`. Defaults to `false`.
     fn use_private_browsing(&self, uri: &str) -> bool {
-        if let Some(value) = self.lookup_site_bool(uri, "private-browsing") {
-            return value;
-        } else if let Some(mode) = self.lookup_bool("general.private-browsing") {
-            return mode;
-        }
-        false
+        self.lookup_site_bool(uri, "general.private-browsing")
+            .unwrap_or(false)
     }
 
     /// Whether to allow browser plugins to run in a buffer based on the global
     /// option `general.allow-plugins` and site-specific option
     /// `sites."[HOST]".allow-plugins`. Defaults to `false`.
     fn use_plugins(&self, uri: &str) -> bool {
-        if let Some(value) = self.lookup_site_bool(uri, "allow-plugins") {
-            return value;
-        } else if let Some(mode) = self.lookup_bool("general.allow-plugins") {
-            return mode;
-        }
-        false
+        self.lookup_site_bool(uri, "general.allow-plugins")
+            .unwrap_or(false)
     }
 
     /// Paths to search for command scripts using configuration option
@@ -316,14 +307,48 @@ pub trait BrowserConfiguration: Sized {
     fn lookup_str_table(&self, key: &str) -> Option<HashMap<String, String>>;
 
     /// Look up the bool value of a configuration option matching key
-    /// formatted as `sites."[HOST]".[key]`
-    fn lookup_site_bool<'a>(&'a self, uri: &str, key: &'a str) -> Option<bool>;
+    /// formatted as `sites."[HOST]".[key]`, falling back to `[key]` if no
+    /// match is found.
+    fn lookup_site_bool<'a>(&'a self, uri: &str, key: &'a str) -> Option<bool> {
+        construct_lookup_key(uri, key)
+            .and_then(|key| self.lookup_bool(&key))
+            .or(self.lookup_bool(&key))
+    }
 
     /// Look up the string value of a configuration option matching key
-    /// formatted as `sites."[HOST]".[key]`
-    fn lookup_site_str<'a>(&'a self, uri: &str, key: &'a str) -> Option<String>;
+    /// formatted as `sites."[HOST]".[key]`, falling back to `[key]` if no
+    /// match is found.
+    fn lookup_site_str<'a>(&'a self, uri: &str, key: &'a str) -> Option<String> {
+        construct_lookup_key(uri, key)
+            .and_then(|key| self.lookup_str(&key))
+            .or(self.lookup_str(&key))
+    }
 
     /// Look up the string vector value of a configuration option matching key
-    /// formatted as `sites."[HOST]".[key]`
-    fn lookup_site_str_vec<'a>(&'a self, uri: &str, key: &'a str) -> Option<Vec<String>>;
+    /// formatted as `sites."[HOST]".[key]`, falling back to `[key]` if no
+    /// match is found.
+    fn lookup_site_str_vec<'a>(&'a self, uri: &str, key: &'a str) -> Option<Vec<String>> {
+        construct_lookup_key(uri, key)
+            .and_then(|key| self.lookup_str_vec(&key))
+            .or(self.lookup_str_vec(&key))
+    }
+}
+
+/// Determine the hostname component of a URI if possible and construct
+/// the key for looking up an option
+fn construct_lookup_key(uri: &str, key: &str) -> Option<String> {
+    const URI_DELIMITER: &'static str = "://";
+    const HTTP_PROTOCOL: &'static str = "http";
+    let formatted_uri = if !uri.contains(URI_DELIMITER) {
+        format!("{}{}{}", HTTP_PROTOCOL, URI_DELIMITER, uri)
+    } else {
+        String::from(uri)
+    };
+    if let Ok(url) = Url::parse(&formatted_uri) {
+        if let Some(host) = url.host_str() {
+            return Some(format!("sites.\"{}\".{}", host, key))
+        }
+    }
+    warn!("Failed to parse URI: {}", uri);
+    None
 }

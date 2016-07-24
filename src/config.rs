@@ -1,12 +1,13 @@
+//! Configuration manipulation and handling for common browser options
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::collections::HashMap;
 
 use toml::Value;
-use url::Url;
 
 use ui::BrowserConfiguration;
+
 
 pub const DEFAULT_CONFIG: &'static str = r#"
 [general]
@@ -22,6 +23,86 @@ const CONFIG_DIR: &'static str = "CONFIG_DIR";
 
 const HOME: &'static str = "HOME";
 
+/// Configuration option storage and lookup
+///
+/// ## Examples
+///
+/// Using a start page setting for new windows
+///
+/// ```
+/// use webkitten::config::Config;
+/// use webkitten::ui::BrowserConfiguration;
+///
+/// let config = Config::parse(r#"
+/// [window]
+/// start-page = "file:///path/to/the/page.html"
+/// "#).unwrap();
+/// let start_page = config.start_page().unwrap();
+/// assert_eq!("file:///path/to/the/page.html", &start_page);
+/// ```
+///
+/// Replacing `CONFIG_DIR` in string options with a preferred path
+///
+/// ```
+/// use webkitten::config::Config;
+/// use webkitten::ui::BrowserConfiguration;
+///
+/// let config = Config::parse(r#"
+/// [general]
+/// config-dir = "/path/to/config"
+/// [window]
+/// start-page = "file://CONFIG_DIR/page.html"
+/// "#).unwrap();
+/// let start_page = config.start_page().unwrap();
+/// assert_eq!("file:///path/to/config/page.html", &start_page);
+/// ```
+///
+/// Looking up a custom field
+///
+/// ```
+/// use webkitten::config::Config;
+/// use webkitten::ui::BrowserConfiguration;
+///
+/// let config = Config::parse(r#"
+/// [dependencies]
+/// external-path = "/path/to/bin"
+/// "#).unwrap();
+/// let path = config.lookup_str("dependencies.external-path").unwrap();
+/// assert_eq!("/path/to/bin", &path);
+/// ```
+///
+/// Overriding a field with site-specific options
+///
+/// ```
+/// use webkitten::config::Config;
+/// use webkitten::ui::BrowserConfiguration;
+///
+/// let config = Config::parse(r#"
+/// [dessert]
+/// pie = false
+/// [sites."example.us".dessert]
+/// pie = true
+/// "#).unwrap();
+/// let pie = config.lookup_site_bool("http://example.us/other/stuff.html",
+///                                   "dessert.pie");
+/// assert_eq!(true, pie.unwrap());
+/// ```
+///
+/// Using global fallback for a missing site-specific option
+///
+/// ```
+/// use webkitten::config::Config;
+/// use webkitten::ui::BrowserConfiguration;
+///
+/// let config = Config::parse(r#"
+/// [dependencies]
+/// external-path = "/path/to/bin"
+/// [sites."example.com".dependencies]
+/// external-path = "/path/to/sites-bin"
+/// "#).unwrap();
+/// let path = config.lookup_site_str("http://example.co.uk/old", "dependencies.external-path");
+/// assert_eq!("/path/to/bin", &path.unwrap());
+/// ```
 pub struct Config {
     value: Value
 }
@@ -85,18 +166,6 @@ impl BrowserConfiguration for Config {
                 Some(str_values)
             })
     }
-
-    fn lookup_site_bool<'a>(&'a self, uri: &str, key: &'a str) -> Option<bool> {
-        site_config_key(uri, key).and_then(|key| self.lookup_bool(&key))
-    }
-
-    fn lookup_site_str<'a>(&'a self, uri: &str, key: &'a str) -> Option<String> {
-        site_config_key(uri, key).and_then(|key| self.lookup_str(&key))
-    }
-
-    fn lookup_site_str_vec<'a>(&'a self, uri: &str, key: &'a str) -> Option<Vec<String>> {
-        site_config_key(uri, key).and_then(|key| self.lookup_str_vec(&key))
-    }
 }
 
 impl Config {
@@ -150,11 +219,59 @@ impl Config {
     }
 }
 
-fn site_config_key(uri: &str, key: &str) -> Option<String> {
-    if let Ok(url) = Url::parse(&uri) {
-        if let Some(host) = url.host_str() {
-            return Some(format!("sites.\"{}\".{}", host, key))
-        }
+#[cfg(test)]
+mod tests {
+
+    use super::Config;
+    use ui::{BrowserConfiguration,URIEvent};
+
+    #[test]
+    fn lookup_fail_uri_commands() {
+        let config = Config::parse(r#"
+        [commands]
+        on-fail-uri = ["bob","refresh"]
+        "#).unwrap();
+        let commands = config.on_uri_event_commands(URIEvent::Fail);
+        assert_eq!(2, commands.len());
+        assert_eq!(String::from("bob"), commands[0]);
+        assert_eq!(String::from("refresh"), commands[1]);
     }
-    None
+
+    #[test]
+    fn lookup_request_uri_commands() {
+        let config = Config::parse(r#"
+        [commands]
+        on-request-uri = ["bob","refresh"]
+        "#).unwrap();
+        let commands = config.on_uri_event_commands(URIEvent::Request);
+        assert_eq!(2, commands.len());
+        assert_eq!(String::from("bob"), commands[0]);
+        assert_eq!(String::from("refresh"), commands[1]);
+    }
+
+    #[test]
+    fn lookup_load_uri_commands() {
+        let config = Config::parse(r#"
+        [commands]
+        on-load-uri = ["bob","refresh"]
+        "#).unwrap();
+        let commands = config.on_uri_event_commands(URIEvent::Load);
+        assert_eq!(2, commands.len());
+        assert_eq!(String::from("bob"), commands[0]);
+        assert_eq!(String::from("refresh"), commands[1]);
+    }
+
+    #[test]
+    fn lookup_site_override_vec() {
+        let config = Config::parse(r#"
+        [commands]
+        on-load-uri = ["bob","refresh"]
+        [sites."example.com".commands]
+        on-load-uri = ["frut"]
+        "#).unwrap();
+        let commands = config.lookup_site_str_vec("example.com/page.html",
+                                                  "commands.on-load-uri").unwrap();
+        assert_eq!(1, commands.len());
+        assert_eq!(String::from("frut"), commands[0]);
+    }
 }
