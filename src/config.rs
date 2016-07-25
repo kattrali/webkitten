@@ -15,6 +15,9 @@ private-browsing = false
 
 [window]
 start-page = "https://delisa.fuller.li"
+
+[new-frame]
+opens-in-focused-window = false
 "#;
 
 /// Placeholder used in webkitten configuration to represent the configuration
