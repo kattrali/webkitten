@@ -87,6 +87,7 @@ impl_objc_class!(NSMenu);
 impl_objc_class!(NSMenuItem);
 impl_objc_class!(NSPasteboard);
 impl_objc_class!(NSResponder);
+impl_objc_class!(NSSecureTextField);
 impl_objc_class!(NSTextField);
 impl_objc_class!(NSView);
 impl_objc_class!(NSWindow);
@@ -284,6 +285,17 @@ impl NSPasteboard {
     }
 }
 
+impl NSSecureTextField {
+
+    pub fn new() -> Self {
+        NSSecureTextField { ptr: unsafe { msg_send![class!("NSSecureTextField"), new] } }
+    }
+
+    pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
+        unsafe { msg_send![self.ptr, setDelegate:delegate.ptr()] }
+    }
+}
+
 impl NSTextField {
 
     pub fn new() -> Self {
@@ -292,6 +304,10 @@ impl NSTextField {
 
     pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
         unsafe { msg_send![self.ptr, setDelegate:delegate.ptr()] }
+    }
+
+    pub fn set_placeholder(&self, text: &str) {
+        unsafe { msg_send![self.ptr, setPlaceholderString:NSString::from(text).ptr()] }
     }
 }
 

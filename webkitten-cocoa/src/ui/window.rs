@@ -282,14 +282,23 @@ fn layout_window_subviews(window: &NSWindow) {
 
     let container = WebViewContainerView::new().coerce::<NSView>().unwrap();
     let command_bar = NSTextField::new();
+    let secure_bar = NSSecureTextField::new();
     command_bar.set_delegate(&CommandBarDelegate::new());
     let ref config = super::UI.engine.config;
     let content_view = window.content_view().unwrap();
     let command_bar_view = command_bar.coerce::<NSView>().unwrap();
+    let secure_bar_view = secure_bar.coerce::<NSView>().unwrap();
+    secure_bar_view.set_hidden(true);
     content_view.add_subview(&container);
     content_view.add_subview(&command_bar_view);
+    content_view.add_subview(&secure_bar_view);
     command_bar_view.set_height(BAR_HEIGHT as CGFloat);
+    secure_bar_view.set_height(BAR_HEIGHT as CGFloat);
     command_bar_view.disable_translates_autoresizing_mask_into_constraints();
+    secure_bar_view.disable_translates_autoresizing_mask_into_constraints();
+    content_view.add_constraint(NSLayoutConstraint::bind(&secure_bar_view, NSLayoutAttribute::Bottom, &content_view, NSLayoutAttribute::Bottom));
+    content_view.add_constraint(NSLayoutConstraint::bind(&secure_bar_view, NSLayoutAttribute::Left, &content_view, NSLayoutAttribute::Left));
+    content_view.add_constraint(NSLayoutConstraint::bind(&secure_bar_view, NSLayoutAttribute::Right, &content_view, NSLayoutAttribute::Right));
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Bottom, &content_view, NSLayoutAttribute::Bottom));
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Left, &content_view, NSLayoutAttribute::Left));
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Right, &content_view, NSLayoutAttribute::Right));
