@@ -1,9 +1,5 @@
 #![allow(non_snake_case)]
 
-extern crate cocoa;
-extern crate core_foundation_sys;
-extern crate core_foundation;
-extern crate core_graphics;
 extern crate block;
 #[macro_use]
 extern crate lazy_static;
@@ -11,11 +7,11 @@ extern crate libc;
 #[macro_use]
 extern crate log;
 #[macro_use]
+extern crate macos;
+#[macro_use]
 extern crate objc;
 extern crate webkitten;
 
-mod webkit;
-mod cocoa_ext;
 mod ui;
 mod runtime;
 
@@ -45,6 +41,6 @@ fn main() {
     if let Err(err) = log_result {
         println!("Failed to initialize logger: {}", err);
     }
-    runtime::declare_delegate_classes();
+    runtime::declare_classes();
     ui::UI.run();
 }

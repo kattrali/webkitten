@@ -1,195 +1,180 @@
 use objc::declare::ClassDecl;
-use objc::runtime::{Class, Object, Sel};
-use core_foundation_sys::string::CFStringRef;
-use core_foundation::string::CFString;
-use core_foundation::base::TCFType;
-use cocoa::base::{id,nil,class,BOOL,YES};
+use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
+use macos::{Id,ObjCClass};
+use macos::foundation::*;
+use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags};
+use macos::core_services::register_default_scheme_handler;
+use macos::webkit::*;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use webkitten::WEBKITTEN_APP_ID;
-use cocoa_ext::foundation::*;
-use cocoa_ext::appkit::NSControl;
-use ui::{CocoaUI,UI,window};
-use webkit::WKNavigation;
+use block::Block;
+
+use ui::{CocoaUI,UI};
 
 
-const CBDELEGATE_CLASS: &'static str = "CommandBarDelegate";
-const WVHDELEGATE_CLASS: &'static str = "WebViewHistoryDelegate";
-const KEY_DELEGATE_CLASS: &'static str = "KeyInputDelegate";
-const WVCONTAINER_CLASS: &'static str = "WebViewContainerView";
-const WK_APP_DELEGATE: &'static str = "WebkittenAppDelegate";
-
-const INTERNET_EVENT_CLASS: u32 = 1196773964;
-const GET_URL_EVENT_ID: u32 = 1196773964;
-const URL_KEYWORD: u32 = 757935405;
-
-pub struct CommandBarDelegate;
-pub struct WebViewHistoryDelegate;
-pub struct WebViewContainerView;
-pub struct KeyInputDelegate;
-pub struct AppDelegate;
+impl_objc_class!(CommandBarDelegate);
+impl_objc_class!(WebViewHistoryDelegate);
+impl_objc_class!(WebViewContainerView);
+impl_objc_class!(KeyInputDelegate);
+impl_objc_class!(AppDelegate);
 
 impl CommandBarDelegate {
-    pub unsafe fn new() -> id { msg_send![class(CBDELEGATE_CLASS), new] }
+    pub fn new() -> Self {
+        CommandBarDelegate {
+            ptr: unsafe { msg_send![class!("CommandBarDelegate"), new] }
+        }
+    }
 }
 
 impl WebViewHistoryDelegate {
-    pub unsafe fn new() -> id { msg_send![class(WVHDELEGATE_CLASS), new] }
+    pub fn new() -> Self {
+        WebViewHistoryDelegate {
+            ptr: unsafe { msg_send![class!("WebViewHistoryDelegate"), new] }
+        }
+    }
 }
 
 impl AppDelegate {
-    pub unsafe fn new() -> id { msg_send![class(WK_APP_DELEGATE), new] }
+    pub fn new() -> Self {
+        AppDelegate {
+            ptr: unsafe { msg_send![class!("AppDelegate"), new] }
+        }
+    }
 }
 
 impl WebViewContainerView {
-    pub unsafe fn new() -> id { msg_send![class(WVCONTAINER_CLASS), new] }
+    pub fn new() -> Self {
+        WebViewContainerView {
+            ptr: unsafe { msg_send![class!("WebViewContainerView"), new] }
+        }
+    }
 }
 
 impl KeyInputDelegate {
-    pub unsafe fn new(command: &str) -> id {
-        let delegate: id = msg_send![class(KEY_DELEGATE_CLASS), new];
-        let obj = &mut *(delegate as *mut _ as *mut Object);
-        obj.set_ivar("_command", <id as NSString>::from_str(command));
-        obj
+    pub fn new(command: &str) -> Self {
+        let ptr = unsafe {
+            let delegate: *mut Object = msg_send![class!("KeyInputDelegate"), new];
+            let obj = &mut *(delegate as *mut _ as *mut Object);
+            obj.set_ivar("_command", NSString::from(command).ptr());
+            delegate
+        };
+        KeyInputDelegate { ptr: ptr }
+    }
+
+    pub fn command(&self) -> Option<NSString> {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        NSString::from_ptr(unsafe { *obj.get_ivar("_command") })
     }
 }
 
-#[link(name = "CoreServices", kind = "framework")]
-extern {
-    fn LSSetDefaultHandlerForURLScheme(scheme: CFStringRef, bundle_id:CFStringRef);
-}
-
-pub fn log_error_description(err: id) {
-    if err != nil {
-        unsafe {
-            let desc: id = msg_send![err, description];
-            if let Some(desc) = desc.as_str() {
-                error!("{}", desc);
-            }
-        }
+pub fn log_error_description(err: Id) {
+    let desc = NSError::from_ptr(err)
+        .and_then(|err| err.description())
+        .and_then(|desc| desc.as_str());
+    if let Some(desc) = desc {
+        error!("{}", desc);
     }
 }
 
-pub fn declare_delegate_classes() {
+pub fn declare_classes() {
     declare_view_classes();
-    if let Some(superclass) = Class::get("NSObject") {
-        declare_app_delegates(&superclass);
-        declare_bar_delegate(&superclass);
-        declare_webview_delegates(&superclass);
-    }
+    declare_app_delegates();
+    declare_bar_delegate();
+    declare_webview_delegates();
 }
 
 fn declare_view_classes() {
-    if let Some(superclass) = Class::get("NSView") {
-        if let Some(mut decl) = ClassDecl::new(WVCONTAINER_CLASS, superclass) {
-            unsafe {
-                decl.add_method(sel!(acceptsFirstResponder),
-                    container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
-                decl.add_method(sel!(keyDown:),
-                    container_key_down as extern fn (&Object, Sel, id));
-            }
-            decl.register();
-        }
+    let mut decl = ClassDecl::new(WebViewContainerView::class_name(), class!("NSView")).unwrap();
+    unsafe {
+        decl.add_method(sel!(acceptsFirstResponder),
+            container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
+        decl.add_method(sel!(keyDown:),
+            container_key_down as extern fn (&mut Object, Sel, Id));
     }
+    decl.register();
 }
 
-fn declare_app_delegates(superclass: &Class) {
-    if let Some(mut delegate_class) = ClassDecl::new(KEY_DELEGATE_CLASS, superclass) {
-        delegate_class.add_ivar::<id>("_command");
-        unsafe {
-            delegate_class.add_method(sel!(runKeybindingCommand),
-                run_keybinding_command as extern fn(&Object, Sel));
-        }
-        delegate_class.register();
+fn declare_app_delegates() {
+    let mut key_input = ClassDecl::new(KeyInputDelegate::class_name(), class!("NSObject")).unwrap();
+    key_input.add_ivar::<Id>("_command");
+    unsafe {
+        key_input.add_method(sel!(runKeybindingCommand),
+            run_keybinding_command as extern fn(&mut Object, Sel));
     }
-    if let Some(mut delegate_class) = ClassDecl::new(WK_APP_DELEGATE, superclass) {
-        unsafe {
-            delegate_class.add_method(sel!(applicationWillFinishLaunching:),
-                app_will_finish_launching as extern fn (&Object, Sel, id));
-            delegate_class.add_method(sel!(applicationDidFinishLaunching:),
-                app_finished_launching as extern fn (&Object, Sel, id));
-            delegate_class.add_method(sel!(application:openFile:),
-                open_file as extern fn (&Object, Sel, id, id) -> BOOL);
-            delegate_class.add_method(sel!(setAsDefaultBrowser),
-                set_as_default_browser as extern fn (&Object, Sel));
-            delegate_class.add_method(sel!(handleGetURLEvent:withReplyEvent:),
-                handle_get_url as extern fn (&Object, Sel, id, id));
-        }
-        delegate_class.register();
+    key_input.register();
+    let mut app_delegate = ClassDecl::new(AppDelegate::class_name(), class!("NSObject")).unwrap();
+    unsafe {
+        app_delegate.add_method(sel!(applicationWillFinishLaunching:),
+            app_will_finish_launching as extern fn (&mut Object, Sel, Id));
+        app_delegate.add_method(sel!(applicationDidFinishLaunching:),
+            app_finished_launching as extern fn (&Object, Sel, Id));
+        app_delegate.add_method(sel!(application:openFile:),
+            open_file as extern fn (&Object, Sel, Id, Id) -> BOOL);
+        app_delegate.add_method(sel!(setAsDefaultBrowser),
+            set_as_default_browser as extern fn (&Object, Sel));
+        app_delegate.add_method(sel!(handleGetURLEvent:withReplyEvent:),
+            handle_get_url as extern fn (&Object, Sel, Id, Id));
     }
+    app_delegate.register();
 }
 
-fn declare_bar_delegate(superclass: &Class) {
-    if let Some(mut decl) = ClassDecl::new(CBDELEGATE_CLASS, superclass) {
-        unsafe {
-            decl.add_method(sel!(controlTextDidChange:),
-                command_bar_text_changed as extern fn(&Object, Sel, id));
-            decl.add_method(sel!(controlTextDidEndEditing:),
-                command_bar_did_end_editing as extern fn(&Object, Sel, id));
-            decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
-                command_bar_get_completion as extern fn(&Object, Sel, id, id, id, NSRange, id) -> id);
-        }
-
-        decl.register();
+fn declare_bar_delegate() {
+    let mut decl = ClassDecl::new(CommandBarDelegate::class_name(), class!("NSObject")).unwrap();
+    unsafe {
+        decl.add_method(sel!(controlTextDidChange:),
+            command_bar_text_changed as extern fn(&Object, Sel, Id));
+        decl.add_method(sel!(controlTextDidEndEditing:),
+            command_bar_did_end_editing as extern fn(&Object, Sel, Id));
+        decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
+            command_bar_get_completion as extern fn(&Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
     }
+    decl.register();
 }
 
-fn declare_webview_delegates(superclass: &Class) {
-    if let Some(mut decl) = ClassDecl::new(WVHDELEGATE_CLASS, superclass) {
-        unsafe {
-            decl.add_method(sel!(webView:didStartProvisionalNavigation:),
-                webview_will_load as extern fn (&Object, Sel, id, id));
-            decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
-                webview_did_load as extern fn (&Object, Sel, id, id));
-            decl.add_method(sel!(webView:didFailNavigation:),
-                webview_load_failed as extern fn (&Object, Sel, id, id));
-        }
-        decl.register();
+fn declare_webview_delegates() {
+    let mut decl = ClassDecl::new(WebViewHistoryDelegate::class_name(), class!("NSObject")).unwrap();
+    unsafe {
+        decl.add_method(sel!(webView:didStartProvisionalNavigation:),
+            webview_will_load as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
+            webview_did_load as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(webView:didFailNavigation:),
+            webview_load_failed as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(webView:decidePolicyForNavigationAction:decisionHandler:),
+            webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
     }
+    decl.register();
 }
 
 extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
-    unsafe {
-        let http = CFString::new("http");
-        let https = CFString::new("https");
-        let bundle_id = CFString::new(WEBKITTEN_APP_ID);
-        LSSetDefaultHandlerForURLScheme(https.as_concrete_TypeRef(),
-                                        bundle_id.as_concrete_TypeRef());
-        LSSetDefaultHandlerForURLScheme(http.as_concrete_TypeRef(),
-                                        bundle_id.as_concrete_TypeRef());
+    register_default_scheme_handler("http", WEBKITTEN_APP_ID);
+    register_default_scheme_handler("https", WEBKITTEN_APP_ID);
+}
+
+extern fn open_file(_: &Object, _cmd: Sel, _app: Id, path: Id) -> BOOL {
+    if let Some(path) = NSString::from_ptr(path).and_then(|s| s.as_str()) {
+        let window_index = UI.focused_window_index();
+        UI.focus_window(window_index);
+        let mut protocol = String::from("file://");
+        protocol.push_str(path);
+        UI.open_webview(window_index, Some(&protocol));
+        return YES;
+    }
+    NO
+}
+
+extern fn app_will_finish_launching(this: &mut Object, _cmd: Sel, _note: Id) {
+    if let Some(delegate) = AppDelegate::from_ptr(this) {
+        NSAppleEventManager::shared_manager().set_get_url_event_handler(&delegate);
     }
 }
 
-extern fn open_file(_: &Object, _cmd: Sel, _app: id, path: id) -> BOOL {
-    unsafe {
-        if let Some(path) = path.as_str() {
-            let window_index = UI.focused_window_index();
-            UI.focus_window(window_index);
-            let mut protocol = String::from("file://");
-            protocol.push_str(path);
-            UI.open_webview(window_index, Some(&protocol));
-        }
-    }
-    YES
+extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: Id) {
 }
 
-extern fn app_will_finish_launching(this: &Object, _cmd: Sel, _note: id) {
-    unsafe {
-        let manager: id = msg_send![class("NSAppleEventManager"), sharedAppleEventManager];
-        msg_send![manager, setEventHandler:this
-                               andSelector:sel!(handleGetURLEvent:withReplyEvent:)
-                             forEventClass:INTERNET_EVENT_CLASS
-                                andEventID:GET_URL_EVENT_ID];
-    }
-}
-
-extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: id) {
-}
-
-extern fn handle_get_url(_: &Object, _cmd: Sel, event: id, _reply_event: id) {
-    unsafe {
-        let descriptor: id = msg_send![event, paramDescriptorForKeyword:URL_KEYWORD];
-        let url: id = msg_send![descriptor, stringValue];
-        if let Some(url) = url.as_str() {
+extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
+    if let Some(event) = NSAppleEventDescriptor::from_ptr(event) {
+        if let Some(url) = event.url_param_value().and_then(|u| u.as_str()) {
             UI.open_webview(UI.focused_window_index(), Some(url));
         }
     }
@@ -199,57 +184,67 @@ extern fn container_accepts_first_responder(_: &Object, _cmd: Sel) -> BOOL {
     YES
 }
 
-extern fn container_key_down(this: &Object, _cmd: Sel, event: id) {
-    unsafe {
-        let flags: NSUInteger = msg_send![event, modifierFlags];
+extern fn container_key_down(this: &mut Object, _cmd: Sel, event: Id) {
+    if let Some(event) = NSEvent::from_ptr(event) {
+        let flags = event.modifier_flags();
         if flags == 0 || flags == 256 {
             return;
         }
-        let superview: id = msg_send![this, superview];
-        if superview != nil {
-            msg_send![superview, keyDown:event];
+        if let Some(view) = NSView::from_ptr(this).and_then(|v| v.superview()) {
+            view.key_down(event);
         }
     }
 }
 
-extern fn run_keybinding_command(this: &Object, _cmd: Sel) {
-    unsafe {
-        let command: id = *this.get_ivar("_command");
-        if let Some(command) = command.as_str() {
+extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
+    if let Some(key_delegate) = KeyInputDelegate::from_ptr(this) {
+        if let Some(command) = key_delegate.command().and_then(|c| c.as_str()) {
             let window_index = UI.focused_window_index();
             UI.engine.execute_command::<CocoaUI>(&UI, window_index, command);
         }
     }
 }
 
-extern fn webview_will_load(_: &Object, _cmd: Sel, webview: id, navigation: id) {
-    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
-        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
-        if let Some(uri) = uri {
-            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Request);
+extern fn webview_will_navigate(_: &Object, _cmd: Sel, webview_ptr: Id, action:Id,
+                                handler: Id) {
+    if let Some(action) = WKNavigationAction::from_ptr(action) {
+        let openable_type = action.navigation_type() == WKNavigationType::LinkActivated;
+        let cmd_pressed = action.modifier_flags() == NSEventModifierFlags::Command as NSUInteger;
+        if (openable_type && cmd_pressed) || action.target_frame().is_none() {
+            let window = NSView::from_ptr(webview_ptr)
+                .and_then(|view| view.window());
+            let url = action.request()
+                .and_then(|req| req.url().absolute_string().as_str());
+            if url.is_some() && window.is_some() {
+                run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
+                UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.unwrap().number() as u32, url.unwrap());
+            }
+            return;
         }
+    }
+    run_nav_action_block(handler, WKNavigationActionPolicy::Allow);
+}
+
+fn run_nav_action_block(handler: Id, policy: WKNavigationActionPolicy) {
+    unsafe {
+        let ref block = *(handler as *mut _ as *mut Block<(WKNavigationActionPolicy,), ()>);
+        block.call((policy,));
     }
 }
 
-extern fn webview_load_failed(_: &Object, _cmd: Sel, webview: id, navigation: id) {
-    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
-        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
-        if let Some(uri) = uri {
-            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Fail);
-        }
-    }
+extern fn webview_will_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
+    register_uri_event(webview_ptr, nav_ptr, URIEvent::Request);
 }
 
-extern fn webview_did_load(_: &Object, _cmd: Sel, webview: id, navigation: id) {
-    if let Some((window_index, webview_index)) = window::reference_indices(webview) {
-        let uri = unsafe { navigation.request().url().absolute_string().as_str() };
-        if let Some(uri) = uri {
-            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index, uri, URIEvent::Load);
-        }
-    }
+extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
+    register_uri_event(webview_ptr, nav_ptr, URIEvent::Fail);
 }
 
-extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
+extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
+    register_uri_event(webview_ptr, nav_ptr, URIEvent::Load);
+}
+
+extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
     if is_return_key_event(notification) {
         if let Some(text) = notification_object_text(notification) {
             UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
@@ -257,7 +252,7 @@ extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: id) {
     }
 }
 
-extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: id) {
+extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: Id) {
     if let Some(text) = notification_object_text(notification) {
         if let Some(command) = UI.engine.config.command_matching_prefix(text) {
             UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), &command);
@@ -265,28 +260,57 @@ extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: id) {
     }
 }
 
-extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: id, _: id, words: id, _: NSRange, _: id) -> id {
+extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, words: Id, _: NSRange, _: Id) -> Id {
     info!("requesting command bar completions");
-    unsafe {
-        if let Some(prefix) = control.string_value().as_str() {
-            let completions = UI.engine.command_completions::<CocoaUI>(&UI, prefix);
-            <id as NSArray>::from_vec(completions, |item| <id as NSString>::from_str(&item))
-        } else {
-            words
+    let prefix = NSControl::from_ptr(control)
+        .and_then(|control| control.text())
+        .and_then(|string| string.as_str());
+    if let Some(prefix) = prefix {
+        let completions = UI.engine.command_completions::<CocoaUI>(&UI, prefix);
+        NSArray::from_vec(completions, |item| NSString::from(&item)).ptr()
+    } else {
+        words
+    }
+}
+
+fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
+    let uri = WKNavigation::from_ptr(nav_ptr)
+        .and_then(|u| u.url_string())
+        .and_then(|u| u.as_str())
+        // FIXME: Workaround for refresh event not including a `request` object
+        .or(WKWebView::from_ptr(webview_ptr)
+            .and_then(|view| view.url())
+            .and_then(|url| url.absolute_string().as_str()));
+    if let Some(uri) = uri {
+        if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
+            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index,
+                                              uri, event);
         }
     }
 }
 
-fn notification_object_text<'a>(notification: id) -> Option<&'a str> {
-    unsafe {
-        let control = notification.object();
-        return control.string_value().as_str();
-    };
+fn reference_indices(webview: Id) -> Option<(u32, u32)> {
+    if let Some(webview) = WKWebView::from_ptr(webview).and_then(|v| v.coerce::<NSView>()) {
+        if let Some(window) = webview.window() {
+            return Some((window.number() as u32,
+                         webview.subview_index().unwrap() as u32));
+        }
+    }
+    None
 }
 
-fn is_return_key_event(notification: id) -> bool {
-    let keycode = unsafe {
-        notification.user_info().object_for_key("NSTextMovement").integer_value()
-    };
-    keycode == 0x10
+fn notification_object_text<'a>(notification: Id) -> Option<&'a str> {
+    return NSNotification::from_ptr(notification)
+        .and_then(|note| note.object::<NSControl>())
+        .and_then(|control| control.text())
+        .and_then(|string| string.as_str());
+}
+
+fn is_return_key_event(notification: Id) -> bool {
+    const RETURN_KEY_VALUE: NSInteger = 0x10;
+    return NSNotification::from_ptr(notification)
+        .and_then(|note| note.user_info())
+        .and_then(|info| info.get::<NSNumber>("NSTextMovement"))
+        .and_then(|value| Some(value.integer_value() == RETURN_KEY_VALUE))
+        .unwrap_or(false);
 }

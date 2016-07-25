@@ -1,19 +1,21 @@
 pub mod application;
-pub mod webview;
 pub mod window;
 
 use std::env;
 use std::fs::File;
 use std::io::Read;
+
 use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
-use cocoa_ext::appkit::NSPasteboard;
-
-use cocoa::base::{id,nil};
+use macos::foundation::{NSURLRequest,NSURL,NSString};
+use macos::appkit::{NSPasteboard,nsapp};
+use macos::webkit::*;
+use macos::{Id,nil};
 use block::ConcreteBlock;
-use webkit::*;
+
 use runtime::log_error_description;
+
 
 const DEFAULT_CONFIG_PATH: &'static str = ".config/webkitten/config.toml";
 
@@ -44,14 +46,12 @@ impl CocoaUI {
         if let Some(mut file) = filter_path.and_then(|p| File::open(p).ok()) {
             let mut contents = String::new();
             if let Some(_) = file.read_to_string(&mut contents).ok() {
-                unsafe {
-                    let block = ConcreteBlock::new(move |_: id, err: id| {
-                        log_error_description(err);
-                        completion(err == nil);
-                    });
-                    let store = _WKUserContentExtensionStore::default_store(nil);
-                    store.compile_content_extension("filter", &contents, &block.copy());
-                }
+                let block = ConcreteBlock::new(move |_: Id, err: Id| {
+                    log_error_description(err);
+                    completion(err == nil);
+                });
+                let store = _WKUserContentExtensionStore::default_store();
+                store.compile_content_extension("filter", &contents, &block.copy());
             }
         }
     }
@@ -66,6 +66,14 @@ impl CocoaUI {
         } else {
             self.open_window(None);
         }
+    }
+
+    pub fn create_request(uri: &str) -> NSURLRequest {
+        let mut target = String::from(uri);
+        if !target.contains("://") {
+            target = format!("http://{}", target);
+        }
+        NSURLRequest::from(NSURL::from(NSString::from(&target)))
     }
 }
 
@@ -83,21 +91,19 @@ impl ApplicationUI for CocoaUI {
         self.compile_content_extensions(|_| {});
         let delegate = application::initialize_app_env();
         self.open_first_window();
-        application::start_run_loop(delegate);
+        application::start_run_loop(&delegate);
     }
 
     fn copy(&self, text: &str) {
-        unsafe {
-            <id as NSPasteboard>::general_pasteboard().copy(text);
-        }
+        NSPasteboard::general().copy(text);
     }
 
     fn open_window(&self, uri: Option<&str>) {
         if uri.is_some() {
-            window::open(uri)
+            window::open(uri);
         } else {
-            window::open(self.engine.config.start_page())
-        };
+            window::open(self.engine.config.start_page());
+        }
     }
 
     fn close_window(&self, index: u32) {
@@ -117,7 +123,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn window_count(&self) -> u32 {
-        window::window_count()
+        nsapp().windows().count() as u32
     }
 
     fn toggle_window(&self, window_index: u32, visible: bool) {
@@ -157,6 +163,8 @@ impl ApplicationUI for CocoaUI {
             window::open_webview(window_index, uri);
         } else if let Some(uri) = self.engine.config.start_page() {
             window::open_webview(window_index, uri);
+        } else {
+            warn!("Skipping opening an empty buffer");
         }
     }
 
@@ -170,65 +178,90 @@ impl ApplicationUI for CocoaUI {
 
     fn reload_webview(&self, window_index: u32, webview_index: u32, disable_filters: bool) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::reload(webview, disable_filters);
+            match disable_filters {
+                true  => webview.reload_without_content_blockers(),
+                false => webview.reload()
+            }
         }
     }
 
     fn set_uri(&self, window_index: u32, webview_index: u32, uri: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::load_uri(webview, uri);
+            webview.load_request(CocoaUI::create_request(uri));
         }
     }
 
     fn go_back(&self, window_index: u32, webview_index: u32) -> bool {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::go_back(webview)
-        } else {
-            false
+            if webview.can_go_back() {
+                webview.go_back();
+                return true;
+            }
         }
+        false
     }
 
     fn go_forward(&self, window_index: u32, webview_index: u32) -> bool {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::go_forward(webview)
-        } else {
-            false
+            if webview.can_go_forward() {
+                webview.go_forward();
+                return true;
+            }
         }
+        false
     }
 
     fn uri(&self, window_index: u32, webview_index: u32) -> String {
-        window::webview(window_index, webview_index)
-            .and_then(|webview| Some(webview::uri(webview)))
-            .unwrap_or(String::new())
+        String::from(window::webview(window_index, webview_index)
+            .and_then(|webview| webview.url())
+            .and_then(|u| u.absolute_string().as_str())
+            .unwrap_or(""))
     }
 
     fn webview_title(&self, window_index: u32, webview_index: u32) -> String {
-        window::webview(window_index, webview_index)
-            .and_then(|webview| Some(webview::title(webview)))
-            .unwrap_or(String::new())
+        String::from(window::webview(window_index, webview_index)
+            .and_then(|webview| webview.title())
+            .and_then(|title| title.as_str())
+            .unwrap_or(""))
     }
 
     fn find_string(&self, window_index: u32, webview_index: u32, query: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::find_string(webview, query)
+            webview.find_string(query)
         }
     }
 
     fn hide_find_results(&self, window_index: u32, webview_index: u32) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::hide_find_results(webview)
+            webview.hide_find_results()
         }
     }
 
     fn run_javascript(&self, window_index: u32, webview_index: u32, script: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::run_javascript(webview, script)
+            webview.evaluate_javascript(script)
         }
     }
 
     fn apply_styles(&self, window_index: u32, webview_index: u32, styles: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview::apply_styles(webview, styles);
+            let controller = webview.configuration().user_content_controller();
+            if controller.can_add_user_style_sheet() {
+                let sheet = _WKUserStyleSheet::new(styles);
+                controller.add_user_style_sheet(sheet);
+            } else {
+                info!("Using fallback stylesheet");
+                let formatted_style = styles.replace("\"", "\\\"").replace("\n", "");
+                let script = format!(r#"
+                    var head = document.getElementsByTagName('head')[0],
+                        style = document.createElement('style'),
+                        content = document.createTextNode('{}');
+                    style.appendChild(content);
+                    if (head != undefined) {{
+                        head.appendChild(style);
+                        }}"#, formatted_style);
+                webview.evaluate_javascript(&script);
+            }
         }
     }
 }
