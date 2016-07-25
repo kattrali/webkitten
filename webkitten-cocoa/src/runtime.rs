@@ -246,7 +246,11 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, 
 fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
     let uri = WKNavigation::from_ptr(nav_ptr)
         .and_then(|u| u.url_string())
-        .and_then(|u| u.as_str());
+        .and_then(|u| u.as_str())
+        // FIXME: Workaround for refresh event not including a `request` object
+        .or(WKWebView::from_ptr(webview_ptr)
+            .and_then(|view| view.url())
+            .and_then(|url| url.absolute_string().as_str()));
     if let Some(uri) = uri {
         if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
             UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index,
