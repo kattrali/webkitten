@@ -58,8 +58,9 @@ build: $(DEV_FILE) ## Build the webkitten binary
 
 cocoa: $(COCOA_APP) ## Build the Cocoa application wrapper
 
-cocoa-clean:
+cocoa-clean: ## Clean the Cocoa wrapper build artifact
 	@rm -r $(COCOA_APP)
+	@cd webkitten-cocoa && xcodebuild clean
 
 release: $(PROD_FILE) ## Build the webkitten binary in release mode
 
