@@ -156,6 +156,9 @@ pub trait EventHandler {
                                       webview_index: u32,
                                       uri: &str,
                                       event: URIEvent);
+
+    /// Handle a request to open a URI in a new frame
+    fn on_new_frame_request<T: ApplicationUI>(&self, ui: &T, window_index: u32, uri: &str);
 }
 
 pub trait BrowserConfiguration: Sized {
@@ -167,6 +170,14 @@ pub trait BrowserConfiguration: Sized {
     /// `window.start-page`
     fn start_page(&self) -> Option<String> {
         self.lookup_str("window.start-page")
+    }
+
+    /// Whether to open a buffer in the focused window or a new window when
+    /// requesting a new frame. Defaults to `false`, always opening a new
+    /// window.
+    fn new_frame_uses_focused_window(&self) -> bool {
+        self.lookup_bool("new-frame.opens-in-focused-window")
+            .unwrap_or(false)
     }
 
     /// The directory to replace instances of CONFIG_DIR in the configuration

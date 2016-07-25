@@ -24,7 +24,24 @@ pub enum WKFindOptions {
     ShowHighlight = 1 << 7
 }
 
+pub enum WKNavigationActionPolicy {
+    Cancel = 0,
+    Allow  = 1,
+}
+
+#[derive(PartialEq)]
+pub enum WKNavigationType {
+    LinkActivated   = 0,
+    FormSubmitted   = 1,
+    BackForward     = 2,
+    Reload          = 3,
+    FormResubmitted = 4,
+    Other           = -1,
+}
+
+impl_objc_class!(WKFrameInfo);
 impl_objc_class!(WKNavigation);
+impl_objc_class!(WKNavigationAction);
 impl_objc_class!(WKPreferences);
 impl_objc_class!(WKUserContentController);
 impl_objc_class!(WKWebView);
@@ -33,6 +50,14 @@ impl_objc_class!(WKWebsiteDataStore);
 impl_objc_class!(_WKUserContentExtensionStore);
 impl_objc_class!(_WKUserContentFilter);
 impl_objc_class!(_WKUserStyleSheet);
+
+impl WKFrameInfo {
+
+    pub fn is_main_frame(&self) -> bool {
+        let is_main: BOOL = unsafe { msg_send![self.ptr, isMainFrame] };
+        is_main == YES
+    }
+}
 
 impl WKNavigation {
 
@@ -43,6 +68,29 @@ impl WKNavigation {
     pub fn url_string(&self) -> Option<NSString> {
         self.request()
             .and_then(|req| Some(req.url().absolute_string()))
+    }
+}
+
+impl WKNavigationAction {
+
+    pub fn request(&self) -> Option<NSURLRequest> {
+        NSURLRequest::from_ptr(unsafe { msg_send![self.ptr, request] })
+    }
+
+    pub fn modifier_flags(&self) -> NSUInteger {
+        unsafe { msg_send![self.ptr, modifierFlags] }
+    }
+
+    pub fn navigation_type(&self) -> WKNavigationType {
+        unsafe { msg_send![self.ptr, navigationType] }
+    }
+
+    pub fn target_frame(&self) -> Option<WKFrameInfo> {
+        WKFrameInfo::from_ptr(unsafe { msg_send![self.ptr, targetFrame] })
+    }
+
+    pub fn source_frame(&self) -> Option<WKFrameInfo> {
+        WKFrameInfo::from_ptr(unsafe { msg_send![self.ptr, sourceFrame] })
     }
 }
 

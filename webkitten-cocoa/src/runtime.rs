@@ -2,11 +2,12 @@ use objc::declare::ClassDecl;
 use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
 use macos::foundation::*;
-use macos::appkit::{NSControl,NSEvent,NSView};
+use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags};
 use macos::core_services::register_default_scheme_handler;
-use macos::webkit::{WKNavigation,WKWebView};
+use macos::webkit::*;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use webkitten::WEBKITTEN_APP_ID;
+use block::Block;
 
 use ui::{CocoaUI,UI};
 
@@ -139,6 +140,8 @@ fn declare_webview_delegates() {
             webview_did_load as extern fn (&Object, Sel, Id, Id));
         decl.add_method(sel!(webView:didFailNavigation:),
             webview_load_failed as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(webView:decidePolicyForNavigationAction:decisionHandler:),
+            webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
     }
     decl.register();
 }
@@ -199,6 +202,33 @@ extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
             let window_index = UI.focused_window_index();
             UI.engine.execute_command::<CocoaUI>(&UI, window_index, command);
         }
+    }
+}
+
+extern fn webview_will_navigate(_: &Object, _cmd: Sel, webview_ptr: Id, action:Id,
+                                handler: Id) {
+    if let Some(action) = WKNavigationAction::from_ptr(action) {
+        let openable_type = action.navigation_type() == WKNavigationType::LinkActivated;
+        let cmd_pressed = action.modifier_flags() == NSEventModifierFlags::Command as NSUInteger;
+        if (openable_type && cmd_pressed) || action.target_frame().is_none() {
+            let window = NSView::from_ptr(webview_ptr)
+                .and_then(|view| view.window());
+            let url = action.request()
+                .and_then(|req| req.url().absolute_string().as_str());
+            if url.is_some() && window.is_some() {
+                run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
+                UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.unwrap().number() as u32, url.unwrap());
+            }
+            return;
+        }
+    }
+    run_nav_action_block(handler, WKNavigationActionPolicy::Allow);
+}
+
+fn run_nav_action_block(handler: Id, policy: WKNavigationActionPolicy) {
+    unsafe {
+        let ref block = *(handler as *mut _ as *mut Block<(WKNavigationActionPolicy,), ()>);
+        block.call((policy,));
     }
 }
 
