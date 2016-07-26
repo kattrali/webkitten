@@ -64,6 +64,15 @@ pub fn focused_index() -> u32 {
 
 pub fn close(window_index: u32) {
     if let Some(mut window) = window_for_index(window_index) {
+        let webviews = window_webviews(&window);
+        for index in 0 .. webviews.count() {
+            if let Some(view) = webviews.get::<WKWebView>(index) {
+                view.remove_from_superview();
+                view.release_delegates();
+                view.close();
+            }
+        }
+        window.release_delegate();
         window.close();
     }
 }
@@ -92,9 +101,11 @@ pub fn close_webview(window_index: u32, webview_index: u32) {
         let is_focused = focused_webview_index(window_index) == webview_index;
         info!("Closing 1 webview of {}", webviews.count());
         for index in 0 .. webviews.count() {
-            if let Some(view) = webviews.get::<NSView>(index) {
+            if let Some(view) = webviews.get::<WKWebView>(index) {
                 if index == (webview_index as NSUInteger) {
                     view.remove_from_superview();
+                    view.release_delegates();
+                    view.close();
                     if is_focused {
                         if index as usize >= webviews.count() as usize {
                             focus_webview(window_index, 0);
