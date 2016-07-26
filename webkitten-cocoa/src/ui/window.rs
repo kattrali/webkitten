@@ -221,7 +221,7 @@ fn add_and_focus_webview(window_index: u32, uri: String) {
                     view.set_hidden(true);
                 }
             }
-            let config = WKWebViewConfiguration::new();
+            let config = WKWebViewConfiguration::new().autorelease();
             if private_browsing {
                 info!("blocking data storage in buffer");
                 config.set_website_data_store(WKWebsiteDataStore::nonpersistent_store());
@@ -233,7 +233,7 @@ fn add_and_focus_webview(window_index: u32, uri: String) {
             } else if err != nil {
                 log_error_description(err);
             }
-            let webview = WKWebView::new(CGRect::zero(), config);
+            let webview = WKWebView::new(CGRect::zero(), config).autorelease();
             webview.set_navigation_delegate(WebViewHistoryDelegate::new());
             webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");
             let webview_view = webview.coerce::<NSView>().unwrap();
@@ -280,8 +280,8 @@ fn create_nswindow() -> NSWindow {
 fn layout_window_subviews(window: &NSWindow) {
     const BAR_HEIGHT: usize = 24;
 
-    let container = WebViewContainerView::new().coerce::<NSView>().unwrap();
-    let command_bar = NSTextField::new();
+    let container = WebViewContainerView::new().autorelease().coerce::<NSView>().unwrap();
+    let command_bar = NSTextField::new().autorelease();
     command_bar.set_delegate(&CommandBarDelegate::new());
     let ref config = super::UI.engine.config;
     let content_view = window.content_view().unwrap();
