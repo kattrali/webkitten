@@ -88,8 +88,8 @@ pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix
 
 pub fn on_uri_event<T: ApplicationUI>(file: File,
                                       ui: &T,
-                                      window_index: u32,
-                                      webview_index: u32,
+                                      window_index: i32,
+                                      webview_index: i32,
                                       uri: &str,
                                       event: URIEvent) -> ScriptResult<()> {
     let mut lua = create_runtime::<T>(ui);
@@ -164,15 +164,15 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         }
         String::new()
     }));
-    lua.set("focus_window", function1(|index: u32| {
+    lua.set("focus_window", function1(|index: i32| {
         info!("focus_window: {}", index);
         ui.focus_window(index);
     }));
-    lua.set("focus_webview_in_window", function1(|index: u32| {
+    lua.set("focus_webview_in_window", function1(|index: i32| {
         info!("focus_webview_in_window: {}", index);
         ui.focus_window_area(index, WindowArea::WebView);
     }));
-    lua.set("focus_commandbar_in_window", function1(|index: u32| {
+    lua.set("focus_commandbar_in_window", function1(|index: i32| {
         info!("focus_commandbar_in_window: {}", index);
         ui.focus_window_area(index, WindowArea::CommandBar);
     }));
@@ -184,7 +184,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
             ui.open_window(None);
         }
     }));
-    lua.set("close_window", function1(|window_index: u32| {
+    lua.set("close_window", function1(|window_index: i32| {
         info!("close_window: {}", window_index);
         ui.close_window(window_index);
     }));
@@ -196,83 +196,83 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("get focused_window_index");
         ui.focused_window_index()
     }));
-    lua.set("hide_window", function1(|window_index: u32| {
+    lua.set("hide_window", function1(|window_index: i32| {
         info!("hide_window: {}", window_index);
         ui.toggle_window(window_index, false);
     }));
-    lua.set("show_window", function1(|window_index: u32| -> () {
+    lua.set("show_window", function1(|window_index: i32| -> () {
         info!("show_window: {}", window_index);
         ui.toggle_window(window_index, true);
     }));
-    lua.set("open_webview", function2(|window_index: u32, uri: String| {
+    lua.set("open_webview", function2(|window_index: i32, uri: String| {
         info!("open_webview: {}", window_index);
         ui.open_webview(window_index, if uri.is_empty() { None } else { Some(&uri) });
     }));
-    lua.set("webview_count", function1(|window_index: u32| {
+    lua.set("webview_count", function1(|window_index: i32| {
         info!("get webview_count: {}", window_index);
         ui.webview_count(window_index)
     }));
-    lua.set("set_command_field_text", function2(|window_index: u32, text: String| {
+    lua.set("set_command_field_text", function2(|window_index: i32, text: String| {
         info!("set command_field_text");
         ui.set_command_field_text(window_index, &text);
     }));
-    lua.set("command_field_text", function1(|window_index: u32| {
+    lua.set("command_field_text", function1(|window_index: i32| {
         info!("get command_field_text");
         ui.command_field_text(window_index)
     }));
-    lua.set("focused_webview_index", function1(|window_index: u32| {
+    lua.set("focused_webview_index", function1(|window_index: i32| {
         info!("get focused_webview_index");
         ui.focused_webview_index(window_index)
     }));
-    lua.set("resize_window", function3(|window_index: u32, width: u32, height: u32| {
+    lua.set("resize_window", function3(|window_index: i32, width: u32, height: u32| {
         info!("resize_window: {} => ({}, {})", window_index, width, height);
         ui.resize_window(window_index, width, height);
     }));
-    lua.set("close_webview", function2(|window_index: u32, webview_index: u32| {
+    lua.set("close_webview", function2(|window_index: i32, webview_index: i32| {
         info!("close_webview: ({}, {})", window_index, webview_index);
         ui.close_webview(window_index, webview_index);
     }));
-    lua.set("reload_webview", function3(|window_index: u32, webview_index: u32, disable_filters: bool| {
+    lua.set("reload_webview", function3(|window_index: i32, webview_index: i32, disable_filters: bool| {
         info!("reload_webview: ({}, {})", window_index, webview_index);
         ui.reload_webview(window_index, webview_index, disable_filters);
     }));
-    lua.set("focus_webview", function2(|window_index: u32, webview_index: u32| {
+    lua.set("focus_webview", function2(|window_index: i32, webview_index: i32| {
         info!("focus_webview: ({}, {})", window_index, webview_index);
         ui.focus_webview(window_index, webview_index);
     }));
-    lua.set("load_uri", function3(|window_index: u32, webview_index: u32, uri: String| {
+    lua.set("load_uri", function3(|window_index: i32, webview_index: i32, uri: String| {
         info!("load_uri: ({}, {})", window_index, webview_index);
         ui.set_uri(window_index, webview_index, &uri);
     }));
-    lua.set("go_back", function2(|window_index: u32, webview_index: u32| {
+    lua.set("go_back", function2(|window_index: i32, webview_index: i32| {
         info!("go_back: ({}, {})", window_index, webview_index);
         ui.go_back(window_index, webview_index);
     }));
-    lua.set("go_forward", function2(|window_index: u32, webview_index: u32| {
+    lua.set("go_forward", function2(|window_index: i32, webview_index: i32| {
         info!("go_forward: ({}, {})", window_index, webview_index);
         ui.go_forward(window_index, webview_index);
     }));
-    lua.set("webview_uri", function2(|window_index: u32, webview_index: u32| {
+    lua.set("webview_uri", function2(|window_index: i32, webview_index: i32| {
         info!("get webview_uri: ({}, {})", window_index, webview_index);
         ui.uri(window_index, webview_index)
     }));
-    lua.set("webview_title", function2(|window_index: u32, webview_index: u32| {
+    lua.set("webview_title", function2(|window_index: i32, webview_index: i32| {
         info!("get webview_title: ({}, {})", window_index, webview_index);
         ui.webview_title(window_index, webview_index)
     }));
-    lua.set("find", function3(|window_index: u32, webview_index: u32, query: String| {
+    lua.set("find", function3(|window_index: i32, webview_index: i32, query: String| {
         info!("find: ({}, {})", window_index, webview_index);
         ui.find_string(window_index, webview_index, &query);
     }));
-    lua.set("hide_find", function2(|window_index: u32, webview_index: u32| {
+    lua.set("hide_find", function2(|window_index: i32, webview_index: i32| {
         info!("hide_find: ({}, {})", window_index, webview_index);
         ui.hide_find_results(window_index, webview_index)
     }));
-    lua.set("run_javascript", function3(|window_index: u32, webview_index: u32, script: String| {
+    lua.set("run_javascript", function3(|window_index: i32, webview_index: i32, script: String| {
         info!("run_javascript: ({}, {})", window_index, webview_index);
         ui.run_javascript(window_index, webview_index, &script);
     }));
-    lua.set("add_styles", function3(|window_index: u32, webview_index: u32, styles: String| {
+    lua.set("add_styles", function3(|window_index: i32, webview_index: i32, styles: String| {
         ui.apply_styles(window_index, webview_index, &styles);
     }));
     lua

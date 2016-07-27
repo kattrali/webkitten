@@ -217,7 +217,7 @@ extern fn webview_will_navigate(_: &Object, _cmd: Sel, webview_ptr: Id, action:I
                 .and_then(|req| req.url().absolute_string().as_str());
             if url.is_some() && window.is_some() {
                 run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
-                UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.unwrap().number() as u32, url.unwrap());
+                UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.unwrap().number() as i32, url.unwrap());
             }
             return;
         }
@@ -289,11 +289,11 @@ fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
     }
 }
 
-fn reference_indices(webview: Id) -> Option<(u32, u32)> {
+fn reference_indices(webview: Id) -> Option<(i32, i32)> {
     if let Some(webview) = WKWebView::from_ptr(webview).and_then(|v| v.coerce::<NSView>()) {
         if let Some(window) = webview.window() {
-            return Some((window.number() as u32,
-                         webview.subview_index().unwrap() as u32));
+            return Some((window.number() as i32,
+                         webview.subview_index().unwrap() as i32));
         }
     }
     None
