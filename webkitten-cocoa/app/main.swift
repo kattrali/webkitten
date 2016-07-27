@@ -9,6 +9,7 @@ func log(data: NSData) {
 let task = NSTask()
 let bundle = NSBundle.mainBundle()
 task.launchPath = bundle.pathForResource("webkitten-cocoa", ofType: nil)
+task.environment = ["RUST_BACKTRACE": "1"]
 
 let stdOut = NSPipe()
 let stdErr = NSPipe()
