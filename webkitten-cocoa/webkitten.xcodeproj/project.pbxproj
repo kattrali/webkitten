@@ -12,6 +12,16 @@
 		8AEA2C071D3E011100A82429 /* webkitten-cocoa in Resources */ = {isa = PBXBuildFile; fileRef = 8AEA2C061D3E011100A82429 /* webkitten-cocoa */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		8A41C8F51D487CF000515E73 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8A7514331D3DDD42001C4112 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A41C8F11D487CDE00515E73;
+			remoteInfo = "webkitten-cocoa";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		8A75143B1D3DDD42001C4112 /* Webkitten.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Webkitten.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A7514441D3DDD42001C4112 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -60,6 +70,23 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXLegacyTarget section */
+		8A41C8F11D487CDE00515E73 /* webkitten-cocoa */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = release;
+			buildConfigurationList = 8A41C8F41D487CDE00515E73 /* Build configuration list for PBXLegacyTarget "webkitten-cocoa" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = ..;
+			dependencies = (
+			);
+			name = "webkitten-cocoa";
+			passBuildSettingsInEnvironment = 1;
+			productName = "webkitten-cocoa";
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		8A75143A1D3DDD42001C4112 /* Webkitten */ = {
 			isa = PBXNativeTarget;
@@ -72,6 +99,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				8A41C8F61D487CF000515E73 /* PBXTargetDependency */,
 			);
 			name = Webkitten;
 			productName = Webkitten;
@@ -87,6 +115,9 @@
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "Delisa Mason";
 				TargetAttributes = {
+					8A41C8F11D487CDE00515E73 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
 					8A75143A1D3DDD42001C4112 = {
 						CreatedOnToolsVersion = 7.3.1;
 					};
@@ -106,6 +137,7 @@
 			projectRoot = "";
 			targets = (
 				8A75143A1D3DDD42001C4112 /* Webkitten */,
+				8A41C8F11D487CDE00515E73 /* webkitten-cocoa */,
 			);
 		};
 /* End PBXProject section */
@@ -133,7 +165,38 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		8A41C8F61D487CF000515E73 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A41C8F11D487CDE00515E73 /* webkitten-cocoa */;
+			targetProxy = 8A41C8F51D487CF000515E73 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		8A41C8F21D487CDE00515E73 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8A41C8F31D487CDE00515E73 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		8A75144A1D3DDD42001C4112 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -245,6 +308,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8A41C8F41D487CDE00515E73 /* Build configuration list for PBXLegacyTarget "webkitten-cocoa" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A41C8F21D487CDE00515E73 /* Debug */,
+				8A41C8F31D487CDE00515E73 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		8A7514361D3DDD42001C4112 /* Build configuration list for PBXProject "webkitten" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
