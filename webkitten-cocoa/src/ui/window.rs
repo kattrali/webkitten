@@ -63,7 +63,7 @@ pub fn focused_index() -> u32 {
 }
 
 pub fn close(window_index: u32) {
-    if let Some(window) = window_for_index(window_index) {
+    if let Some(mut window) = window_for_index(window_index) {
         window.close();
     }
 }
