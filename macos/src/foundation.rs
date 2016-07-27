@@ -136,6 +136,10 @@ impl NSAutoreleasePool {
             ptr: unsafe { msg_send![class!("NSAutoreleasePool"), new] }
         }
     }
+
+    pub fn drain(&self) {
+        unsafe { msg_send![self.ptr, drain] }
+    }
 }
 
 impl NSMutableArray {

@@ -8,7 +8,7 @@ use std::io::Read;
 use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
-use macos::foundation::{NSURLRequest,NSURL,NSString};
+use macos::foundation::{NSURLRequest,NSURL,NSString,NSAutoreleasePool};
 use macos::appkit::{NSPasteboard,nsapp};
 use macos::webkit::*;
 use macos::{Id,nil};
@@ -88,10 +88,12 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn run(&self) {
+        let pool = NSAutoreleasePool::new();
         self.compile_content_extensions(|_| {});
         let delegate = application::initialize_app_env();
         self.open_first_window();
         application::start_run_loop(&delegate);
+        pool.drain();
     }
 
     fn copy(&self, text: &str) {

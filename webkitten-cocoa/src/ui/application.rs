@@ -1,5 +1,5 @@
 use macos::ObjCClass;
-use macos::foundation::{NSAutoreleasePool,NSUInteger};
+use macos::foundation::NSUInteger;
 use macos::appkit::{NSApplicationActivationPolicy,NSMenu,NSMenuItem,nsapp};
 use webkitten::ui::BrowserConfiguration;
 
@@ -7,7 +7,6 @@ use runtime::{KeyInputDelegate,AppDelegate};
 
 
 pub fn initialize_app_env() -> AppDelegate {
-    let _pool = NSAutoreleasePool::new();
     nsapp().set_activation_policy(NSApplicationActivationPolicy::Regular);
     let delegate = AppDelegate::new();
     create_menu(&delegate);
