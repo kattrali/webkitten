@@ -194,7 +194,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("focused_window_index", function0(|| {
         info!("get focused_window_index");
-        ui.focused_window_index()
+        if let Some(focused_window_index) = ui.focused_window_index() {
+            focused_window_index as i32
+        } else {
+            return -1
+        }
     }));
     lua.set("hide_window", function1(|window_index: u32| {
         info!("hide_window: {}", window_index);
@@ -222,7 +226,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("focused_webview_index", function1(|window_index: u32| {
         info!("get focused_webview_index");
-        ui.focused_webview_index(window_index)
+        if let Some(focused_webview_index) = ui.focused_webview_index(window_index) {
+            focused_webview_index as i32
+        } else {
+            -1
+        }
     }));
     lua.set("resize_window", function3(|window_index: u32, width: u32, height: u32| {
         info!("resize_window: {} => ({}, {})", window_index, width, height);

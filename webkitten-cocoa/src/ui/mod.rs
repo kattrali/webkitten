@@ -112,7 +112,7 @@ impl ApplicationUI for CocoaUI {
         window::close(index);
     }
 
-    fn focused_window_index(&self) -> u32 {
+    fn focused_window_index(&self) -> Option<u32> {
         window::focused_index()
     }
 
@@ -152,7 +152,7 @@ impl ApplicationUI for CocoaUI {
         window::set_title(window_index, title);
     }
 
-    fn focused_webview_index(&self, window_index: u32) -> u32 {
+    fn focused_webview_index(&self, window_index: u32) -> Option<u32> {
         window::focused_webview_index(window_index)
     }
 

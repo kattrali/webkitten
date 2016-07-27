@@ -20,7 +20,7 @@ pub trait ApplicationUI: Sized {
 
 
     /// The index of the focused window
-    fn focused_window_index(&self) -> u32;
+    fn focused_window_index(&self) -> Option<u32>;
 
     /// Number of open windows
     fn window_count(&self) -> u32;
@@ -57,7 +57,7 @@ pub trait ApplicationUI: Sized {
 
 
     /// Index of the webview currently visible in a specified window
-    fn focused_webview_index(&self, window_index: u32) -> u32;
+    fn focused_webview_index(&self, window_index: u32) -> Option<u32>;
 
     /// Number of webviews in a window
     fn webview_count(&self, window_index: u32) -> u32;
