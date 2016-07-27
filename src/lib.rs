@@ -57,7 +57,7 @@ impl Engine {
 
 impl EventHandler for Engine {
 
-    fn on_new_frame_request<T: ApplicationUI>(&self, ui: &T, window_index: u32, uri: &str) {
+    fn on_new_frame_request<T: ApplicationUI>(&self, ui: &T, window_index: i32, uri: &str) {
         if self.config.new_frame_uses_focused_window() {
             ui.open_webview(window_index, Some(uri));
         } else {
@@ -67,7 +67,7 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self,
                                          ui: &T,
-                                         window_index: u32,
+                                         window_index: i32,
                                          text: &str)
                                          -> CommandOutput {
         if let Some(text) = self.config.command_matching_prefix(text) {
@@ -118,8 +118,8 @@ impl EventHandler for Engine {
 
     fn on_uri_event<T: ApplicationUI>(&self,
                                       ui: &T,
-                                      window_index: u32,
-                                      webview_index: u32,
+                                      window_index: i32,
+                                      webview_index: i32,
                                       uri: &str,
                                       event: URIEvent) {
         for name in self.config.on_uri_event_commands(event) {
