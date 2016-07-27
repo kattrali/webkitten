@@ -253,6 +253,25 @@ impl WKWebView {
     pub fn hide_find_results(&self) {
         unsafe { msg_send![self.ptr, _hideFindUI]; }
     }
+
+    pub fn remove_from_superview(&self) {
+        unsafe { msg_send![self.ptr, removeFromSuperview]; }
+    }
+
+    pub fn release_delegates(&self) {
+        unsafe {
+            let nav_delegate: Id = msg_send![self.ptr, navigationDelegate];
+            msg_send![nav_delegate, release];
+            let history_delegate: Id = msg_send![self.ptr, _historyDelegate];
+            msg_send![history_delegate, release];
+            msg_send![self.ptr, setNavigationDelegate:nil];
+            msg_send![self.ptr, _setHistoryDelegate:nil];
+        }
+    }
+
+    pub fn close(&self) {
+        unsafe { msg_send![self.ptr, _close]; }
+    }
 }
 
 impl WKWebViewConfiguration {

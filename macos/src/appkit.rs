@@ -401,8 +401,17 @@ impl NSWindow {
         NSView::from_ptr(unsafe { msg_send![self.ptr, contentView] })
     }
 
-    pub fn close(&self) {
-        unsafe { msg_send![self.ptr, close] }
+    pub fn close(&mut self) {
+        unsafe { msg_send![self.ptr, close]; }
+        self.ptr = nil;
+    }
+
+    pub fn release_delegate(&mut self) {
+        unsafe {
+            let delegate: Id = msg_send![self.ptr, delegate];
+            msg_send![delegate, release];
+            msg_send![self.ptr, setDelegate:nil];
+        }
     }
 
     pub fn center(&self) {

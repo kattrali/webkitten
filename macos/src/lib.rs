@@ -26,6 +26,10 @@ pub trait ObjCClass: Sized {
     fn coerce<T: ObjCClass>(&self) -> Option<T> {
         T::from_ptr(self.ptr())
     }
+
+    fn autorelease(&self) -> Self;
+
+    fn release(&mut self);
 }
 
 /// Shorthand for getting a class by name
@@ -74,6 +78,15 @@ macro_rules! impl_objc_class {
             fn nil() -> Self { $name { ptr: 0 as Id } }
 
             fn class_name() -> &'static str { stringify!($name) }
+
+            fn autorelease(&self) -> Self {
+                $name { ptr: unsafe { msg_send![self.ptr, autorelease] } }
+            }
+
+            fn release(&mut self) {
+                unsafe { msg_send![self.ptr(), release]; }
+                self.ptr = 0 as Id;
+            }
         }
     );
 }
