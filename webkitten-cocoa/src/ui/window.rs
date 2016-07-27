@@ -59,7 +59,7 @@ pub fn focused_index() -> i32 {
             }
         }
     }
-    0
+    -1
 }
 
 pub fn close(window_index: i32) {
@@ -188,14 +188,14 @@ pub fn focused_webview_index(window_index: i32) -> i32 {
             }
         }
     }
-    0
+    -1
 }
 
 pub fn webview_count(window_index: i32) -> i32 {
     if let Some(window) = window_for_index(window_index) {
         window_webviews(&window).count() as i32
     } else {
-        0
+        -1
     }
 }
 
