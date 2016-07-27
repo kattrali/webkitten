@@ -2,8 +2,9 @@ use objc::declare::ClassDecl;
 use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
 use macos::foundation::*;
-use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags};
+use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags,NSLayoutConstraint};
 use macos::core_services::register_default_scheme_handler;
+use macos::core_graphics::CGFloat;
 use macos::webkit::*;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use webkitten::WEBKITTEN_APP_ID;
@@ -17,6 +18,7 @@ impl_objc_class!(WebViewHistoryDelegate);
 impl_objc_class!(WebViewContainerView);
 impl_objc_class!(KeyInputDelegate);
 impl_objc_class!(AppDelegate);
+impl_objc_class!(CommandBarView);
 
 impl CommandBarDelegate {
     pub fn new() -> Self {
@@ -67,6 +69,55 @@ impl KeyInputDelegate {
     }
 }
 
+impl CommandBarView {
+
+    pub fn new() -> Self {
+        let ptr = unsafe {
+            let view: Id = msg_send![class!(CommandBarView::class_name()), new];
+            msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            view
+        };
+        CommandBarView { ptr: ptr }
+    }
+
+    pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
+        unsafe { msg_send![self.ptr, setDelegate:delegate.ptr()] }
+    }
+
+    pub fn height(&self) -> CGFloat {
+        if let Some(constraint) = self.height_constraint() {
+            constraint.constant()
+        } else {
+            0 as CGFloat
+        }
+    }
+
+    pub fn set_height(&self, height: CGFloat) {
+        if let Some(constraint) = self.height_constraint() {
+            if constraint.constant() != height {
+                constraint.set_constant(height);
+            }
+        } else {
+            let view = self.coerce::<NSView>().unwrap();
+            let constraint = NSLayoutConstraint::height_constraint(&view, height);
+            self.set_height_constraint(&constraint);
+            view.add_constraint(constraint);
+        }
+    }
+
+    fn height_constraint(&self) -> Option<NSLayoutConstraint> {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        NSLayoutConstraint::from_ptr(unsafe { *obj.get_ivar("_heightConstraint") })
+    }
+
+    fn set_height_constraint(&self, constraint: &NSLayoutConstraint) {
+       unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_heightConstraint", constraint.ptr());
+       }
+    }
+}
+
 pub fn log_error_description(err: Id) {
     let desc = NSError::from_ptr(err)
         .and_then(|err| err.description())
@@ -84,14 +135,17 @@ pub fn declare_classes() {
 }
 
 fn declare_view_classes() {
-    let mut decl = ClassDecl::new(WebViewContainerView::class_name(), class!("NSView")).unwrap();
+    let mut container = ClassDecl::new(WebViewContainerView::class_name(), class!("NSView")).unwrap();
     unsafe {
-        decl.add_method(sel!(acceptsFirstResponder),
+        container.add_method(sel!(acceptsFirstResponder),
             container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
-        decl.add_method(sel!(keyDown:),
+        container.add_method(sel!(keyDown:),
             container_key_down as extern fn (&mut Object, Sel, Id));
     }
-    decl.register();
+    container.register();
+    let mut bar = ClassDecl::new(CommandBarView::class_name(), class!("NSTextField")).unwrap();
+    bar.add_ivar::<Id>("_heightConstraint");
+    bar.register();
 }
 
 fn declare_app_delegates() {

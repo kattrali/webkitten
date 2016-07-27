@@ -8,9 +8,11 @@ use webkitten::WEBKITTEN_TITLE;
 use webkitten::ui::{BrowserConfiguration,WindowArea};
 
 use runtime::{CommandBarDelegate,WebViewHistoryDelegate,WebViewContainerView,
-              log_error_description};
+              log_error_description,CommandBarView};
 use super::CocoaUI;
 
+
+const BAR_HEIGHT: usize = 24;
 
 pub fn toggle(window_index: u32, visible: bool) {
     if let Some(window) = window_for_index(window_index) {
@@ -55,6 +57,7 @@ fn focus_command_bar_area(window_index: u32) {
     let bar = window_for_index(window_index)
         .and_then(|window| subview(&window, WindowArea::CommandBar).coerce::<NSResponder>());
     if let Some(bar) = bar {
+        set_command_field_visible(window_index, true);
         bar.become_first_responder();
     }
 }
@@ -188,6 +191,23 @@ pub fn set_command_field_text(window_index: u32, text: &str) {
     }
 }
 
+pub fn command_field_visible(window_index: u32) -> bool {
+    let bar = window_for_index(window_index)
+        .and_then(|window| subview(&window, WindowArea::CommandBar).coerce::<CommandBarView>());
+    if let Some(bar) = bar {
+        return bar.height() > 0 as CGFloat;
+    }
+    false
+}
+
+pub fn set_command_field_visible(window_index: u32, visible: bool) {
+    let bar = window_for_index(window_index)
+        .and_then(|window| subview(&window, WindowArea::CommandBar).coerce::<CommandBarView>());
+    if let Some(bar) = bar {
+        bar.set_height(if visible { BAR_HEIGHT } else { 0 } as CGFloat);
+    }
+}
+
 pub fn focused_webview_index(window_index: u32) -> Option<u32> {
     if let Some(window) = window_for_index(window_index) {
         let webviews = window_webviews(&window);
@@ -300,18 +320,15 @@ fn create_nswindow() -> NSWindow {
 }
 
 fn layout_window_subviews(window: &NSWindow) {
-    const BAR_HEIGHT: usize = 24;
-
     let container = WebViewContainerView::new().autorelease().coerce::<NSView>().unwrap();
-    let command_bar = NSTextField::new().autorelease();
+    let command_bar = CommandBarView::new().autorelease();
     command_bar.set_delegate(&CommandBarDelegate::new());
+    command_bar.set_height(BAR_HEIGHT as CGFloat);
     let ref config = super::UI.engine.config;
     let content_view = window.content_view().unwrap();
     let command_bar_view = command_bar.coerce::<NSView>().unwrap();
     content_view.add_subview(&container);
     content_view.add_subview(&command_bar_view);
-    command_bar_view.set_height(BAR_HEIGHT as CGFloat);
-    command_bar_view.disable_translates_autoresizing_mask_into_constraints();
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Bottom, &content_view, NSLayoutAttribute::Bottom));
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Left, &content_view, NSLayoutAttribute::Left));
     content_view.add_constraint(NSLayoutConstraint::bind(&command_bar_view, NSLayoutAttribute::Right, &content_view, NSLayoutAttribute::Right));

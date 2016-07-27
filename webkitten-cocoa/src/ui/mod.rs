@@ -140,8 +140,16 @@ impl ApplicationUI for CocoaUI {
         window::command_field_text(window_index)
     }
 
+    fn command_field_visible(&self, window_index: u32) -> bool {
+        window::command_field_visible(window_index)
+    }
+
     fn set_command_field_text(&self, window_index: u32, text: &str) {
         window::set_command_field_text(window_index, text);
+    }
+
+    fn set_command_field_visible(&self, window_index: u32, visible: bool) {
+        window::set_command_field_visible(window_index, visible);
     }
 
     fn window_title(&self, window_index: u32) -> String {
