@@ -10,6 +10,12 @@ function run()
   else
     target = lookup_string(config_file_path, "window.start-page")
   end
-  open_webview(windex, target)
+
+  if windex >= 0 then
+    open_webview(windex, target)
+  else
+    open_window(target)
+  end
+
   return true
 end
