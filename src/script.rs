@@ -212,9 +212,17 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("get webview_count: {}", window_index);
         ui.webview_count(window_index)
     }));
+    lua.set("set_command_field_visible", function2(|window_index: u32, visible: bool| {
+        info!("set command_field_visible");
+        ui.set_command_field_visible(window_index, visible);
+    }));
     lua.set("set_command_field_text", function2(|window_index: u32, text: String| {
         info!("set command_field_text");
         ui.set_command_field_text(window_index, &text);
+    }));
+    lua.set("command_field_visible", function1(|window_index: u32| {
+        info!("get command_field_visible");
+        ui.command_field_visible(window_index)
     }));
     lua.set("command_field_text", function1(|window_index: u32| {
         info!("get command_field_text");

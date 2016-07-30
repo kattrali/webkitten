@@ -202,6 +202,26 @@ impl NSLayoutConstraint {
         NSLayoutConstraint::new(view1, attr1, NSLayoutRelation::Equal,
                                 view2, attr2, 1 as CGFloat, 0 as CGFloat)
     }
+
+    pub fn height_constraint(view: &NSView, height: CGFloat) -> NSLayoutConstraint {
+        NSLayoutConstraint::new(view,
+            NSLayoutAttribute::Height, NSLayoutRelation::Equal, &NSView::nil(),
+            NSLayoutAttribute::NotAnAttribute, 1 as CGFloat, height)
+    }
+
+    pub fn width_constraint(view: &NSView, width: CGFloat) -> NSLayoutConstraint {
+        NSLayoutConstraint::new(view,
+            NSLayoutAttribute::Width, NSLayoutRelation::Equal, &NSView::nil(),
+            NSLayoutAttribute::NotAnAttribute, 1 as CGFloat, width)
+    }
+
+    pub fn set_constant(&self, constant: CGFloat) {
+        unsafe { msg_send![self.ptr, setConstant:constant]; }
+    }
+
+    pub fn constant(&self) -> CGFloat {
+        unsafe { msg_send![self.ptr, constant] }
+    }
 }
 
 impl NSMenu {
@@ -320,18 +340,6 @@ impl NSView {
 
     pub fn key_down(&self, event: NSEvent) {
         unsafe { msg_send![self.ptr, keyDown:event.ptr()] }
-    }
-
-    pub fn set_height(&self, height: CGFloat) {
-        self.add_constraint(NSLayoutConstraint::new(self,
-            NSLayoutAttribute::Height, NSLayoutRelation::Equal, &NSView::nil(),
-            NSLayoutAttribute::NotAnAttribute, 1 as CGFloat, height));
-    }
-
-    pub fn set_width(&self, width: CGFloat) {
-        self.add_constraint(NSLayoutConstraint::new(self,
-            NSLayoutAttribute::Width, NSLayoutRelation::Equal, &NSView::nil(),
-            NSLayoutAttribute::NotAnAttribute, 1 as CGFloat, width));
     }
 
     pub fn subviews(&self) -> Option<NSArray> {

@@ -49,6 +49,12 @@ pub trait ApplicationUI: Sized {
     /// Set the text in the command bar of a specified window
     fn set_command_field_text(&self, window_index: u32, text: &str);
 
+    /// `true` if the command bar of a specified window is visible
+    fn command_field_visible(&self, window_index: u32) -> bool;
+
+    /// Set the visibility in the command bar of a specified window
+    fn set_command_field_visible(&self, window_index: u32, visible: bool);
+
     /// Title of a specified window
     fn window_title(&self, window_index: u32) -> String;
 
