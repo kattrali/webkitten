@@ -21,12 +21,12 @@ pub fn toggle(window_index: u32, visible: bool) {
     }
 }
 
-pub fn open<T: Into<String>>(uri: Option<T>) -> NSWindow {
+pub fn open<T: Into<String>>(uri: Option<T>) -> u32 {
     let window = create_nswindow();
     if let Some(uri) = uri {
         add_and_focus_webview(window.number(), uri.into());
     }
-    window
+    window.number()
 }
 
 pub fn focus(window_index: u32) {

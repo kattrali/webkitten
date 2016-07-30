@@ -153,13 +153,12 @@ extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
 
 extern fn open_file(_: &Object, _cmd: Sel, _app: Id, path: Id) -> BOOL {
     if let Some(path) = NSString::from_ptr(path).and_then(|s| s.as_str()) {
-        if let Some(focused_window_index) = UI.focused_window_index() {
-            UI.focus_window(focused_window_index);
-            let mut protocol = String::from("file://");
-            protocol.push_str(path);
-            UI.open_webview(focused_window_index, Some(&protocol));
-            return YES;
-        }
+        let window_index = UI.focused_window_index().unwrap_or(UI.open_window(None));
+        UI.focus_window(window_index);
+        let mut protocol = String::from("file://");
+        protocol.push_str(path);
+        UI.open_webview(window_index, Some(&protocol));
+        return YES;
     }
     NO
 }

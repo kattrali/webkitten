@@ -26,7 +26,7 @@ pub trait ApplicationUI: Sized {
     fn window_count(&self) -> u32;
 
     /// Open a new window
-    fn open_window(&self, uri: Option<&str>);
+    fn open_window(&self, uri: Option<&str>) -> u32;
 
     /// Close a window
     fn close_window(&self, index: u32);
