@@ -37,18 +37,25 @@ pub fn focus(window_index: u32) {
 
 pub fn focus_area(window_index: u32, area: WindowArea) {
     match area {
-        WindowArea::WebView => {
-            if let Some(focused_webview_index) = focused_webview_index(window_index) {
-                if let Some(webview) = webview(window_index, focused_webview_index) {
-                    webview.coerce::<NSResponder>().unwrap().become_first_responder();
-                }
-            }
-        },
-        WindowArea::CommandBar => {
-            if let Some(window) = window_for_index(window_index) {
-                subview(&window, area).coerce::<NSResponder>().unwrap().become_first_responder();
-            }
-        }
+        WindowArea::WebView => focus_webview_area(window_index),
+        WindowArea::CommandBar => focus_command_bar_area(window_index)
+    }
+}
+
+fn focus_webview_area(window_index: u32) {
+    let webview = focused_webview_index(window_index)
+        .and_then(|webview_index| webview(window_index, webview_index))
+        .and_then(|webview| webview.coerce::<NSResponder>());
+    if let Some(webview) = webview {
+        webview.become_first_responder();
+    }
+}
+
+fn focus_command_bar_area(window_index: u32) {
+    let bar = window_for_index(window_index)
+        .and_then(|window| subview(&window, WindowArea::CommandBar).coerce::<NSResponder>());
+    if let Some(bar) = bar {
+        bar.become_first_responder();
     }
 }
 
