@@ -11,7 +11,7 @@ function run()
     target = lookup_string(config_file_path, "window.start-page")
   end
 
-  if windex >= 0 then
+  if windex ~= NOT_FOUND then
     open_webview(windex, target)
   else
     open_window(target)

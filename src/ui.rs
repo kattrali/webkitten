@@ -133,7 +133,7 @@ pub enum URIEvent {
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u32, text: &str)
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: Option<u32>, text: &str)
         -> CommandOutput;
 
     /// Close the application

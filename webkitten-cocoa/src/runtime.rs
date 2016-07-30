@@ -174,12 +174,12 @@ extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: Id) {
 }
 
 extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
-    if let Some(event) = NSAppleEventDescriptor::from_ptr(event) {
-        if let Some(url) = event.url_param_value().and_then(|u| u.as_str()) {
-            if let Some(focused_window_index) = UI.focused_window_index() {
-                UI.open_webview(focused_window_index, Some(url));
-            }
-        }
+    let url = NSAppleEventDescriptor::from_ptr(event)
+        .and_then(|event| event.url_param_value())
+        .and_then(|url| url.as_str());
+    let window_index = UI.focused_window_index();
+    if let (Some(url), Some(window_index)) = (url, window_index) {
+        UI.open_webview(window_index, Some(url));
     }
 }
 
@@ -202,9 +202,7 @@ extern fn container_key_down(this: &mut Object, _cmd: Sel, event: Id) {
 extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
     if let Some(key_delegate) = KeyInputDelegate::from_ptr(this) {
         if let Some(command) = key_delegate.command().and_then(|c| c.as_str()) {
-            if let Some(focused_window_index) = UI.focused_window_index() {
-                UI.engine.execute_command::<CocoaUI>(&UI, focused_window_index, command);
-            }
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), command);
         }
     }
 }
@@ -251,9 +249,7 @@ extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
     if is_return_key_event(notification) {
         if let Some(text) = notification_object_text(notification) {
-            if let Some(focused_window_index) = UI.focused_window_index() {
-                UI.engine.execute_command::<CocoaUI>(&UI, focused_window_index, text);
-            }
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
         }
     }
 }
@@ -261,9 +257,7 @@ extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
 extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: Id) {
     if let Some(text) = notification_object_text(notification) {
         if let Some(command) = UI.engine.config.command_matching_prefix(text) {
-            if let Some(focused_window_index) = UI.focused_window_index() {
-                UI.engine.execute_command::<CocoaUI>(&UI, focused_window_index, &command);
-            }
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), &command);
         }
     }
 }
