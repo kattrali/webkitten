@@ -62,7 +62,7 @@ impl CocoaUI {
                 self.open_window(Some(page.as_str()));
             }
         } else if let Some(page) = self.engine.config.start_page() {
-            self.open_window(Some(&page))
+            self.open_window(Some(&page));
         } else {
             self.open_window(None);
         }
@@ -100,11 +100,11 @@ impl ApplicationUI for CocoaUI {
         NSPasteboard::general().copy(text);
     }
 
-    fn open_window(&self, uri: Option<&str>) {
+    fn open_window(&self, uri: Option<&str>) -> u32 {
         if uri.is_some() {
-            window::open(uri);
+            window::open(uri)
         } else {
-            window::open(self.engine.config.start_page());
+            window::open(self.engine.config.start_page())
         }
     }
 
@@ -112,7 +112,7 @@ impl ApplicationUI for CocoaUI {
         window::close(index);
     }
 
-    fn focused_window_index(&self) -> u32 {
+    fn focused_window_index(&self) -> Option<u32> {
         window::focused_index()
     }
 
@@ -152,7 +152,7 @@ impl ApplicationUI for CocoaUI {
         window::set_title(window_index, title);
     }
 
-    fn focused_webview_index(&self, window_index: u32) -> u32 {
+    fn focused_webview_index(&self, window_index: u32) -> Option<u32> {
         window::focused_webview_index(window_index)
     }
 

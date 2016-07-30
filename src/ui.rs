@@ -20,13 +20,13 @@ pub trait ApplicationUI: Sized {
 
 
     /// The index of the focused window
-    fn focused_window_index(&self) -> u32;
+    fn focused_window_index(&self) -> Option<u32>;
 
     /// Number of open windows
     fn window_count(&self) -> u32;
 
     /// Open a new window
-    fn open_window(&self, uri: Option<&str>);
+    fn open_window(&self, uri: Option<&str>) -> u32;
 
     /// Close a window
     fn close_window(&self, index: u32);
@@ -57,7 +57,7 @@ pub trait ApplicationUI: Sized {
 
 
     /// Index of the webview currently visible in a specified window
-    fn focused_webview_index(&self, window_index: u32) -> u32;
+    fn focused_webview_index(&self, window_index: u32) -> Option<u32>;
 
     /// Number of webviews in a window
     fn webview_count(&self, window_index: u32) -> u32;
@@ -133,7 +133,7 @@ pub enum URIEvent {
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: u32, text: &str)
+    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: Option<u32>, text: &str)
         -> CommandOutput;
 
     /// Close the application

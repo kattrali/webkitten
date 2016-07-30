@@ -67,7 +67,7 @@ impl EventHandler for Engine {
 
     fn execute_command<T: ApplicationUI>(&self,
                                          ui: &T,
-                                         window_index: u32,
+                                         window_index: Option<u32>,
                                          text: &str)
                                          -> CommandOutput {
         if let Some(text) = self.config.command_matching_prefix(text) {
@@ -77,7 +77,9 @@ impl EventHandler for Engine {
             if let Some(file) = command.file() {
                 match script::execute::<T>(file, command.arguments, ui) {
                     Err(err) => warn!("{}", err),
-                    Ok(success) => if success { ui.set_command_field_text(window_index, "") }
+                    Ok(success) => if let (true, Some(index)) = (success, window_index) {
+                        ui.set_command_field_text(index, "")
+                    }
                 }
             }
         } else if let Some(default) = self.config.default_command() {

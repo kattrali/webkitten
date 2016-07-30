@@ -21,12 +21,12 @@ pub fn toggle(window_index: u32, visible: bool) {
     }
 }
 
-pub fn open<T: Into<String>>(uri: Option<T>) -> NSWindow {
+pub fn open<T: Into<String>>(uri: Option<T>) -> u32 {
     let window = create_nswindow();
     if let Some(uri) = uri {
         add_and_focus_webview(window.number(), uri.into());
     }
-    window
+    window.number()
 }
 
 pub fn focus(window_index: u32) {
@@ -37,29 +37,38 @@ pub fn focus(window_index: u32) {
 
 pub fn focus_area(window_index: u32, area: WindowArea) {
     match area {
-        WindowArea::WebView => {
-            if let Some(webview) = webview(window_index, focused_webview_index(window_index)) {
-                webview.coerce::<NSResponder>().unwrap().become_first_responder();
-            }
-        },
-        WindowArea::CommandBar => {
-            if let Some(window) = window_for_index(window_index) {
-                subview(&window, area).coerce::<NSResponder>().unwrap().become_first_responder();
-            }
-        }
+        WindowArea::WebView => focus_webview_area(window_index),
+        WindowArea::CommandBar => focus_command_bar_area(window_index)
     }
 }
 
-pub fn focused_index() -> u32 {
+fn focus_webview_area(window_index: u32) {
+    let webview = focused_webview_index(window_index)
+        .and_then(|webview_index| webview(window_index, webview_index))
+        .and_then(|webview| webview.coerce::<NSResponder>());
+    if let Some(webview) = webview {
+        webview.become_first_responder();
+    }
+}
+
+fn focus_command_bar_area(window_index: u32) {
+    let bar = window_for_index(window_index)
+        .and_then(|window| subview(&window, WindowArea::CommandBar).coerce::<NSResponder>());
+    if let Some(bar) = bar {
+        bar.become_first_responder();
+    }
+}
+
+pub fn focused_index() -> Option<u32> {
     let windows = nsapp().windows();
     for index in 0 .. windows.count() {
         if let Some(window) = windows.get::<NSWindow>(index) {
             if window.is_key_window() {
-                return window.number() as u32;
+                return Some(window.number());
             }
         }
     }
-    0
+    None
 }
 
 pub fn close(window_index: u32) {
@@ -97,23 +106,25 @@ pub fn open_webview<T: Into<String>>(window_index: u32, uri: T) {
 
 pub fn close_webview(window_index: u32, webview_index: u32) {
     if let Some(window) = window_for_index(window_index) {
-        let webviews = window_webviews(&window);
-        let is_focused = focused_webview_index(window_index) == webview_index;
-        info!("Closing 1 webview of {}", webviews.count());
-        for index in 0 .. webviews.count() {
-            if let Some(view) = webviews.get::<WKWebView>(index) {
-                if index == (webview_index as NSUInteger) {
-                    view.remove_from_superview();
-                    view.release_delegates();
-                    view.close();
-                    if is_focused {
-                        if index as usize >= webviews.count() as usize {
-                            focus_webview(window_index, 0);
-                        } else {
-                            focus_webview(window_index, index as u32);
+        if let Some(focused_index) = focused_webview_index(window_index) {
+            let is_focused = focused_index == webview_index;
+            let webviews = window_webviews(&window);
+            info!("Closing 1 webview of {}", webviews.count());
+            for index in 0 .. webviews.count() {
+                if let Some(view) = webviews.get::<WKWebView>(index) {
+                    if index == (webview_index as NSUInteger) {
+                        view.remove_from_superview();
+                        view.release_delegates();
+                        view.close();
+                        if is_focused {
+                            if index as usize >= webviews.count() as usize {
+                                focus_webview(window_index, 0);
+                            } else {
+                                focus_webview(window_index, index as u32);
+                            }
                         }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -177,18 +188,18 @@ pub fn set_command_field_text(window_index: u32, text: &str) {
     }
 }
 
-pub fn focused_webview_index(window_index: u32) -> u32 {
+pub fn focused_webview_index(window_index: u32) -> Option<u32> {
     if let Some(window) = window_for_index(window_index) {
         let webviews = window_webviews(&window);
         for index in 0 .. webviews.count() {
             if let Some(view) = webviews.get::<NSView>(index) {
                 if !view.hidden() {
-                    return index as u32;
+                    return Some(index as u32);
                 }
             }
         }
     }
-    0
+    None
 }
 
 pub fn webview_count(window_index: u32) -> u32 {

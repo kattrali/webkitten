@@ -153,7 +153,7 @@ extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
 
 extern fn open_file(_: &Object, _cmd: Sel, _app: Id, path: Id) -> BOOL {
     if let Some(path) = NSString::from_ptr(path).and_then(|s| s.as_str()) {
-        let window_index = UI.focused_window_index();
+        let window_index = UI.focused_window_index().unwrap_or(UI.open_window(None));
         UI.focus_window(window_index);
         let mut protocol = String::from("file://");
         protocol.push_str(path);
@@ -173,10 +173,12 @@ extern fn app_finished_launching(_: &Object, _cmd: Sel, _note: Id) {
 }
 
 extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
-    if let Some(event) = NSAppleEventDescriptor::from_ptr(event) {
-        if let Some(url) = event.url_param_value().and_then(|u| u.as_str()) {
-            UI.open_webview(UI.focused_window_index(), Some(url));
-        }
+    let url = NSAppleEventDescriptor::from_ptr(event)
+        .and_then(|event| event.url_param_value())
+        .and_then(|url| url.as_str());
+    let window_index = UI.focused_window_index();
+    if let (Some(url), Some(window_index)) = (url, window_index) {
+        UI.open_webview(window_index, Some(url));
     }
 }
 
@@ -199,8 +201,7 @@ extern fn container_key_down(this: &mut Object, _cmd: Sel, event: Id) {
 extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
     if let Some(key_delegate) = KeyInputDelegate::from_ptr(this) {
         if let Some(command) = key_delegate.command().and_then(|c| c.as_str()) {
-            let window_index = UI.focused_window_index();
-            UI.engine.execute_command::<CocoaUI>(&UI, window_index, command);
+            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), command);
         }
     }
 }

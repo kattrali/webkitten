@@ -11,7 +11,7 @@ use super::ui::{ApplicationUI,BrowserConfiguration,URIEvent,WindowArea};
 use super::config::Config;
 
 
-const INVALID_RESULT: u32 = 247;
+const NOT_FOUND: u32 = 483600;
 
 pub type ScriptResult<T> = Result<T, ScriptError>;
 
@@ -131,7 +131,7 @@ fn resolve_script_output<T>(output: Result<T, LuaError>) -> ScriptResult<T> {
 fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     let mut lua = Lua::new();
     lua.openlibs();
-    lua.set("INVALID_RESULT", INVALID_RESULT);
+    lua.set("NOT_FOUND", NOT_FOUND);
     lua.set("log_info", function1(|message: String| {
         info!("lua: {}", message);
     }));
@@ -194,7 +194,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("focused_window_index", function0(|| {
         info!("get focused_window_index");
-        ui.focused_window_index()
+        ui.focused_window_index().unwrap_or(NOT_FOUND)
     }));
     lua.set("hide_window", function1(|window_index: u32| {
         info!("hide_window: {}", window_index);
@@ -222,7 +222,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("focused_webview_index", function1(|window_index: u32| {
         info!("get focused_webview_index");
-        ui.focused_webview_index(window_index)
+        ui.focused_webview_index(window_index).unwrap_or(NOT_FOUND)
     }));
     lua.set("resize_window", function3(|window_index: u32, width: u32, height: u32| {
         info!("resize_window: {} => ({}, {})", window_index, width, height);
