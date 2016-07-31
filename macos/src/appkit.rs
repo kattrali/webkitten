@@ -177,6 +177,10 @@ impl NSEvent {
     pub fn modifier_flags(&self) -> NSUInteger {
         unsafe { msg_send![self.ptr, modifierFlags] }
     }
+
+    pub fn key_code(&self) -> u16 {
+        unsafe { msg_send![self.ptr, keyCode] }
+    }
 }
 
 impl NSLayoutConstraint {

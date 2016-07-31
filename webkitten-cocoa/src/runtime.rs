@@ -1,3 +1,5 @@
+use std::cmp;
+
 use objc::declare::ClassDecl;
 use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
@@ -13,6 +15,8 @@ use block::Block;
 use ui::{CocoaUI,UI};
 
 
+const DRAFT_INDEX: NSInteger = -1;
+
 impl_objc_class!(CommandBarDelegate);
 impl_objc_class!(WebViewHistoryDelegate);
 impl_objc_class!(WebViewContainerView);
@@ -21,41 +25,177 @@ impl_objc_class!(AppDelegate);
 impl_objc_class!(CommandBarView);
 
 impl CommandBarDelegate {
+
+    fn load_class() {
+        let mut decl = ClassDecl::new(Self::class_name(), class!("NSObject")).unwrap();
+        decl.add_ivar::<Id>("_items");
+        decl.add_ivar::<Id>("_draft");
+        decl.add_ivar::<NSUInteger>("_capacity");
+        decl.add_ivar::<NSInteger>("_currentIndex");
+        unsafe {
+            decl.add_method(sel!(controlTextDidChange:),
+                command_bar_text_changed as extern fn(&Object, Sel, Id));
+            decl.add_method(sel!(controlTextDidEndEditing:),
+                command_bar_did_end_editing as extern fn(&mut Object, Sel, Id));
+            decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
+                command_bar_get_completion as extern fn(&mut Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
+        }
+        decl.register();
+    }
+
     pub fn new() -> Self {
-        CommandBarDelegate {
-            ptr: unsafe { msg_send![class!("CommandBarDelegate"), new] }
+        let ptr = unsafe {
+            let delegate: *mut Object = msg_send![class!(Self::class_name()), new];
+            let obj = &mut *(delegate as *mut _ as *mut Object);
+            obj.set_ivar("_items", NSMutableArray::new().ptr());
+            obj.set_ivar("_capacity", 50 as NSUInteger);
+            obj.set_ivar("_currentIndex", -1 as NSInteger);
+            obj.set_ivar("_draft", NSString::new().ptr());
+            delegate
+        };
+        CommandBarDelegate { ptr: ptr }
+    }
+
+    fn items(&self) -> NSMutableArray {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        NSMutableArray::from_ptr(unsafe { *obj.get_ivar("_items") }).unwrap()
+    }
+
+    fn capacity(&self) -> NSUInteger {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        unsafe { *obj.get_ivar("_capacity") }
+    }
+    fn current_index(&self) -> NSInteger {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        unsafe { *obj.get_ivar("_currentIndex") }
+    }
+
+    fn draft(&self) -> Option<NSString> {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            let draft: Id = *obj.get_ivar("_draft");
+            NSString::from_ptr(msg_send![draft, copy])
+        }
+    }
+
+    fn set_current_index(&self, index: NSInteger) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_currentIndex", index);
+        }
+    }
+
+    fn insert_history_item(&self, item: NSString) {
+        let items = self.items();
+        if items.count() == 0 || items.get::<NSString>(0).unwrap() != item {
+            items.insert(0, item);
+            if items.count() > self.capacity() {
+                items.remove_last_object();
+            }
+            self.set_current_index(DRAFT_INDEX);
+        }
+    }
+
+    fn set_capacity(&self, capacity: NSUInteger) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_capacity", capacity);
+        }
+    }
+
+    fn set_draft(&self, draft: NSString) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_draft", draft.ptr());
         }
     }
 }
 
 impl WebViewHistoryDelegate {
+
+    fn load_class() {
+        let mut decl = ClassDecl::new(Self::class_name(), class!("NSObject")).unwrap();
+        unsafe {
+            decl.add_method(sel!(webView:didStartProvisionalNavigation:),
+                webview_will_load as extern fn (&Object, Sel, Id, Id));
+            decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
+                webview_did_load as extern fn (&Object, Sel, Id, Id));
+            decl.add_method(sel!(webView:didFailNavigation:),
+                webview_load_failed as extern fn (&Object, Sel, Id, Id));
+            decl.add_method(sel!(webView:decidePolicyForNavigationAction:decisionHandler:),
+                webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
+        }
+        decl.register();
+    }
+
     pub fn new() -> Self {
         WebViewHistoryDelegate {
-            ptr: unsafe { msg_send![class!("WebViewHistoryDelegate"), new] }
+            ptr: unsafe { msg_send![class!(Self::class_name()), new] }
         }
     }
 }
 
 impl AppDelegate {
+
+    fn load_class() {
+        let mut app_delegate = ClassDecl::new(Self::class_name(), class!("NSObject")).unwrap();
+        unsafe {
+            app_delegate.add_method(sel!(applicationWillFinishLaunching:),
+                app_will_finish_launching as extern fn (&mut Object, Sel, Id));
+            app_delegate.add_method(sel!(applicationDidFinishLaunching:),
+                app_finished_launching as extern fn (&Object, Sel, Id));
+            app_delegate.add_method(sel!(application:openFile:),
+                open_file as extern fn (&Object, Sel, Id, Id) -> BOOL);
+            app_delegate.add_method(sel!(setAsDefaultBrowser),
+                set_as_default_browser as extern fn (&Object, Sel));
+            app_delegate.add_method(sel!(handleGetURLEvent:withReplyEvent:),
+                handle_get_url as extern fn (&Object, Sel, Id, Id));
+        }
+        app_delegate.register();
+    }
+
     pub fn new() -> Self {
         AppDelegate {
-            ptr: unsafe { msg_send![class!("AppDelegate"), new] }
+            ptr: unsafe { msg_send![class!(Self::class_name()), new] }
         }
     }
 }
 
 impl WebViewContainerView {
+
+    fn load_class() {
+        let mut container = ClassDecl::new(Self::class_name(), class!("NSView")).unwrap();
+        unsafe {
+            container.add_method(sel!(acceptsFirstResponder),
+                container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
+            container.add_method(sel!(keyDown:),
+                container_key_down as extern fn (&mut Object, Sel, Id));
+        }
+        container.register();
+    }
+
     pub fn new() -> Self {
         WebViewContainerView {
-            ptr: unsafe { msg_send![class!("WebViewContainerView"), new] }
+            ptr: unsafe { msg_send![class!(Self::class_name()), new] }
         }
     }
 }
 
 impl KeyInputDelegate {
+
+    fn load_class() {
+        let mut key_input = ClassDecl::new(Self::class_name(), class!("NSObject")).unwrap();
+        key_input.add_ivar::<Id>("_command");
+        unsafe {
+            key_input.add_method(sel!(runKeybindingCommand),
+                run_keybinding_command as extern fn(&mut Object, Sel));
+        }
+        key_input.register();
+    }
+
     pub fn new(command: &str) -> Self {
         let ptr = unsafe {
-            let delegate: *mut Object = msg_send![class!("KeyInputDelegate"), new];
+            let delegate: *mut Object = msg_send![class!(Self::class_name()), new];
             let obj = &mut *(delegate as *mut _ as *mut Object);
             obj.set_ivar("_command", NSString::from(command).ptr());
             delegate
@@ -71,13 +211,51 @@ impl KeyInputDelegate {
 
 impl CommandBarView {
 
+    fn load_class() {
+        let mut bar = ClassDecl::new(Self::class_name(), class!("NSTextField")).unwrap();
+        unsafe {
+            bar.add_method(sel!(keyUp:),
+                command_bar_key_up as extern fn(&mut Object, Sel, Id));
+        }
+        bar.add_ivar::<Id>("_heightConstraint");
+        bar.register();
+    }
+
     pub fn new() -> Self {
         let ptr = unsafe {
-            let view: Id = msg_send![class!(CommandBarView::class_name()), new];
+            let view: Id = msg_send![class!(Self::class_name()), new];
             msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            let cell: Id = msg_send![view, cell];
+            msg_send![cell, setUsesSingleLineMode:YES];
             view
         };
         CommandBarView { ptr: ptr }
+    }
+
+    pub fn selected_range(&self) -> NSRange {
+        unsafe {
+            let editor: Id = msg_send![self.ptr, currentEditor];
+            msg_send![editor, selectedRange]
+        }
+    }
+
+    pub fn completion_range(&self) -> NSRange {
+        unsafe {
+            let editor: Id = msg_send![self.ptr, currentEditor];
+            msg_send![editor, rangeForUserTextChange]
+        }
+    }
+
+    pub fn text(&self) -> Option<NSString> {
+        NSString::from_ptr(unsafe { msg_send![self.ptr, stringValue] })
+    }
+
+    pub fn set_text(&self, text: &str) {
+        unsafe { msg_send![self.ptr, setStringValue:NSString::from(text).ptr()]; }
+    }
+
+    pub fn delegate(&self) -> Option<CommandBarDelegate> {
+        CommandBarDelegate::from_ptr(unsafe { msg_send![self.ptr, delegate] })
     }
 
     pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
@@ -128,76 +306,12 @@ pub fn log_error_description(err: Id) {
 }
 
 pub fn declare_classes() {
-    declare_view_classes();
-    declare_app_delegates();
-    declare_bar_delegate();
-    declare_webview_delegates();
-}
-
-fn declare_view_classes() {
-    let mut container = ClassDecl::new(WebViewContainerView::class_name(), class!("NSView")).unwrap();
-    unsafe {
-        container.add_method(sel!(acceptsFirstResponder),
-            container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
-        container.add_method(sel!(keyDown:),
-            container_key_down as extern fn (&mut Object, Sel, Id));
-    }
-    container.register();
-    let mut bar = ClassDecl::new(CommandBarView::class_name(), class!("NSTextField")).unwrap();
-    bar.add_ivar::<Id>("_heightConstraint");
-    bar.register();
-}
-
-fn declare_app_delegates() {
-    let mut key_input = ClassDecl::new(KeyInputDelegate::class_name(), class!("NSObject")).unwrap();
-    key_input.add_ivar::<Id>("_command");
-    unsafe {
-        key_input.add_method(sel!(runKeybindingCommand),
-            run_keybinding_command as extern fn(&mut Object, Sel));
-    }
-    key_input.register();
-    let mut app_delegate = ClassDecl::new(AppDelegate::class_name(), class!("NSObject")).unwrap();
-    unsafe {
-        app_delegate.add_method(sel!(applicationWillFinishLaunching:),
-            app_will_finish_launching as extern fn (&mut Object, Sel, Id));
-        app_delegate.add_method(sel!(applicationDidFinishLaunching:),
-            app_finished_launching as extern fn (&Object, Sel, Id));
-        app_delegate.add_method(sel!(application:openFile:),
-            open_file as extern fn (&Object, Sel, Id, Id) -> BOOL);
-        app_delegate.add_method(sel!(setAsDefaultBrowser),
-            set_as_default_browser as extern fn (&Object, Sel));
-        app_delegate.add_method(sel!(handleGetURLEvent:withReplyEvent:),
-            handle_get_url as extern fn (&Object, Sel, Id, Id));
-    }
-    app_delegate.register();
-}
-
-fn declare_bar_delegate() {
-    let mut decl = ClassDecl::new(CommandBarDelegate::class_name(), class!("NSObject")).unwrap();
-    unsafe {
-        decl.add_method(sel!(controlTextDidChange:),
-            command_bar_text_changed as extern fn(&Object, Sel, Id));
-        decl.add_method(sel!(controlTextDidEndEditing:),
-            command_bar_did_end_editing as extern fn(&Object, Sel, Id));
-        decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
-            command_bar_get_completion as extern fn(&Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
-    }
-    decl.register();
-}
-
-fn declare_webview_delegates() {
-    let mut decl = ClassDecl::new(WebViewHistoryDelegate::class_name(), class!("NSObject")).unwrap();
-    unsafe {
-        decl.add_method(sel!(webView:didStartProvisionalNavigation:),
-            webview_will_load as extern fn (&Object, Sel, Id, Id));
-        decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
-            webview_did_load as extern fn (&Object, Sel, Id, Id));
-        decl.add_method(sel!(webView:didFailNavigation:),
-            webview_load_failed as extern fn (&Object, Sel, Id, Id));
-        decl.add_method(sel!(webView:decidePolicyForNavigationAction:decisionHandler:),
-            webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
-    }
-    decl.register();
+    AppDelegate::load_class();
+    CommandBarDelegate::load_class();
+    CommandBarView::load_class();
+    KeyInputDelegate::load_class();
+    WebViewContainerView::load_class();
+    WebViewHistoryDelegate::load_class();
 }
 
 extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
@@ -300,9 +414,27 @@ extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) 
     register_uri_event(webview_ptr, nav_ptr, URIEvent::Load);
 }
 
-extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
+extern fn command_bar_key_up(bar: &mut Object, _cmd: Sel, event: Id) {
+    const KEY_UP: u16 = 126;
+    const KEY_DOWN: u16 = 125;
+    match NSEvent::from_ptr(event).and_then(|event| Some(event.key_code())) {
+        Some(KEY_UP) => {
+            let bar = CommandBarView::from_ptr(bar).unwrap();
+            change_command_bar_history_index(bar, 1);
+        },
+        Some(KEY_DOWN) => {
+            let bar = CommandBarView::from_ptr(bar).unwrap();
+            change_command_bar_history_index(bar, -1);
+        },
+        _ => ()
+    }
+}
+
+extern fn command_bar_did_end_editing(delegate: &mut Object, _cmd: Sel, notification: Id) {
     if is_return_key_event(notification) {
         if let Some(text) = notification_object_text(notification) {
+            let delegate = CommandBarDelegate::from_ptr(delegate).unwrap();
+            delegate.insert_history_item(NSString::from(text));
             UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
         }
     }
@@ -316,8 +448,10 @@ extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: Id) {
     }
 }
 
-extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, words: Id, _: NSRange, _: Id) -> Id {
+extern fn command_bar_get_completion(delegate: &mut Object, _cmd: Sel, control: Id, _: Id, words: Id, _: NSRange, _: Id) -> Id {
     info!("requesting command bar completions");
+    let delegate = CommandBarDelegate::from_ptr(delegate).unwrap();
+    delegate.set_current_index(DRAFT_INDEX);
     let prefix = NSControl::from_ptr(control)
         .and_then(|control| control.text())
         .and_then(|string| string.as_str());
@@ -326,6 +460,34 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, 
         NSArray::from_vec(completions, |item| NSString::from(&item)).ptr()
     } else {
         words
+    }
+}
+
+fn change_command_bar_history_index(bar: CommandBarView, offset: NSInteger) {
+    if bar.completion_range().length > 0 || bar.selected_range().length > 0 {
+        info!("Selection active, skipping history action");
+        return;
+    }
+    let delegate = bar.delegate().unwrap();
+    let index = cmp::max(DRAFT_INDEX, cmp::min(delegate.current_index() + offset,
+                                               delegate.items().count() as NSInteger));
+    if index != delegate.current_index() {
+        if let (true, Some(text)) = (delegate.current_index() == DRAFT_INDEX, bar.text()) {
+            delegate.set_draft(text);
+        }
+        delegate.set_current_index(index);
+        if index == DRAFT_INDEX {
+            if let Some(text) = delegate.draft().and_then(|d| d.as_str()) {
+                bar.set_text(text);
+            }
+        } else {
+            let items = delegate.items().coerce::<NSArray>().unwrap();
+            let text = items.get::<NSString>(index as NSUInteger)
+                .and_then(|text| text.as_str());
+            if let Some(text) = text {
+                bar.set_text(text);
+            }
+        }
     }
 }
 
