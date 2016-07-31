@@ -125,7 +125,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn window_count(&self) -> u32 {
-        nsapp().windows().count() as u32
+        nsapp().ordered_windows().count() as u32
     }
 
     fn toggle_window(&self, window_index: u32, visible: bool) {

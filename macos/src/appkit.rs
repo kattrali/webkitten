@@ -128,8 +128,8 @@ impl NSApplication {
         NSMenu::from_ptr(unsafe { msg_send![self.ptr, mainMenu] })
     }
 
-    pub fn windows(&self) -> NSArray {
-        NSArray::from_ptr(unsafe { msg_send![self.ptr, windows] }).unwrap()
+    pub fn ordered_windows(&self) -> NSArray {
+        NSArray::from_ptr(unsafe { msg_send![self.ptr, orderedWindows] }).unwrap()
     }
 
     pub fn window_by_number(&self, window_number: NSInteger) -> Option<NSWindow> {
@@ -139,7 +139,7 @@ impl NSApplication {
     }
 
     pub fn window_by_index(&self, window_index: NSUInteger) -> Option<NSWindow> {
-        self.windows().get::<NSWindow>(window_index)
+        self.ordered_windows().get::<NSWindow>(window_index)
     }
 
     pub fn run(&self) {
