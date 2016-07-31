@@ -230,9 +230,10 @@ extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
     let url = NSAppleEventDescriptor::from_ptr(event)
         .and_then(|event| event.url_param_value())
         .and_then(|url| url.as_str());
-    let window_index = UI.focused_window_index();
-    if let (Some(url), Some(window_index)) = (url, window_index) {
-        UI.open_webview(window_index, Some(url));
+    if let Some(window_index) = UI.focused_window_index() {
+        UI.open_webview(window_index, url);
+    } else {
+        UI.open_window(url);
     }
 }
 
