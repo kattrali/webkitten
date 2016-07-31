@@ -71,8 +71,11 @@ impl CommandBarDelegate {
     }
 
     fn draft(&self) -> Option<NSString> {
-        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
-        NSString::from_ptr(unsafe { *obj.get_ivar("_draft") })
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            let draft: Id = *obj.get_ivar("_draft");
+            NSString::from_ptr(msg_send![draft, copy])
+        }
     }
 
     fn set_current_index(&self, index: NSInteger) {
