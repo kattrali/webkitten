@@ -38,7 +38,7 @@ impl CommandBarDelegate {
             decl.add_method(sel!(controlTextDidEndEditing:),
                 command_bar_did_end_editing as extern fn(&mut Object, Sel, Id));
             decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
-                command_bar_get_completion as extern fn(&Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
+                command_bar_get_completion as extern fn(&mut Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
         }
         decl.register();
     }
@@ -448,8 +448,10 @@ extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: Id) {
     }
 }
 
-extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, words: Id, _: NSRange, _: Id) -> Id {
+extern fn command_bar_get_completion(delegate: &mut Object, _cmd: Sel, control: Id, _: Id, words: Id, _: NSRange, _: Id) -> Id {
     info!("requesting command bar completions");
+    let delegate = CommandBarDelegate::from_ptr(delegate).unwrap();
+    delegate.set_current_index(DRAFT_INDEX);
     let prefix = NSControl::from_ptr(control)
         .and_then(|control| control.text())
         .and_then(|string| string.as_str());
