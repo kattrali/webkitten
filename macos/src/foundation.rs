@@ -177,6 +177,22 @@ impl NSMutableArray {
         unsafe { msg_send![self.ptr, addObject:object.ptr()] }
     }
 
+    pub fn get<T: ObjCClass>(&self, index: NSUInteger) ->Option<T> {
+        if self.count() > index {
+            T::from_ptr(unsafe { msg_send![self.ptr, objectAtIndex:index] })
+        } else {
+            None
+        }
+    }
+
+    pub fn insert<T: ObjCClass>(&self, index: NSUInteger, object: T) {
+        unsafe { msg_send![self.ptr, insertObject:object.ptr() atIndex:index] }
+    }
+
+    pub fn remove_last_object(&self) {
+        unsafe { msg_send![self.ptr, removeLastObject] }
+    }
+
     pub fn copy(&self) -> NSArray {
         let ptr = unsafe { msg_send![self.ptr, copy] };
         NSArray { ptr: ptr }

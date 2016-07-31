@@ -1,3 +1,5 @@
+use std::cmp;
+
 use objc::declare::ClassDecl;
 use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
@@ -13,6 +15,8 @@ use block::Block;
 use ui::{CocoaUI,UI};
 
 
+const DRAFT_INDEX: NSInteger = -1;
+
 impl_objc_class!(CommandBarDelegate);
 impl_objc_class!(WebViewHistoryDelegate);
 impl_objc_class!(WebViewContainerView);
@@ -24,11 +28,15 @@ impl CommandBarDelegate {
 
     fn load_class() {
         let mut decl = ClassDecl::new(Self::class_name(), class!("NSObject")).unwrap();
+        decl.add_ivar::<Id>("_items");
+        decl.add_ivar::<Id>("_draft");
+        decl.add_ivar::<NSUInteger>("_capacity");
+        decl.add_ivar::<NSInteger>("_currentIndex");
         unsafe {
             decl.add_method(sel!(controlTextDidChange:),
                 command_bar_text_changed as extern fn(&Object, Sel, Id));
             decl.add_method(sel!(controlTextDidEndEditing:),
-                command_bar_did_end_editing as extern fn(&Object, Sel, Id));
+                command_bar_did_end_editing as extern fn(&mut Object, Sel, Id));
             decl.add_method(sel!(control:textView:completions:forPartialWordRange:indexOfSelectedItem:),
                 command_bar_get_completion as extern fn(&Object, Sel, Id, Id, Id, NSRange, Id) -> Id);
         }
@@ -36,8 +44,66 @@ impl CommandBarDelegate {
     }
 
     pub fn new() -> Self {
-        CommandBarDelegate {
-            ptr: unsafe { msg_send![class!(Self::class_name()), new] }
+        let ptr = unsafe {
+            let delegate: *mut Object = msg_send![class!(Self::class_name()), new];
+            let obj = &mut *(delegate as *mut _ as *mut Object);
+            obj.set_ivar("_items", NSMutableArray::new().ptr());
+            obj.set_ivar("_capacity", 50 as NSUInteger);
+            obj.set_ivar("_currentIndex", -1 as NSInteger);
+            obj.set_ivar("_draft", NSString::new().ptr());
+            delegate
+        };
+        CommandBarDelegate { ptr: ptr }
+    }
+
+    fn items(&self) -> NSMutableArray {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        NSMutableArray::from_ptr(unsafe { *obj.get_ivar("_items") }).unwrap()
+    }
+
+    fn capacity(&self) -> NSUInteger {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        unsafe { *obj.get_ivar("_capacity") }
+    }
+    fn current_index(&self) -> NSInteger {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        unsafe { *obj.get_ivar("_currentIndex") }
+    }
+
+    fn draft(&self) -> Option<NSString> {
+        let obj = unsafe { &mut *(self.ptr as *mut _ as *mut Object) };
+        NSString::from_ptr(unsafe { *obj.get_ivar("_draft") })
+    }
+
+    fn set_current_index(&self, index: NSInteger) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_currentIndex", index);
+        }
+    }
+
+    fn insert_history_item(&self, item: NSString) {
+        let items = self.items();
+        if items.count() == 0 || items.get::<NSString>(0).unwrap() != item {
+            items.insert(0, item);
+            if items.count() > self.capacity() {
+                items.remove_last_object();
+            }
+            self.set_current_index(DRAFT_INDEX);
+        }
+    }
+
+    fn set_capacity(&self, capacity: NSUInteger) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_capacity", capacity);
+        }
+    }
+
+    fn set_draft(&self, draft: NSString) {
+        unsafe {
+            let obj = &mut *(self.ptr as *mut _ as *mut Object);
+            obj.set_ivar("_draft", draft.ptr());
         }
     }
 }
@@ -144,6 +210,10 @@ impl CommandBarView {
 
     fn load_class() {
         let mut bar = ClassDecl::new(Self::class_name(), class!("NSTextField")).unwrap();
+        unsafe {
+            bar.add_method(sel!(keyUp:),
+                command_bar_key_up as extern fn(&mut Object, Sel, Id));
+        }
         bar.add_ivar::<Id>("_heightConstraint");
         bar.register();
     }
@@ -152,9 +222,37 @@ impl CommandBarView {
         let ptr = unsafe {
             let view: Id = msg_send![class!(Self::class_name()), new];
             msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            let cell: Id = msg_send![view, cell];
+            msg_send![cell, setUsesSingleLineMode:YES];
             view
         };
         CommandBarView { ptr: ptr }
+    }
+
+    pub fn selected_range(&self) -> NSRange {
+        unsafe {
+            let editor: Id = msg_send![self.ptr, currentEditor];
+            msg_send![editor, selectedRange]
+        }
+    }
+
+    pub fn completion_range(&self) -> NSRange {
+        unsafe {
+            let editor: Id = msg_send![self.ptr, currentEditor];
+            msg_send![editor, rangeForUserTextChange]
+        }
+    }
+
+    pub fn text(&self) -> Option<NSString> {
+        NSString::from_ptr(unsafe { msg_send![self.ptr, stringValue] })
+    }
+
+    pub fn set_text(&self, text: &str) {
+        unsafe { msg_send![self.ptr, setStringValue:NSString::from(text).ptr()]; }
+    }
+
+    pub fn delegate(&self) -> Option<CommandBarDelegate> {
+        CommandBarDelegate::from_ptr(unsafe { msg_send![self.ptr, delegate] })
     }
 
     pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
@@ -243,9 +341,10 @@ extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
     let url = NSAppleEventDescriptor::from_ptr(event)
         .and_then(|event| event.url_param_value())
         .and_then(|url| url.as_str());
-    let window_index = UI.focused_window_index();
-    if let (Some(url), Some(window_index)) = (url, window_index) {
-        UI.open_webview(window_index, Some(url));
+    if let Some(window_index) = UI.focused_window_index() {
+        UI.open_webview(window_index, url);
+    } else {
+        UI.open_window(url);
     }
 }
 
@@ -312,9 +411,27 @@ extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) 
     register_uri_event(webview_ptr, nav_ptr, URIEvent::Load);
 }
 
-extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
+extern fn command_bar_key_up(bar: &mut Object, _cmd: Sel, event: Id) {
+    const KEY_UP: u16 = 126;
+    const KEY_DOWN: u16 = 125;
+    match NSEvent::from_ptr(event).and_then(|event| Some(event.key_code())) {
+        Some(KEY_UP) => {
+            let bar = CommandBarView::from_ptr(bar).unwrap();
+            change_command_bar_history_index(bar, 1);
+        },
+        Some(KEY_DOWN) => {
+            let bar = CommandBarView::from_ptr(bar).unwrap();
+            change_command_bar_history_index(bar, -1);
+        },
+        _ => ()
+    }
+}
+
+extern fn command_bar_did_end_editing(delegate: &mut Object, _cmd: Sel, notification: Id) {
     if is_return_key_event(notification) {
         if let Some(text) = notification_object_text(notification) {
+            let delegate = CommandBarDelegate::from_ptr(delegate).unwrap();
+            delegate.insert_history_item(NSString::from(text));
             UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
         }
     }
@@ -338,6 +455,34 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, 
         NSArray::from_vec(completions, |item| NSString::from(&item)).ptr()
     } else {
         words
+    }
+}
+
+fn change_command_bar_history_index(bar: CommandBarView, offset: NSInteger) {
+    if bar.completion_range().length > 0 || bar.selected_range().length > 0 {
+        info!("Selection active, skipping history action");
+        return;
+    }
+    let delegate = bar.delegate().unwrap();
+    let index = cmp::max(DRAFT_INDEX, cmp::min(delegate.current_index() + offset,
+                                               delegate.items().count() as NSInteger));
+    if index != delegate.current_index() {
+        if let (true, Some(text)) = (delegate.current_index() == DRAFT_INDEX, bar.text()) {
+            delegate.set_draft(text);
+        }
+        delegate.set_current_index(index);
+        if index == DRAFT_INDEX {
+            if let Some(text) = delegate.draft().and_then(|d| d.as_str()) {
+                bar.set_text(text);
+            }
+        } else {
+            let items = delegate.items().coerce::<NSArray>().unwrap();
+            let text = items.get::<NSString>(index as NSUInteger)
+                .and_then(|text| text.as_str());
+            if let Some(text) = text {
+                bar.set_text(text);
+            }
+        }
     }
 }
 

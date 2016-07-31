@@ -70,7 +70,12 @@ macro_rules! impl_objc_class {
                     msg_send![ptr, isKindOfClass:class!($name::class_name())]
                 };
                 if eq != YES && ptr != 0 as Id {
-                    println!("ERROR! Failed type coercion to {}", $name::class_name());
+                    let actual_class = NSString::from_ptr(unsafe {
+                        msg_send![ptr, className]
+                    }).and_then(|name| name.as_str()).unwrap_or("<unknown>");
+                    println!("ERROR! Failed type coercion from {} to {}",
+                             actual_class,
+                             $name::class_name());
                 }
                 eq == YES
             }
