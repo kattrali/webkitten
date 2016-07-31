@@ -146,7 +146,10 @@ pub fn focus_webview(window_index: u32, webview_index: u32) {
             if let Some(view) = subviews.get::<NSView>(index) {
                 let hidden = (webview_index as NSUInteger) != index;
                 view.set_hidden(hidden);
-                info!("Set webview #{} hidden: {}", index, hidden);
+                if !hidden {
+                    view.coerce::<NSResponder>().unwrap().become_first_responder();
+                }
+                info!("Set webview {} hidden: {}", index, hidden);
             }
         }
     }
