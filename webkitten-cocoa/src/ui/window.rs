@@ -71,7 +71,7 @@ pub fn focused_index() -> Option<u32> {
             }
         }
     }
-    None
+    windows.get::<NSWindow>(0).map(|window| window.number())
 }
 
 pub fn close(window_index: u32) {
