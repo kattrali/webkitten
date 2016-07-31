@@ -63,7 +63,7 @@ fn focus_command_bar_area(window_index: u32) {
 }
 
 pub fn focused_index() -> Option<u32> {
-    let windows = nsapp().windows();
+    let windows = nsapp().ordered_windows();
     for index in 0 .. windows.count() {
         if let Some(window) = windows.get::<NSWindow>(index) {
             if window.is_key_window() {
