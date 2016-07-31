@@ -179,9 +179,9 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     lua.set("open_window", function1(|uri: String| {
         info!("open_window");
         if uri.len() > 0 {
-            ui.open_window(Some(&uri));
+            ui.open_window(Some(&uri))
         } else {
-            ui.open_window(None);
+            ui.open_window(None)
         }
     }));
     lua.set("close_window", function1(|window_index: u32| {
