@@ -8,6 +8,8 @@ function run()
   if #arguments > 0 then
     if arguments[1] == "status" then
       load_uri(windex, webview_index, "https://status.github.com")
+    elseif arguments[1] == "gist" then
+      load_uri(windex, webview_index, "https://gist.github.com")
     elseif arguments[1] == "help" then
       load_uri(windex, webview_index, "https://help.github.com")
     elseif arguments[1] == "api" then
@@ -32,7 +34,7 @@ function run()
 end
 
 function complete_command()
-  local subcommands = {"api","dev","help", "status"}
+  local subcommands = {"api","dev","gist", "help", "status"}
   local query = table.concat(arguments," ")
   if #query == 0 then
     return table.concat(subcommands,",")
