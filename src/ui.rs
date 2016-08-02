@@ -267,6 +267,14 @@ pub trait BrowserConfiguration: Sized {
             .unwrap_or(false)
     }
 
+    /// Whether to allow JavaScript to run in a buffer based on the global
+    /// option `general.allow-javascript` and site-specific option
+    /// `sites."[HOST]".general.allow-javascript`. Defaults to `true`.
+    fn use_javascript(&self, uri: &str) -> bool {
+        self.lookup_site_bool(uri, "general.allow-javascript")
+            .unwrap_or(false)
+    }
+
     /// Whether to allow browser plugins to run in a buffer based on the global
     /// option `general.allow-plugins` and site-specific option
     /// `sites."[HOST]".general.allow-plugins`. Defaults to `false`.

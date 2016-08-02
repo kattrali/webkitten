@@ -257,10 +257,12 @@ fn add_and_focus_webview<B: BrowserConfiguration>(window_index: u32, uri: String
     let mut private_browsing = config.use_private_browsing(&uri);
     let mut use_plugins = config.use_plugins(&uri);
     let mut skip_content_filter = config.skip_content_filter(&uri);
+    let mut use_js = config.use_javascript(&uri);
     if let Some(buffer_config) = buffer_config {
         private_browsing = buffer_config.use_private_browsing(&uri);
         use_plugins = buffer_config.use_plugins(&uri);
         skip_content_filter = buffer_config.skip_content_filter(&uri);
+        use_js = buffer_config.use_javascript(&uri);
     }
     let block = ConcreteBlock::new(move |filter: Id, err: Id| {
         if let Some(window) = window_for_index(window_index) {
@@ -278,6 +280,8 @@ fn add_and_focus_webview<B: BrowserConfiguration>(window_index: u32, uri: String
             }
             info!("setting plugins option to {}", use_plugins);
             config.preferences().set_plugins_enabled(use_plugins);
+            info!("setting js option to {}", use_js);
+            config.preferences().set_javascript_enabled(use_js);
             if let Some(filter) = _WKUserContentFilter::from_ptr(filter) {
                 config.user_content_controller().add_user_content_filter(filter);
             } else if err != nil {
