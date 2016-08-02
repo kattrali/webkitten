@@ -182,11 +182,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_window", function1(|uri: String| {
         info!("open_window");
-        ui.open_window::<Config>(coerce_optional_str(uri.as_str()), None)
+        ui.open_window::<_, Config>(coerce_optional_str(uri), None)
     }));
     lua.set("open_custom_window", function2(|uri: String, config: String| {
         info!("open_window");
-        ui.open_window::<Config>(coerce_optional_str(uri.as_str()), Config::parse(&config))
+        ui.open_window(coerce_optional_str(uri), Config::parse(&config))
     }));
     lua.set("close_window", function1(|window_index: u32| {
         info!("close_window: {}", window_index);
@@ -210,11 +210,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_webview", function2(|window_index: u32, uri: String| {
         info!("open_webview: {}", window_index);
-        ui.open_webview::<Config>(window_index, coerce_optional_str(uri.as_str()), None);
+        ui.open_webview::<_, Config>(window_index, coerce_optional_str(uri), None);
     }));
     lua.set("open_custom_webview", function3(|window_index: u32, uri: String, config: String| {
         info!("open_custom_webview: {} {}", window_index, config);
-        ui.open_webview::<Config>(window_index, coerce_optional_str(uri.as_str()), Config::parse(&config));
+        ui.open_webview::<_, Config>(window_index, coerce_optional_str(uri), Config::parse(&config));
     }));
     lua.set("webview_count", function1(|window_index: u32| {
         info!("get webview_count: {}", window_index);
@@ -302,7 +302,7 @@ fn coerce_optional_index(value: u32) -> Option<u32> {
     }
 }
 
-fn coerce_optional_str<'a, T: Into<&'a str>>(value: T) -> Option<&'a str> {
+fn coerce_optional_str<T: Into<String>>(value: T) -> Option<String> {
     let string = value.into();
     if string.is_empty() {
         return None;

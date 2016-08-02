@@ -23,11 +23,11 @@ pub fn toggle(window_index: u32, visible: bool) {
     }
 }
 
-pub fn open<T: Into<String>, B: BrowserConfiguration>(uri: Option<T>, config: Option<B>) -> u32 {
+pub fn open<T, B>(uri: Option<T>, config: Option<B>) -> u32
+    where B: BrowserConfiguration,
+          T: Into<String> {
     let window = create_nswindow();
-    if let Some(uri) = uri {
-        add_and_focus_webview(window.number(), uri.into(), config);
-    }
+    add_and_focus_webview(window.number(), uri, config);
     window.number()
 }
 
@@ -103,8 +103,10 @@ pub fn set_title(window_index: u32, title: &str) {
     }
 }
 
-pub fn open_webview<T: Into<String>, B: BrowserConfiguration>(window_index: u32, uri: T, config: Option<B>) {
-    add_and_focus_webview(window_index, uri.into(), config);
+pub fn open_webview<T, B>(window_index: u32, uri: Option<T>, config: Option<B>)
+    where B: BrowserConfiguration,
+          T: Into<String> {
+    add_and_focus_webview(window_index, uri, config);
 }
 
 pub fn close_webview(window_index: u32, webview_index: u32) {
@@ -226,11 +228,9 @@ pub fn focused_webview_index(window_index: u32) -> Option<u32> {
 }
 
 pub fn webview_count(window_index: u32) -> u32 {
-    if let Some(window) = window_for_index(window_index) {
-        window_webviews(&window).count() as u32
-    } else {
-        0
-    }
+    window_for_index(window_index)
+        .map(|w| window_webviews(&w).count() as u32)
+        .unwrap_or(0)
 }
 
 fn window_for_index(index: u32) -> Option<NSWindow> {
@@ -251,9 +251,12 @@ fn subview(window: &NSWindow, area: WindowArea) -> NSView {
     subviews.get::<NSView>(index).unwrap()
 }
 
-fn add_and_focus_webview<B: BrowserConfiguration>(window_index: u32, uri: String, buffer_config: Option<B>) {
+fn add_and_focus_webview<T, B>(window_index: u32, uri: Option<T>, buffer_config: Option<B>)
+    where B: BrowserConfiguration,
+          T: Into<String> {
     let store = _WKUserContentExtensionStore::default_store();
     let ref config = super::UI.engine.config;
+    let uri = uri.map(|u| u.into()).unwrap_or(String::new());
     let mut private_browsing = config.use_private_browsing(&uri);
     let mut use_plugins = config.use_plugins(&uri);
     let mut skip_content_filter = config.skip_content_filter(&uri);
@@ -297,7 +300,9 @@ fn add_and_focus_webview<B: BrowserConfiguration>(window_index: u32, uri: String
             container.add_constraint(NSLayoutConstraint::bind(&webview_view, NSLayoutAttribute::Bottom, &container, NSLayoutAttribute::Bottom));
             container.add_constraint(NSLayoutConstraint::bind(&webview_view, NSLayoutAttribute::Left, &container, NSLayoutAttribute::Left));
             container.add_constraint(NSLayoutConstraint::bind(&webview_view, NSLayoutAttribute::Right, &container, NSLayoutAttribute::Right));
-            webview.load_request(CocoaUI::create_request(&uri));
+            if !uri.is_empty() {
+                webview.load_request(CocoaUI::create_request(&uri));
+            }
         }
     });
     if skip_content_filter {

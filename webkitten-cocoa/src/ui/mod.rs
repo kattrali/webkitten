@@ -60,12 +60,10 @@ impl CocoaUI {
     fn open_first_window(&self) {
         if !self.engine.initial_pages().is_empty() {
             for page in self.engine.initial_pages() {
-                self.open_window::<Config>(Some(page.as_str()), None);
+                self.open_window::<_, Config>(Some(page.as_str()), None);
             }
-        } else if let Some(page) = self.engine.config.start_page() {
-            self.open_window::<Config>(Some(&page), None);
         } else {
-            self.open_window::<Config>(None, None);
+            self.open_window::<_, Config>(self.engine.config.start_page(), None);
         }
     }
 
@@ -105,9 +103,11 @@ impl ApplicationUI for CocoaUI {
         UI.engine.execute_command::<CocoaUI>(&UI, window_index, text);
     }
 
-    fn open_window<T: BrowserConfiguration>(&self, uri: Option<&str>, config: Option<T>) -> u32 {
-        if uri.is_some() {
-            window::open(uri, config)
+    fn open_window<U, B>(&self, uri: Option<U>, config: Option<B>) -> u32
+        where U: Into<String>,
+              B: BrowserConfiguration {
+        if let Some(uri) = uri {
+            window::open(Some(uri), config)
         } else {
             window::open(self.engine.config.start_page(), config)
         }
@@ -173,13 +173,13 @@ impl ApplicationUI for CocoaUI {
         window::webview_count(window_index)
     }
 
-    fn open_webview<T: BrowserConfiguration>(&self, window_index: u32, uri: Option<&str>, config: Option<T>) {
+    fn open_webview<U, B>(&self, window_index: u32, uri: Option<U>, config: Option<B>)
+        where U: Into<String>,
+              B: BrowserConfiguration {
         if let Some(uri) = uri {
-            window::open_webview(window_index, uri, config);
-        } else if let Some(uri) = self.engine.config.start_page() {
-            window::open_webview(window_index, uri, config);
+            window::open_webview(window_index, Some(uri), config);
         } else {
-            warn!("Skipping opening an empty buffer");
+            window::open_webview(window_index, self.engine.config.start_page(), config);
         }
     }
 
