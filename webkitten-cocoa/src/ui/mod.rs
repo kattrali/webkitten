@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Read;
 
 use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
+use webkitten::config::Config;
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
 use macos::foundation::{NSURLRequest,NSURL,NSString,NSAutoreleasePool};
@@ -59,12 +60,12 @@ impl CocoaUI {
     fn open_first_window(&self) {
         if !self.engine.initial_pages().is_empty() {
             for page in self.engine.initial_pages() {
-                self.open_window(Some(page.as_str()));
+                self.open_window::<Config>(Some(page.as_str()), None);
             }
         } else if let Some(page) = self.engine.config.start_page() {
-            self.open_window(Some(&page));
+            self.open_window::<Config>(Some(&page), None);
         } else {
-            self.open_window(None);
+            self.open_window::<Config>(None, None);
         }
     }
 
@@ -100,11 +101,11 @@ impl ApplicationUI for CocoaUI {
         NSPasteboard::general().copy(text);
     }
 
-    fn open_window(&self, uri: Option<&str>) -> u32 {
+    fn open_window<T: BrowserConfiguration>(&self, uri: Option<&str>, config: Option<T>) -> u32 {
         if uri.is_some() {
-            window::open(uri)
+            window::open(uri, config)
         } else {
-            window::open(self.engine.config.start_page())
+            window::open(self.engine.config.start_page(), config)
         }
     }
 
@@ -168,11 +169,11 @@ impl ApplicationUI for CocoaUI {
         window::webview_count(window_index)
     }
 
-    fn open_webview(&self, window_index: u32, uri: Option<&str>) {
+    fn open_webview<T: BrowserConfiguration>(&self, window_index: u32, uri: Option<&str>, config: Option<T>) {
         if let Some(uri) = uri {
-            window::open_webview(window_index, uri);
+            window::open_webview(window_index, uri, config);
         } else if let Some(uri) = self.engine.config.start_page() {
-            window::open_webview(window_index, uri);
+            window::open_webview(window_index, uri, config);
         } else {
             warn!("Skipping opening an empty buffer");
         }

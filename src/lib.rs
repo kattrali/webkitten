@@ -59,9 +59,9 @@ impl EventHandler for Engine {
 
     fn on_new_frame_request<T: ApplicationUI>(&self, ui: &T, window_index: u32, uri: &str) {
         if self.config.new_frame_uses_focused_window() {
-            ui.open_webview(window_index, Some(uri));
+            ui.open_webview::<config::Config>(window_index, Some(uri), None);
         } else {
-            ui.open_window(Some(uri));
+            ui.open_window::<config::Config>(Some(uri), None);
         }
     }
 

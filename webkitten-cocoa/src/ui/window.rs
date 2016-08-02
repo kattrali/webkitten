@@ -23,10 +23,10 @@ pub fn toggle(window_index: u32, visible: bool) {
     }
 }
 
-pub fn open<T: Into<String>>(uri: Option<T>) -> u32 {
+pub fn open<T: Into<String>, B: BrowserConfiguration>(uri: Option<T>, config: Option<B>) -> u32 {
     let window = create_nswindow();
     if let Some(uri) = uri {
-        add_and_focus_webview(window.number(), uri.into());
+        add_and_focus_webview(window.number(), uri.into(), config);
     }
     window.number()
 }
@@ -103,8 +103,8 @@ pub fn set_title(window_index: u32, title: &str) {
     }
 }
 
-pub fn open_webview<T: Into<String>>(window_index: u32, uri: T) {
-    add_and_focus_webview(window_index, uri.into());
+pub fn open_webview<T: Into<String>, B: BrowserConfiguration>(window_index: u32, uri: T, config: Option<B>) {
+    add_and_focus_webview(window_index, uri.into(), config);
 }
 
 pub fn close_webview(window_index: u32, webview_index: u32) {
@@ -251,12 +251,17 @@ fn subview(window: &NSWindow, area: WindowArea) -> NSView {
     subviews.get::<NSView>(index).unwrap()
 }
 
-fn add_and_focus_webview(window_index: u32, uri: String) {
+fn add_and_focus_webview<B: BrowserConfiguration>(window_index: u32, uri: String, buffer_config: Option<B>) {
     let store = _WKUserContentExtensionStore::default_store();
     let ref config = super::UI.engine.config;
-    let private_browsing = config.use_private_browsing(&uri);
-    let use_plugins = config.use_plugins(&uri);
-    let skip_content_filter = config.skip_content_filter(&uri);
+    let mut private_browsing = config.use_private_browsing(&uri);
+    let mut use_plugins = config.use_plugins(&uri);
+    let mut skip_content_filter = config.skip_content_filter(&uri);
+    if let Some(buffer_config) = buffer_config {
+        private_browsing = buffer_config.use_private_browsing(&uri);
+        use_plugins = buffer_config.use_plugins(&uri);
+        skip_content_filter = buffer_config.skip_content_filter(&uri);
+    }
     let block = ConcreteBlock::new(move |filter: Id, err: Id| {
         if let Some(window) = window_for_index(window_index) {
             let container = subview(&window, WindowArea::WebView);

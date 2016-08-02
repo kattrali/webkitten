@@ -26,7 +26,7 @@ pub trait ApplicationUI: Sized {
     fn window_count(&self) -> u32;
 
     /// Open a new window
-    fn open_window(&self, uri: Option<&str>) -> u32;
+    fn open_window<T: BrowserConfiguration>(&self, uri: Option<&str>, config: Option<T>) -> u32;
 
     /// Close a window
     fn close_window(&self, index: u32);
@@ -69,7 +69,7 @@ pub trait ApplicationUI: Sized {
     fn webview_count(&self, window_index: u32) -> u32;
 
     /// Open a new webview in a specified window
-    fn open_webview(&self, window_index: u32, uri: Option<&str>);
+    fn open_webview<T: BrowserConfiguration>(&self, window_index: u32, uri: Option<&str>, config: Option<T>);
 
     /// Close a webview in a specified window
     fn close_webview(&self, window_index: u32, webview_index: u32);

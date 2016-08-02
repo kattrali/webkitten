@@ -178,11 +178,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_window", function1(|uri: String| {
         info!("open_window");
-        if uri.len() > 0 {
-            ui.open_window(Some(&uri))
-        } else {
-            ui.open_window(None)
-        }
+        ui.open_window::<Config>(coerce_optional_str(uri.as_str()), None)
+    }));
+    lua.set("open_custom_window", function2(|uri: String, config: String| {
+        info!("open_window");
+        ui.open_window::<Config>(coerce_optional_str(uri.as_str()), Config::parse(&config))
     }));
     lua.set("close_window", function1(|window_index: u32| {
         info!("close_window: {}", window_index);
@@ -206,7 +206,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_webview", function2(|window_index: u32, uri: String| {
         info!("open_webview: {}", window_index);
-        ui.open_webview(window_index, if uri.is_empty() { None } else { Some(&uri) });
+        ui.open_webview::<Config>(window_index, coerce_optional_str(uri.as_str()), None);
+    }));
+    lua.set("open_custom_webview", function3(|window_index: u32, uri: String, config: String| {
+        info!("open_custom_webview: {} {}", window_index, config);
+        ui.open_webview::<Config>(window_index, coerce_optional_str(uri.as_str()), Config::parse(&config));
     }));
     lua.set("webview_count", function1(|window_index: u32| {
         info!("get webview_count: {}", window_index);
@@ -284,4 +288,12 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.apply_styles(window_index, webview_index, &styles);
     }));
     lua
+}
+
+fn coerce_optional_str<'a, T: Into<&'a str>>(value: T) -> Option<&'a str> {
+    let string = value.into();
+    if string.is_empty() {
+        return None;
+    }
+    Some(string)
 }

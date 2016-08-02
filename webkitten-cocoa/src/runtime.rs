@@ -8,6 +8,7 @@ use macos::core_graphics::CGFloat;
 use macos::webkit::*;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
 use webkitten::WEBKITTEN_APP_ID;
+use webkitten::config::Config;
 use block::Block;
 
 use ui::{CocoaUI,UI};
@@ -207,11 +208,12 @@ extern fn set_as_default_browser(_: &Object, _cmd: Sel) {
 
 extern fn open_file(_: &Object, _cmd: Sel, _app: Id, path: Id) -> BOOL {
     if let Some(path) = NSString::from_ptr(path).and_then(|s| s.as_str()) {
-        let window_index = UI.focused_window_index().unwrap_or(UI.open_window(None));
+        let window_index = UI.focused_window_index()
+            .unwrap_or(UI.open_window::<Config>(None, None));
         UI.focus_window(window_index);
         let mut protocol = String::from("file://");
         protocol.push_str(path);
-        UI.open_webview(window_index, Some(&protocol));
+        UI.open_webview::<Config>(window_index, Some(&protocol), None);
         return YES;
     }
     NO
@@ -231,9 +233,9 @@ extern fn handle_get_url(_: &Object, _cmd: Sel, event: Id, _reply_event: Id) {
         .and_then(|event| event.url_param_value())
         .and_then(|url| url.as_str());
     if let Some(window_index) = UI.focused_window_index() {
-        UI.open_webview(window_index, url);
+        UI.open_webview::<Config>(window_index, url, None);
     } else {
-        UI.open_window(url);
+        UI.open_window::<Config>(url, None);
     }
 }
 
