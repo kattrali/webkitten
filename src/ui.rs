@@ -18,6 +18,8 @@ pub trait ApplicationUI: Sized {
     /// Copy text to the system clipboard
     fn copy(&self, text: &str);
 
+    /// Send a command to the event handler to be run in a particular window
+    fn execute_command(&self, window_index: Option<u32>, text: &str);
 
     /// The index of the focused window
     fn focused_window_index(&self) -> Option<u32>;

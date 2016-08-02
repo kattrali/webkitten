@@ -5,7 +5,7 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
-use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
+use webkitten::ui::*;
 use webkitten::config::Config;
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
@@ -99,6 +99,10 @@ impl ApplicationUI for CocoaUI {
 
     fn copy(&self, text: &str) {
         NSPasteboard::general().copy(text);
+    }
+
+    fn execute_command(&self, window_index: Option<u32>, text: &str) {
+        UI.engine.execute_command::<CocoaUI>(&UI, window_index, text);
     }
 
     fn open_window<T: BrowserConfiguration>(&self, uri: Option<&str>, config: Option<T>) -> u32 {

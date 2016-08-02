@@ -142,6 +142,10 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("copy");
         ui.copy(&message);
     }));
+    lua.set("run_command", function2(|window_index: u32, command: String| {
+        info!("run_command");
+        ui.execute_command(coerce_optional_index(window_index), &command);
+    }));
     lua.set("config_file_path", ui.event_handler().run_config.path.clone());
     lua.set("lookup_bool", function2(|config_path: String, key: String| {
         info!("lookup_bool ({}): {}", config_path, key);
@@ -288,6 +292,14 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.apply_styles(window_index, webview_index, &styles);
     }));
     lua
+}
+
+fn coerce_optional_index(value: u32) -> Option<u32> {
+    if value == NOT_FOUND {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 fn coerce_optional_str<'a, T: Into<&'a str>>(value: T) -> Option<&'a str> {
