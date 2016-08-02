@@ -253,7 +253,7 @@ pub trait BrowserConfiguration: Sized {
     }
 
     /// Whether to skip content filtering based on the site-specific option
-    /// `sites."[HOST]".skip-content-filter`. Defaults to `false`.
+    /// `sites."[HOST]".general.skip-content-filter`. Defaults to `false`.
     fn skip_content_filter(&self, uri: &str) -> bool {
         self.lookup_site_bool(uri, "general.skip-content-filter")
             .unwrap_or(false)
@@ -261,7 +261,7 @@ pub trait BrowserConfiguration: Sized {
 
     /// Whether to enable private browsing based on the global option
     /// `general.private-browsing` and site-specific option
-    /// `sites."[HOST]".private-browsing`. Defaults to `false`.
+    /// `sites."[HOST]".general.private-browsing`. Defaults to `false`.
     fn use_private_browsing(&self, uri: &str) -> bool {
         self.lookup_site_bool(uri, "general.private-browsing")
             .unwrap_or(false)
@@ -269,7 +269,7 @@ pub trait BrowserConfiguration: Sized {
 
     /// Whether to allow browser plugins to run in a buffer based on the global
     /// option `general.allow-plugins` and site-specific option
-    /// `sites."[HOST]".allow-plugins`. Defaults to `false`.
+    /// `sites."[HOST]".general.allow-plugins`. Defaults to `false`.
     fn use_plugins(&self, uri: &str) -> bool {
         self.lookup_site_bool(uri, "general.allow-plugins")
             .unwrap_or(false)
