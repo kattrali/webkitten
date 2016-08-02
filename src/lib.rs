@@ -124,10 +124,10 @@ impl EventHandler for Engine {
                                       webview_index: u32,
                                       uri: &str,
                                       event: URIEvent) {
-        for name in self.config.on_uri_event_commands(event) {
+        for name in self.config.on_uri_event_commands(&event) {
             if let Some(command) = command::Command::parse(&name, &self.config, COMMAND_FILE_SUFFIX) {
                 if let Some(file) = command.file() {
-                    match script::on_uri_event::<T>(file, ui, window_index, webview_index, uri, event) {
+                    match script::on_uri_event::<T>(file, ui, window_index, webview_index, uri, &event) {
                         Err(err) => warn!("{}", err),
                         Ok(_) => (),
                     }

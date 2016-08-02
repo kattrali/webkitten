@@ -129,9 +129,9 @@ pub struct CommandOutput {
     pub message: Option<String>,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Clone)]
 pub enum URIEvent {
-    Fail,
+    Fail(String),
     Load,
     Request,
 }
@@ -294,11 +294,11 @@ pub trait BrowserConfiguration: Sized {
     /// * `Load`: invokes all commands listed in `commands.on-load-uri`
     /// * `Request`: invokes all commands listed in `commands.on-request-uri`
     /// * `Fail`: invokes all commands listed in `commands.on-fail-uri`
-    fn on_uri_event_commands(&self, event: URIEvent) -> Vec<String> {
+    fn on_uri_event_commands(&self, event: &URIEvent) -> Vec<String> {
         let key = match event {
-            URIEvent::Load => "commands.on-load-uri",
-            URIEvent::Request => "commands.on-request-uri",
-            URIEvent::Fail => "commands.on-fail-uri",
+            &URIEvent::Load => "commands.on-load-uri",
+            &URIEvent::Request => "commands.on-request-uri",
+            &URIEvent::Fail(_) => "commands.on-fail-uri",
         };
         self.lookup_str_vec(key).unwrap_or(vec![])
     }
