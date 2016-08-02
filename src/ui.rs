@@ -211,10 +211,11 @@ pub trait BrowserConfiguration: Sized {
 
     /// Find the command to automatically run for a given text prefix
     fn command_matching_prefix(&self, text: &str) -> Option<String> {
-        if text.len() > 0 {
-            let key = format!("commands.on-text-change.\"{}\"", &text[.. 1]);
+        let mut chars = text.chars();
+        if let Some(prefix) = chars.next() {
+            let key = format!("commands.on-text-change.\"{}\"", prefix);
             if let Some(script) = self.lookup_str(&key) {
-                return Some(format!("{} {}", script, &text[1 ..]))
+                return Some(format!("{} {}", script, chars.as_str()))
             }
         }
         None
