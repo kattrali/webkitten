@@ -45,13 +45,6 @@ WebKit-based. An implementation using Servo could be of particular interest.
 
 ## Development
 
-### Dependencies
-
-* make
-* pkg-config
-* (BSD) install, or be comfortable editing the Makefile environment
-* Rust 1.5+, with [Cargo](http://doc.crates.io)
-
 ### Building
 
 To build, run `make`. To run the reference implementations, use `make run`.
