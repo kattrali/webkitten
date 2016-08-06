@@ -1,26 +1,25 @@
-Webkitten: The Hacker's Browser
-===============================
+Webkitten browser toolkit
+=========================
 
-Webkitten is a command-driven web browser built on WebKitGTK+ and inspired by
-luakit (https://mason-larobina.github.io/luakit) and Vim (http://www.vim.org).
+Webkitten is a command-driven web browser toolkit inspired by luakit_ and Vim_.
 
 Webkitten allows you to:
 
 - Browse the web (nearly) pointing device-free
-- Run custom scripts for browser interaction
+- Run custom scripts for browser interaction on demand or triggered by events
 - Edit human-readable configuration files
+- Assign keybindings to your custom scripts
+- Alter web pages with custom CSS and JavaScript
+- Create custom browsing modes based on the sites you visit
+- Customize your own content blocking
 
-Features
---------
+In addition to the tooling, Webkitten includes two reference implementation of
+a the browser interface:
 
-- Human-readable configuration
-- SQLite bookmark storage
-- Scriptable interface
-- Private browsing modes
-- WebKit content blocking (https://webkit.org/blog/3476)
-- Command autocompletion
-- Customizable keybindings
-- Support for userscripts and custom CSS
+- webkitten-gtk_: A WebKit2 GTK+3 implementation of Webkitten with Lua
+  scripting
+- webkitten-cocoa_: A Cocoa WebKit implementation of Webkitten with Lua
+  scripting
 
 User Guide
 ----------
@@ -28,7 +27,23 @@ User Guide
 .. toctree::
    :maxdepth: 2
 
-   installation
-   getting-started
-   custom-commands
+   user-guide/webkitten-cocoa
+   user-guide/webkitten-gtk
+   user-guide/configuration-options
+   user-guide/scripting-with-lua
 
+Developer Guide
+---------------
+
+.. toctree::
+   :maxdepth: 2
+
+   dev-guide/building
+   dev-guide/gui-binding
+   dev-guide/script-binding
+   dev-guide/contributing
+
+.. _luakit: https://mason-larobina.github.io/luakit
+.. _Vim: https://www.vim.org
+.. _webkitten-gtk: user-guide/webkitten-gtk.html
+.. _webkitten-cocoa: user-guide/webkitten-cocoa.html
