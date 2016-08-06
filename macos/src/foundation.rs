@@ -201,6 +201,14 @@ impl NSError {
     pub fn description(&self) -> Option<NSString> {
         NSString::from_ptr(unsafe { msg_send![self.ptr, description] })
     }
+
+    pub fn localized_description(&self) -> Option<NSString> {
+        NSString::from_ptr(unsafe { msg_send![self.ptr, localizedDescription] })
+    }
+    pub fn localized_failure_reason(&self) -> Option<NSString> {
+        NSString::from_ptr(unsafe { msg_send![self.ptr, localizedFailureReason] })
+    }
+
 }
 
 impl NSNotification {

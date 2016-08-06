@@ -193,8 +193,10 @@ fn declare_webview_delegates() {
             webview_will_load as extern fn (&Object, Sel, Id, Id));
         decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
             webview_did_load as extern fn (&Object, Sel, Id, Id));
-        decl.add_method(sel!(webView:didFailNavigation:),
-            webview_load_failed as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(webView:didFailProvisionalNavigation:withError:),
+            webview_load_failed as extern fn (&Object, Sel, Id, Id, Id));
+        decl.add_method(sel!(webView:didFailNavigation:withError:),
+            webview_load_failed as extern fn (&Object, Sel, Id, Id, Id));
         decl.add_method(sel!(webView:decidePolicyForNavigationAction:decisionHandler:),
             webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
     }
@@ -308,8 +310,17 @@ extern fn webview_will_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id)
     register_uri_event(webview_ptr, nav_ptr, URIEvent::Request);
 }
 
-extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
-    register_uri_event(webview_ptr, nav_ptr, URIEvent::Fail);
+extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id, error: Id) {
+    if let Some(error) = NSError::from_ptr(error) {
+        let mut message = String::new();
+        if let Some(description) = error.localized_description().and_then(|d| d.as_str()) {
+            message.push_str(&description);
+        }
+        if let Some(reason) = error.localized_failure_reason().and_then(|d| d.as_str()) {
+            message.push_str(&format!(" ({})", reason));
+        }
+        register_uri_event(webview_ptr, nav_ptr, URIEvent::Fail(message));
+    }
 }
 
 extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {

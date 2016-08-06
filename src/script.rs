@@ -91,7 +91,7 @@ pub fn on_uri_event<T: ApplicationUI>(file: File,
                                       window_index: u32,
                                       webview_index: u32,
                                       uri: &str,
-                                      event: URIEvent) -> ScriptResult<()> {
+                                      event: &URIEvent) -> ScriptResult<()> {
     let mut lua = create_runtime::<T>(ui);
     lua.set("requested_uri", uri);
     lua.set("webview_index", webview_index);
@@ -100,9 +100,12 @@ pub fn on_uri_event<T: ApplicationUI>(file: File,
         Err(ScriptError::new("script parsing failed", Some(err)))
     } else {
         let func: Option<LuaFunction<_>> = match event {
-            URIEvent::Load => lua.get("on_load_uri"),
-            URIEvent::Request => lua.get("on_request_uri"),
-            URIEvent::Fail => lua.get("on_fail_uri"),
+            &URIEvent::Load => lua.get("on_load_uri"),
+            &URIEvent::Request => lua.get("on_request_uri"),
+            &URIEvent::Fail(ref message) => {
+                lua.set("error_message", message.clone());
+                lua.get("on_fail_uri")
+            },
         };
         if let Some(mut func) = func {
             resolve_script_output::<()>(func.call())
