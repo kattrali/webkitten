@@ -2,7 +2,7 @@ use std::ops::BitOr;
 
 use objc::runtime::{Class,YES,NO,BOOL,Sel};
 use foundation::{NSString,NSMutableArray,NSArray,NSInteger,NSUInteger,NSRect,
-                 NSPoint};
+                 NSPoint,NSURL};
 use core_graphics::CGFloat;
 
 use super::{Id,ObjCClass,nil};
@@ -90,6 +90,7 @@ impl_objc_class!(NSResponder);
 impl_objc_class!(NSTextField);
 impl_objc_class!(NSView);
 impl_objc_class!(NSWindow);
+impl_objc_class!(NSWorkspace);
 
 pub fn nsapp() -> NSApplication {
     NSApplication::shared_app()
@@ -461,5 +462,16 @@ impl NSWindow {
 
     pub fn frame(&self) -> NSRect {
         unsafe { msg_send![self.ptr, frame] }
+    }
+}
+
+impl NSWorkspace {
+
+    pub fn shared_workspace() -> Self {
+        NSWorkspace { ptr: unsafe { msg_send![class!(Self::class_name()), sharedWorkspace] }}
+    }
+
+    pub fn open_url(&self, url: NSURL) {
+        unsafe { msg_send![self.ptr, openURL:url.ptr()] }
     }
 }

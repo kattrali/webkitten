@@ -350,6 +350,11 @@ impl NSURL {
         let ptr: *mut Object = unsafe { msg_send![self.ptr, absoluteString] };
         NSString { ptr: ptr }
     }
+
+    pub fn scheme(&self) -> NSString {
+        let ptr: *mut Object = unsafe { msg_send![self.ptr, scheme] };
+        NSString { ptr: ptr }
+    }
 }
 
 impl NSURLRequest {

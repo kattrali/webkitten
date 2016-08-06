@@ -2,7 +2,8 @@ use objc::declare::ClassDecl;
 use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
 use macos::foundation::*;
-use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags,NSLayoutConstraint};
+use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags,
+                    NSLayoutConstraint,NSWorkspace};
 use macos::core_services::register_default_scheme_handler;
 use macos::core_graphics::CGFloat;
 use macos::webkit::*;
@@ -263,22 +264,37 @@ extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
 
 extern fn webview_will_navigate(_: &Object, _cmd: Sel, webview_ptr: Id, action:Id,
                                 handler: Id) {
+    const PERMITTED_SCHEMES: [&'static str; 5] = ["file","http","https","ftp","about"];
     if let Some(action) = WKNavigationAction::from_ptr(action) {
-        let openable_type = action.navigation_type() == WKNavigationType::LinkActivated;
-        let cmd_pressed = action.modifier_flags() == NSEventModifierFlags::Command as NSUInteger;
-        if (openable_type && cmd_pressed) || action.target_frame().is_none() {
-            let window = NSView::from_ptr(webview_ptr)
-                .and_then(|view| view.window());
-            let url = action.request()
-                .and_then(|req| req.url().absolute_string().as_str());
-            if url.is_some() && window.is_some() {
-                run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
-                UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.unwrap().number() as u32, url.unwrap());
+        if let Some(request) = action.request() {
+            let url = request.url();
+            let openable_type = action.navigation_type() == WKNavigationType::LinkActivated;
+            let cmd_pressed = action.modifier_flags() == NSEventModifierFlags::Command as NSUInteger;
+            // Open in a new frame
+            let new_frame = (openable_type && cmd_pressed) || action.target_frame().is_none();
+            if new_frame {
+                let window = NSView::from_ptr(webview_ptr)
+                    .and_then(|view| view.window());
+                if let (Some(url), Some(window)) = (url.absolute_string().as_str(), window) {
+                    run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
+                    UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.number() as u32, url);
+                    return;
+                }
+            } else if let Some(scheme) = url.scheme().as_str() {
+                // Open in the existing frame
+                if PERMITTED_SCHEMES.contains(&scheme) {
+                    run_nav_action_block(handler, WKNavigationActionPolicy::Allow);
+                    return;
+                }
+                info!("Unable to open scheme: {}", scheme);
             }
+            // Open in the default app
+            run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
+            NSWorkspace::shared_workspace().open_url(url);
             return;
         }
     }
-    run_nav_action_block(handler, WKNavigationActionPolicy::Allow);
+    run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
 }
 
 fn run_nav_action_block(handler: Id, policy: WKNavigationActionPolicy) {
