@@ -145,6 +145,10 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("copy");
         ui.copy(&message);
     }));
+    lua.set("run_command", function2(|window_index: u32, command: String| {
+        info!("run_command");
+        ui.execute_command(coerce_optional_index(window_index), &command);
+    }));
     lua.set("config_file_path", ui.event_handler().run_config.path.clone());
     lua.set("lookup_bool", function2(|config_path: String, key: String| {
         info!("lookup_bool ({}): {}", config_path, key);
@@ -181,11 +185,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_window", function1(|uri: String| {
         info!("open_window");
-        if uri.len() > 0 {
-            ui.open_window(Some(&uri))
-        } else {
-            ui.open_window(None)
-        }
+        ui.open_window::<_, Config>(coerce_optional_str(uri), None)
+    }));
+    lua.set("open_custom_window", function2(|uri: String, config: String| {
+        info!("open_window");
+        ui.open_window(coerce_optional_str(uri), Config::parse(&config))
     }));
     lua.set("close_window", function1(|window_index: u32| {
         info!("close_window: {}", window_index);
@@ -209,7 +213,11 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
     }));
     lua.set("open_webview", function2(|window_index: u32, uri: String| {
         info!("open_webview: {}", window_index);
-        ui.open_webview(window_index, if uri.is_empty() { None } else { Some(&uri) });
+        ui.open_webview::<_, Config>(window_index, coerce_optional_str(uri), None);
+    }));
+    lua.set("open_custom_webview", function3(|window_index: u32, uri: String, config: String| {
+        info!("open_custom_webview: {} {}", window_index, config);
+        ui.open_webview::<_, Config>(window_index, coerce_optional_str(uri), Config::parse(&config));
     }));
     lua.set("webview_count", function1(|window_index: u32| {
         info!("get webview_count: {}", window_index);
@@ -287,4 +295,20 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.apply_styles(window_index, webview_index, &styles);
     }));
     lua
+}
+
+fn coerce_optional_index(value: u32) -> Option<u32> {
+    if value == NOT_FOUND {
+        None
+    } else {
+        Some(value)
+    }
+}
+
+fn coerce_optional_str<T: Into<String>>(value: T) -> Option<String> {
+    let string = value.into();
+    if string.is_empty() {
+        return None;
+    }
+    Some(string)
 }

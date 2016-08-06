@@ -18,6 +18,8 @@ pub trait ApplicationUI: Sized {
     /// Copy text to the system clipboard
     fn copy(&self, text: &str);
 
+    /// Send a command to the event handler to be run in a particular window
+    fn execute_command(&self, window_index: Option<u32>, text: &str);
 
     /// The index of the focused window
     fn focused_window_index(&self) -> Option<u32>;
@@ -26,7 +28,9 @@ pub trait ApplicationUI: Sized {
     fn window_count(&self) -> u32;
 
     /// Open a new window
-    fn open_window(&self, uri: Option<&str>) -> u32;
+    fn open_window<U, B>(&self, uri: Option<U>, config: Option<B>) -> u32
+        where U: Into<String>,
+              B: BrowserConfiguration;
 
     /// Close a window
     fn close_window(&self, index: u32);
@@ -69,7 +73,9 @@ pub trait ApplicationUI: Sized {
     fn webview_count(&self, window_index: u32) -> u32;
 
     /// Open a new webview in a specified window
-    fn open_webview(&self, window_index: u32, uri: Option<&str>);
+    fn open_webview<'a, U, B>(&self, window_index: u32, uri: Option<U>, config: Option<B>)
+        where U: Into<String>,
+              B: BrowserConfiguration;
 
     /// Close a webview in a specified window
     fn close_webview(&self, window_index: u32, webview_index: u32);
@@ -265,6 +271,14 @@ pub trait BrowserConfiguration: Sized {
     /// `sites."[HOST]".general.private-browsing`. Defaults to `false`.
     fn use_private_browsing(&self, uri: &str) -> bool {
         self.lookup_site_bool(uri, "general.private-browsing")
+            .unwrap_or(false)
+    }
+
+    /// Whether to allow JavaScript to run in a buffer based on the global
+    /// option `general.allow-javascript` and site-specific option
+    /// `sites."[HOST]".general.allow-javascript`. Defaults to `true`.
+    fn use_javascript(&self, uri: &str) -> bool {
+        self.lookup_site_bool(uri, "general.allow-javascript")
             .unwrap_or(false)
     }
 

@@ -5,7 +5,8 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
-use webkitten::ui::{ApplicationUI,BrowserConfiguration,WindowArea};
+use webkitten::ui::*;
+use webkitten::config::Config;
 use webkitten::Engine;
 use webkitten::optparse::parse_opts;
 use macos::foundation::{NSURLRequest,NSURL,NSString,NSAutoreleasePool};
@@ -59,12 +60,10 @@ impl CocoaUI {
     fn open_first_window(&self) {
         if !self.engine.initial_pages().is_empty() {
             for page in self.engine.initial_pages() {
-                self.open_window(Some(page.as_str()));
+                self.open_window::<_, Config>(Some(page.as_str()), None);
             }
-        } else if let Some(page) = self.engine.config.start_page() {
-            self.open_window(Some(&page));
         } else {
-            self.open_window(None);
+            self.open_window::<_, Config>(self.engine.config.start_page(), None);
         }
     }
 
@@ -100,11 +99,17 @@ impl ApplicationUI for CocoaUI {
         NSPasteboard::general().copy(text);
     }
 
-    fn open_window(&self, uri: Option<&str>) -> u32 {
-        if uri.is_some() {
-            window::open(uri)
+    fn execute_command(&self, window_index: Option<u32>, text: &str) {
+        UI.engine.execute_command::<CocoaUI>(&UI, window_index, text);
+    }
+
+    fn open_window<U, B>(&self, uri: Option<U>, config: Option<B>) -> u32
+        where U: Into<String>,
+              B: BrowserConfiguration {
+        if let Some(uri) = uri {
+            window::open(Some(uri), config)
         } else {
-            window::open(self.engine.config.start_page())
+            window::open(self.engine.config.start_page(), config)
         }
     }
 
@@ -168,13 +173,13 @@ impl ApplicationUI for CocoaUI {
         window::webview_count(window_index)
     }
 
-    fn open_webview(&self, window_index: u32, uri: Option<&str>) {
+    fn open_webview<U, B>(&self, window_index: u32, uri: Option<U>, config: Option<B>)
+        where U: Into<String>,
+              B: BrowserConfiguration {
         if let Some(uri) = uri {
-            window::open_webview(window_index, uri);
-        } else if let Some(uri) = self.engine.config.start_page() {
-            window::open_webview(window_index, uri);
+            window::open_webview(window_index, Some(uri), config);
         } else {
-            warn!("Skipping opening an empty buffer");
+            window::open_webview(window_index, self.engine.config.start_page(), config);
         }
     }
 
