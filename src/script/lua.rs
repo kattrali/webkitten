@@ -2,117 +2,118 @@ extern crate hlua;
 
 use std::error::Error;
 use std::fs::File;
-use std::fmt;
 
 use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
-use super::ui::{ApplicationUI,BrowserConfiguration,URIEvent,WindowArea};
-use super::config::Config;
 
+use ui::{ApplicationUI,BrowserConfiguration,URIEvent,WindowArea};
+use config::Config;
 
-const NOT_FOUND: u32 = 483600;
+use super::{ScriptingEngine,ScriptError,ScriptResult,NOT_FOUND};
 
-pub type ScriptResult<T> = Result<T, ScriptError>;
+#[allow(dead_code)]
+pub struct LuaEngine;
 
-#[derive(Debug)]
-pub struct ScriptError {
-    description: String
-}
+const FILE_EXTENSION: &'static str = "lua";
 
-impl ScriptError {
+impl ScriptingEngine for LuaEngine {
 
-    fn new(description: &str, error: Option<LuaError>) -> Self {
-        let mut full_description = String::from(description);
-        if let Some(error) = error {
-            full_description.push_str(": ");
-            match error {
-                LuaError::SyntaxError(err) => full_description.push_str(&err),
-                LuaError::ExecutionError(err) => full_description.push_str(&err),
-                LuaError::ReadError(err) => full_description.push_str(err.description()),
-                LuaError::WrongType => full_description.push_str("incorrect data type"),
+    fn file_extension() -> &'static str {
+        FILE_EXTENSION
+    }
+
+    fn describe(file: File) -> ScriptResult<String> {
+        let mut lua = Lua::new();
+        if let Err(err) = lua.execute_from_reader::<(), _>(file) {
+            Err(lua_to_script_error("script parsing failed", Some(err)))
+        } else {
+            let run: Option<LuaFunction<_>> = lua.get("description");
+            if let Some(mut run) = run {
+                resolve_script_output::<String>(run.call())
+            } else {
+                Err(lua_to_script_error("'describe' method missing", None))
+            }
+        }
+    }
+
+    fn execute<T, S>(file: File, arguments: Vec<String>, ui: &T, config_path: &str) -> ScriptResult<bool>
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine {
+        let mut lua = create_runtime::<T, S>(ui, config_path.to_owned());
+        lua.set("arguments", arguments);
+        if let Err(err) = lua.execute_from_reader::<(), _>(file) {
+            Err(lua_to_script_error("script parsing failed", Some(err)))
+        } else {
+            let run: Option<LuaFunction<_>> = lua.get("run");
+            if let Some(mut run) = run {
+                resolve_script_output::<bool>(run.call())
+            } else {
+                Err(lua_to_script_error("'run' method missing", None))
+            }
+        }
+    }
+
+    fn autocomplete<T, S>(file: File, arguments: Vec<String>, prefix: &str, ui: &T, config_path: &str) -> ScriptResult<Vec<String>>
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine {
+        let mut lua = create_runtime::<T, S>(ui, config_path.to_owned());
+        lua.set("prefix", prefix);
+        lua.set("arguments", arguments);
+        if let Err(err) = lua.execute_from_reader::<(), _>(file) {
+            Err(lua_to_script_error("script parsing failed", Some(err)))
+        } else {
+            let complete: Option<LuaFunction<_>> = lua.get("complete_command");
+            if let Some(mut complete) = complete {
+                resolve_script_output::<AnyLuaValue>(complete.call())
+                    .and_then(|output| coerce_lua_array(output))
+            } else {
+                Err(lua_to_script_error("'complete_command' method missing", None))
+            }
+        }
+    }
+
+    fn on_uri_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
+                          webview_index: u32, requested_uri: &str,
+                          event: &URIEvent) -> ScriptResult<()>
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine {
+        let mut lua = create_runtime::<T, S>(ui, config_path.to_owned());
+        lua.set("requested_uri", requested_uri);
+        lua.set("webview_index", webview_index);
+        lua.set("window_index", window_index);
+        if let Err(err) = lua.execute_from_reader::<(), _>(file) {
+            Err(lua_to_script_error("script parsing failed", Some(err)))
+        } else {
+            let func: Option<LuaFunction<_>> = match event {
+                &URIEvent::Load => lua.get("on_load_uri"),
+                &URIEvent::Request => lua.get("on_request_uri"),
+                &URIEvent::Fail(ref message) => {
+                    lua.set("error_message", message.clone());
+                    lua.get("on_fail_uri")
+                },
             };
-        }
-        ScriptError { description: full_description }
-    }
-}
-
-impl Error for ScriptError {
-
-    fn description(&self) -> &str {
-        &self.description
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        None
-    }
-}
-
-impl fmt::Display for ScriptError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description)
-    }
-}
-
-pub fn execute<T: ApplicationUI>(file: File, arguments: Vec<String>, ui: &T) -> ScriptResult<bool> {
-    let mut lua = create_runtime::<T>(ui);
-    lua.set("arguments", arguments);
-    if let Err(err) = lua.execute_from_reader::<(), _>(file) {
-        Err(ScriptError::new("script parsing failed", Some(err)))
-    } else {
-        let run: Option<LuaFunction<_>> = lua.get("run");
-        if let Some(mut run) = run {
-            resolve_script_output::<bool>(run.call())
-        } else {
-            Err(ScriptError::new("'run' method missing", None))
+            if let Some(mut func) = func {
+                resolve_script_output::<()>(func.call())
+            } else {
+                Err(lua_to_script_error(&format!("{:?} event method missing", event), None))
+            }
         }
     }
 }
 
-pub fn autocomplete<T: ApplicationUI>(file: File, arguments: Vec<String>, prefix: &str, ui: &T) -> ScriptResult<Vec<String>> {
-    let mut lua = create_runtime::<T>(ui);
-    lua.set("prefix", prefix);
-    lua.set("arguments", arguments);
-    if let Err(err) = lua.execute_from_reader::<(), _>(file) {
-        Err(ScriptError::new("script parsing failed", Some(err)))
-    } else {
-        let complete: Option<LuaFunction<_>> = lua.get("complete_command");
-        if let Some(mut complete) = complete {
-            resolve_script_output::<AnyLuaValue>(complete.call())
-                .and_then(|output| coerce_lua_array(output))
-        } else {
-            Err(ScriptError::new("'complete_command' method missing", None))
-        }
-    }
-}
-
-pub fn on_uri_event<T: ApplicationUI>(file: File,
-                                      ui: &T,
-                                      window_index: u32,
-                                      webview_index: u32,
-                                      uri: &str,
-                                      event: &URIEvent) -> ScriptResult<()> {
-    let mut lua = create_runtime::<T>(ui);
-    lua.set("requested_uri", uri);
-    lua.set("webview_index", webview_index);
-    lua.set("window_index", window_index);
-    if let Err(err) = lua.execute_from_reader::<(), _>(file) {
-        Err(ScriptError::new("script parsing failed", Some(err)))
-    } else {
-        let func: Option<LuaFunction<_>> = match event {
-            &URIEvent::Load => lua.get("on_load_uri"),
-            &URIEvent::Request => lua.get("on_request_uri"),
-            &URIEvent::Fail(ref message) => {
-                lua.set("error_message", message.clone());
-                lua.get("on_fail_uri")
-            },
+fn lua_to_script_error(description: &str, error: Option<LuaError>) -> ScriptError {
+    let mut full_description = String::from(description);
+    if let Some(error) = error {
+        full_description.push_str(": ");
+        match error {
+            LuaError::SyntaxError(err) => full_description.push_str(&err),
+            LuaError::ExecutionError(err) => full_description.push_str(&err),
+            LuaError::ReadError(err) => full_description.push_str(err.description()),
+            LuaError::WrongType => full_description.push_str("incorrect data type"),
         };
-        if let Some(mut func) = func {
-            resolve_script_output::<()>(func.call())
-        } else {
-            Err(ScriptError::new(&format!("{:?} event method missing", event), None))
-        }
     }
+    ScriptError { description: full_description }
 }
 
 fn coerce_lua_array(raw_value: AnyLuaValue) -> ScriptResult<Vec<String>> {
@@ -123,23 +124,25 @@ fn coerce_lua_array(raw_value: AnyLuaValue) -> ScriptResult<Vec<String>> {
             Ok(value.split(",").map(|v| String::from(v)).collect())
         }
     } else {
-        Err(ScriptError::new("Return type is not an string", None))
+        Err(lua_to_script_error("Return type is not an string", None))
     }
 }
 
 fn resolve_script_output<T>(output: Result<T, LuaError>) -> ScriptResult<T> {
-    output.map_err(|err| ScriptError::new("script failed to execute", Some(err)))
+    output.map_err(|err| lua_to_script_error("script failed to execute", Some(err)))
 }
 
-fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
+fn create_runtime<T, S>(ui: &T, config_path: String) -> Lua
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine {
     let mut lua = Lua::new();
     lua.openlibs();
     lua.set("NOT_FOUND", NOT_FOUND);
     lua.set("log_info", function1(|message: String| {
-        info!("lua: {}", message);
+        info!("{}", message);
     }));
     lua.set("log_debug", function1(|message: String| {
-        debug!("lua: {}", message);
+        debug!("{}", message);
     }));
     lua.set("copy", function1(|message: String| {
         info!("copy");
@@ -149,7 +152,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         info!("run_command");
         ui.execute_command(coerce_optional_index(window_index), &command);
     }));
-    lua.set("config_file_path", ui.event_handler().run_config.path.clone());
+    lua.set("config_file_path", config_path);
     lua.set("lookup_bool", function2(|config_path: String, key: String| {
         info!("lookup_bool ({}): {}", config_path, key);
         if let Some(config) = Config::parse_file(&config_path) {
@@ -292,6 +295,7 @@ fn create_runtime<T: ApplicationUI>(ui: &T) -> Lua {
         ui.run_javascript(window_index, webview_index, &script);
     }));
     lua.set("add_styles", function3(|window_index: u32, webview_index: u32, styles: String| {
+        info!("add_styles: ({}, {})", window_index, webview_index);
         ui.apply_styles(window_index, webview_index, &styles);
     }));
     lua
