@@ -32,7 +32,7 @@ impl ScriptingEngine for LuaEngine {
             if let Some(mut run) = run {
                 resolve_script_output::<String>(run.call())
             } else {
-                Err(lua_to_script_error("'describe' method missing", None))
+                Err(lua_to_script_error("'description' method missing", None))
             }
         }
     }
@@ -315,4 +315,71 @@ fn coerce_optional_str<T: Into<String>>(value: T) -> Option<String> {
         return None;
     }
     Some(string)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::fs::{File,remove_file};
+    use std::io::Write;
+    use std::path::PathBuf;
+    use std::slice;
+    use script::{ScriptingEngine,LuaEngine};
+
+    #[test]
+    fn describe_missing_method() {
+        let path = create_script("mail_missing", r#"
+            function not_description()
+                return "Sends mail"
+            end
+        "#);
+        let file = File::open(path.clone()).ok().unwrap();
+        let result = LuaEngine::describe(file);
+        assert!(result.is_err());
+        cleanup_script(path);
+    }
+
+    #[test]
+    fn describe_invalid_string() {
+        let path = create_script("mail_invalid", r#"
+            function description()
+            end
+        "#);
+        let file = File::open(path.clone()).ok().unwrap();
+        let result = LuaEngine::describe(file);
+        assert!(result.is_err());
+        cleanup_script(path);
+    }
+
+    #[test]
+    fn describe_valid_command() {
+        let path = create_script("mail_valid", r#"
+            function description()
+                return "Sends mail"
+            end
+        "#);
+        let file = File::open(path.clone()).ok().unwrap();
+        let result = LuaEngine::describe(file).ok().unwrap();
+        assert_eq!(String::from("Sends mail"), result);
+        cleanup_script(path);
+    }
+
+    #[allow(unused_must_use)]
+    fn cleanup_script(path: PathBuf) {
+        remove_file(path);
+    }
+
+    #[allow(unused_must_use)]
+    fn create_script(name: &str, contents: &str) -> PathBuf {
+        let mut dir = env::temp_dir();
+        dir.push(&format!("{}.lua", name));
+
+        let mut file = File::create(dir.clone()).ok().unwrap();
+        unsafe {
+            let slice = slice::from_raw_parts(contents.as_ptr(),
+                                              contents.len());
+            file.write_all(slice);
+        }
+        dir
+    }
 }
