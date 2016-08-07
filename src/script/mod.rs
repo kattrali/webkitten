@@ -1,4 +1,6 @@
-pub mod lua;
+mod lua;
+
+pub use self::lua::LuaEngine;
 
 use std::error::Error;
 use std::fs::File;
