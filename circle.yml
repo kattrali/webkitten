@@ -8,4 +8,4 @@ machine:
 test:
   override:
     # https://discuss.circleci.com/t/cargo-build-fails-on-fresh-install/1102/3
-    - eval `ssh-agent` && ssh-add /home/ubuntu/.ssh/id_circleci_github && cargo test
+    - rm ~/.gitconfig && eval `ssh-agent` && ssh-add /home/ubuntu/.ssh/id_circleci_github && cargo test
