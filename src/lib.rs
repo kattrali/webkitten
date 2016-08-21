@@ -117,13 +117,13 @@ impl EventHandler for Engine {
         command::Command::list_commands(prefix, &self.config)
     }
 
-    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: URIEvent)
+    fn on_buffer_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: BufferEvent)
         where T: ApplicationUI<S>,
               S: ScriptingEngine {
-        for name in self.config.on_uri_event_commands(&event) {
+        for name in self.config.on_buffer_event_commands(&event) {
             if let Some(command) = command::Command::parse(&name, &self.config, S::file_extension()) {
                 if let Some(file) = command.file() {
-                    match S::on_uri_event::<T, S>(file, ui, &self.run_config.path, window_index, webview_index, uri, &event) {
+                    match S::on_buffer_event::<T, S>(file, ui, &self.run_config.path, window_index, webview_index, uri, &event) {
                         Err(err) => warn!("{}", err),
                         Ok(_) => (),
                     }

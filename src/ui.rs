@@ -134,7 +134,7 @@ pub struct CommandOutput {
 }
 
 #[derive(Debug,Clone)]
-pub enum URIEvent {
+pub enum BufferEvent {
     Fail(String),
     Load,
     Request,
@@ -157,15 +157,16 @@ pub trait EventHandler {
         where T: ApplicationUI<S>,
               S: ScriptingEngine;
 
-    /// Handle a document load event in a webview.
+    /// Handle a buffer event
     ///
     /// ## Events
     ///
-    /// * `URIEvent::Request`: Invoke before document begins loading
-    /// * `URIEvent::Load`: Invoke after document finishes loading but not
+    /// * `BufferEvent::Request`: Invoke before document begins loading
+    /// * `BufferEvent::Load`: Invoke after document finishes loading but not
     ///   necessarily after subresources load
-    /// * `URIEvent::Fail`: Invoke after a document fails to load
-    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: URIEvent)
+    /// * `BufferEvent::Focus`: Invoke after a buffer is focused in a window
+    /// * `BufferEvent::Fail`: Invoke after a document fails to load
+    fn on_buffer_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: BufferEvent)
         where T: ApplicationUI<S>,
               S: ScriptingEngine;
 
@@ -310,14 +311,14 @@ pub trait BrowserConfiguration: Sized {
         self.lookup_str("commands.default")
     }
 
-    /// Commands triggered by a URI load event
+    /// Commands triggered by a buffer event
     ///
     /// ## Events
     ///
     /// * `Load`: invokes all commands listed in `commands.on-load-uri`
     /// * `Request`: invokes all commands listed in `commands.on-request-uri`
     /// * `Fail`: invokes all commands listed in `commands.on-fail-uri`
-    fn on_uri_event_commands(&self, event: &URIEvent) -> Vec<String> {
+    fn on_buffer_event_commands(&self, event: &BufferEvent) -> Vec<String> {
         let key = match event {
             &URIEvent::Load => "commands.on-load-uri",
             &URIEvent::Request => "commands.on-request-uri",

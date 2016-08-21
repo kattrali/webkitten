@@ -226,7 +226,7 @@ impl Config {
 mod tests {
 
     use super::Config;
-    use ui::{BrowserConfiguration,URIEvent};
+    use ui::{BrowserConfiguration,BufferEvent};
 
     #[test]
     fn lookup_fail_uri_commands() {
@@ -234,7 +234,7 @@ mod tests {
         [commands]
         on-fail-uri = ["bob","refresh"]
         "#).unwrap();
-        let commands = config.on_uri_event_commands(&URIEvent::Fail(String::new()));
+        let commands = config.on_buffer_event_commands(&BufferEvent::Fail(String::new()));
         assert_eq!(2, commands.len());
         assert_eq!(String::from("bob"), commands[0]);
         assert_eq!(String::from("refresh"), commands[1]);
@@ -246,7 +246,7 @@ mod tests {
         [commands]
         on-request-uri = ["bob","refresh"]
         "#).unwrap();
-        let commands = config.on_uri_event_commands(&URIEvent::Request);
+        let commands = config.on_buffer_event_commands(&BufferEvent::Request);
         assert_eq!(2, commands.len());
         assert_eq!(String::from("bob"), commands[0]);
         assert_eq!(String::from("refresh"), commands[1]);
@@ -258,7 +258,7 @@ mod tests {
         [commands]
         on-load-uri = ["bob","refresh"]
         "#).unwrap();
-        let commands = config.on_uri_event_commands(&URIEvent::Load);
+        let commands = config.on_buffer_event_commands(&BufferEvent::Load);
         assert_eq!(2, commands.len());
         assert_eq!(String::from("bob"), commands[0]);
         assert_eq!(String::from("refresh"), commands[1]);

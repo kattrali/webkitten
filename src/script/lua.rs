@@ -7,7 +7,7 @@ use self::hlua::{Lua,LuaError,function0,function1,function2,function3};
 use self::hlua::any::AnyLuaValue;
 use self::hlua::functions_read::LuaFunction;
 
-use ui::{ApplicationUI,BrowserConfiguration,URIEvent,WindowArea};
+use ui::{ApplicationUI,BrowserConfiguration,BufferEvent,WindowArea};
 use config::Config;
 
 use super::{ScriptingEngine,ScriptError,ScriptResult,NOT_FOUND};
@@ -73,9 +73,9 @@ impl ScriptingEngine for LuaEngine {
         }
     }
 
-    fn on_uri_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
-                          webview_index: u32, requested_uri: Option<&str>,
-                          event: &URIEvent) -> ScriptResult<()>
+    fn on_buffer_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
+                             webview_index: u32, requested_uri: Option<&str>,
+                             event: &BufferEvent) -> ScriptResult<()>
         where T: ApplicationUI<S>,
               S: ScriptingEngine {
         let mut lua = create_runtime::<T, S>(ui, config_path.to_owned());
@@ -88,9 +88,10 @@ impl ScriptingEngine for LuaEngine {
             Err(lua_to_script_error("script parsing failed", Some(err)))
         } else {
             let func: Option<LuaFunction<_>> = match event {
-                &URIEvent::Load => lua.get("on_load_uri"),
-                &URIEvent::Request => lua.get("on_request_uri"),
-                &URIEvent::Fail(ref message) => {
+                &BufferEvent::Load => lua.get("on_load_uri"),
+                &BufferEvent::Focus => lua.get("on_focus"),
+                &BufferEvent::Request => lua.get("on_request_uri"),
+                &BufferEvent::Fail(ref message) => {
                     lua.set("error_message", message.clone());
                     lua.get("on_fail_uri")
                 },
