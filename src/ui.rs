@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 use url::Url;
+use script::ScriptingEngine;
 
 use keybinding;
 
 
-pub trait ApplicationUI: Sized {
+pub trait ApplicationUI<S>: Sized where S: ScriptingEngine {
 
     /// Create a new UI
     fn new(engine: super::Engine) -> Option<Self>;
-
-    /// UI event handler
-    fn event_handler(&self) -> &super::Engine;
 
     /// Initialize all needed UI functions
     fn run(&self);
@@ -145,14 +143,19 @@ pub enum URIEvent {
 pub trait EventHandler {
 
     /// Handle a Return key press within the command bar
-    fn execute_command<T: ApplicationUI>(&self, ui: &T, window_index: Option<u32>, text: &str)
-        -> CommandOutput;
+    fn execute_command<T, S>(&self, ui: &T, window_index: Option<u32>, text: &str)
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine;
 
     /// Close the application
-    fn close<T: ApplicationUI>(&self, ui: &T);
+    fn close<T, S>(&self, ui: &T)
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine;
 
     /// Get available commands and/or arguments given a prefix
-    fn command_completions<T: ApplicationUI>(&self, ui: &T, prefix: &str) -> Vec<String>;
+    fn command_completions<T, S>(&self, ui: &T, prefix: &str) -> Vec<String>
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine;
 
     /// Handle a document load event in a webview.
     ///
@@ -162,15 +165,14 @@ pub trait EventHandler {
     /// * `URIEvent::Load`: Invoke after document finishes loading but not
     ///   necessarily after subresources load
     /// * `URIEvent::Fail`: Invoke after a document fails to load
-    fn on_uri_event<T: ApplicationUI>(&self,
-                                      ui: &T,
-                                      window_index: u32,
-                                      webview_index: u32,
-                                      uri: &str,
-                                      event: URIEvent);
+    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: &str, event: URIEvent)
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine;
 
     /// Handle a request to open a URI in a new frame
-    fn on_new_frame_request<T: ApplicationUI>(&self, ui: &T, window_index: u32, uri: &str);
+    fn on_new_frame_request<T, S>(&self, ui: &T, window_index: u32, uri: &str)
+        where T: ApplicationUI<S>,
+              S: ScriptingEngine;
 }
 
 pub trait BrowserConfiguration: Sized {
@@ -196,6 +198,12 @@ pub trait BrowserConfiguration: Sized {
     /// file
     fn config_dir(&self) -> Option<String> {
         self.lookup_raw_str("general.config-dir")
+    }
+
+    /// The name of the scripting engine to use for evaluating command files.
+    /// Defaults to "lua".
+    fn command_interpreter(&self) -> Option<String> {
+        self.lookup_str("commands.interpreter").or(Some(String::from("lua")))
     }
 
     /// The name of a command resolving any matching alias in `commands.aliases`

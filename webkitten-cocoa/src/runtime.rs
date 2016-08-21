@@ -261,7 +261,7 @@ extern fn container_key_down(this: &mut Object, _cmd: Sel, event: Id) {
 extern fn run_keybinding_command(this: &mut Object, _cmd: Sel) {
     if let Some(key_delegate) = KeyInputDelegate::from_ptr(this) {
         if let Some(command) = key_delegate.command().and_then(|c| c.as_str()) {
-            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), command);
+            UI.engine.execute_command::<CocoaUI<_>, _>(&UI, UI.focused_window_index(), command);
         }
     }
 }
@@ -281,7 +281,7 @@ extern fn webview_will_navigate(_: &Object, _cmd: Sel, webview_ptr: Id, action:I
                     .and_then(|view| view.window());
                 if let (Some(url), Some(window)) = (url.absolute_string().as_str(), window) {
                     run_nav_action_block(handler, WKNavigationActionPolicy::Cancel);
-                    UI.engine.on_new_frame_request::<CocoaUI>(&UI, window.number() as u32, url);
+                    UI.engine.on_new_frame_request::<CocoaUI<_>, _>(&UI, window.number() as u32, url);
                     return;
                 }
             } else if let Some(scheme) = url.scheme().as_str() {
@@ -332,7 +332,7 @@ extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
     if is_return_key_event(notification) {
         if let Some(text) = notification_object_text(notification) {
-            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), text);
+            UI.engine.execute_command::<CocoaUI<_>, _>(&UI, UI.focused_window_index(), text);
         }
     }
 }
@@ -340,7 +340,7 @@ extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
 extern fn command_bar_text_changed(_: &Object, _cmd: Sel, notification: Id) {
     if let Some(text) = notification_object_text(notification) {
         if let Some(command) = UI.engine.config.command_matching_prefix(text) {
-            UI.engine.execute_command::<CocoaUI>(&UI, UI.focused_window_index(), &command);
+            UI.engine.execute_command::<CocoaUI<_>, _>(&UI, UI.focused_window_index(), &command);
         }
     }
 }
@@ -351,7 +351,7 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, 
         .and_then(|control| control.text())
         .and_then(|string| string.as_str());
     if let Some(prefix) = prefix {
-        let completions = UI.engine.command_completions::<CocoaUI>(&UI, prefix);
+        let completions = UI.engine.command_completions::<CocoaUI<_>, _>(&UI, prefix);
         NSArray::from_vec(completions, |item| NSString::from(&item)).ptr()
     } else {
         words
@@ -368,7 +368,7 @@ fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
             .and_then(|url| url.absolute_string().as_str()));
     if let Some(uri) = uri {
         if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
-            UI.engine.on_uri_event::<CocoaUI>(&UI, window_index, webview_index,
+            UI.engine.on_uri_event::<CocoaUI<_>, _>(&UI, window_index, webview_index,
                                               uri, event);
         }
     }

@@ -9,7 +9,6 @@ use webkitten::ui::{BrowserConfiguration,WindowArea};
 
 use runtime::{CommandBarDelegate,WebViewHistoryDelegate,WebViewContainerView,
               log_error_description,CommandBarView};
-use super::CocoaUI;
 
 
 const BAR_HEIGHT: usize = 24;
@@ -301,7 +300,7 @@ fn add_and_focus_webview<T, B>(window_index: u32, uri: Option<T>, buffer_config:
             container.add_constraint(NSLayoutConstraint::bind(&webview_view, NSLayoutAttribute::Left, &container, NSLayoutAttribute::Left));
             container.add_constraint(NSLayoutConstraint::bind(&webview_view, NSLayoutAttribute::Right, &container, NSLayoutAttribute::Right));
             if !uri.is_empty() {
-                webview.load_request(CocoaUI::create_request(&uri));
+                webview.load_request(super::create_request(&uri));
             }
         }
     });

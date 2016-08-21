@@ -4,10 +4,12 @@ pub mod window;
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use std::marker::PhantomData;
 
 use webkitten::ui::*;
 use webkitten::config::Config;
 use webkitten::Engine;
+use webkitten::script::{ScriptingEngine,LuaEngine};
 use webkitten::optparse::parse_opts;
 use macos::foundation::{NSURLRequest,NSURL,NSString,NSAutoreleasePool};
 use macos::appkit::{NSPasteboard,nsapp};
@@ -21,7 +23,7 @@ use runtime::log_error_description;
 const DEFAULT_CONFIG_PATH: &'static str = ".config/webkitten/config.toml";
 
 lazy_static! {
-    pub static ref UI: CocoaUI = {
+    pub static ref UI: CocoaUI<LuaEngine> = {
         if let Some(home_dir) = env::home_dir() {
             let default_config_path = &format!("{}/{}", home_dir.display(), DEFAULT_CONFIG_PATH);
             parse_opts(default_config_path)
@@ -35,11 +37,12 @@ lazy_static! {
 }
 
 
-pub struct CocoaUI {
-    pub engine: Engine
+pub struct CocoaUI<S: ScriptingEngine> {
+    pub engine: Engine,
+    engine_type: PhantomData<S>
 }
 
-impl CocoaUI {
+impl<S: ScriptingEngine> CocoaUI<S> {
 
     fn compile_content_extensions<F>(&self, completion: F)
         where F: Fn(bool) + 'static {
@@ -66,24 +69,12 @@ impl CocoaUI {
             self.open_window::<_, Config>(self.engine.config.start_page(), None);
         }
     }
-
-    pub fn create_request(uri: &str) -> NSURLRequest {
-        let mut target = String::from(uri);
-        if !target.contains("://") {
-            target = format!("http://{}", target);
-        }
-        NSURLRequest::from(NSURL::from(NSString::from(&target)))
-    }
 }
 
-impl ApplicationUI for CocoaUI {
+impl<S: ScriptingEngine> ApplicationUI<S> for CocoaUI<S> {
 
     fn new(engine: Engine) -> Option<Self> {
-        Some(CocoaUI { engine: engine })
-    }
-
-    fn event_handler(&self) -> &Engine {
-       &self.engine
+        Some(CocoaUI { engine: engine, engine_type: PhantomData })
     }
 
     fn run(&self) {
@@ -100,7 +91,7 @@ impl ApplicationUI for CocoaUI {
     }
 
     fn execute_command(&self, window_index: Option<u32>, text: &str) {
-        UI.engine.execute_command::<CocoaUI>(&UI, window_index, text);
+        UI.engine.execute_command::<CocoaUI<_>, _>(&UI, window_index, text);
     }
 
     fn open_window<U, B>(&self, uri: Option<U>, config: Option<B>) -> u32
@@ -202,7 +193,7 @@ impl ApplicationUI for CocoaUI {
 
     fn set_uri(&self, window_index: u32, webview_index: u32, uri: &str) {
         if let Some(webview) = window::webview(window_index, webview_index) {
-            webview.load_request(CocoaUI::create_request(uri));
+            webview.load_request(create_request(uri));
         }
     }
 
@@ -279,5 +270,13 @@ impl ApplicationUI for CocoaUI {
             }
         }
     }
+}
+
+pub fn create_request(uri: &str) -> NSURLRequest {
+    let mut target = String::from(uri);
+    if !target.contains("://") {
+        target = format!("http://{}", target);
+    }
+    NSURLRequest::from(NSURL::from(NSString::from(&target)))
 }
 
