@@ -192,6 +192,8 @@ fn declare_webview_delegates() {
     unsafe {
         decl.add_method(sel!(webView:didStartProvisionalNavigation:),
             webview_will_load as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(_webView:navigation:didSameDocumentNavigation:),
+            webview_did_same_nav as extern fn (&Object, Sel, Id, Id, Id));
         decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
             webview_did_load as extern fn (&Object, Sel, Id, Id));
         decl.add_method(sel!(webView:didFailProvisionalNavigation:withError:),
@@ -323,6 +325,10 @@ extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: I
         }
         register_uri_event(webview_ptr, nav_ptr, BufferEvent::Fail(message));
     }
+}
+
+extern fn webview_did_same_nav(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id, _nav_type: Id) {
+    register_uri_event(webview_ptr, nav_ptr, BufferEvent::Load);
 }
 
 extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
