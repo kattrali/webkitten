@@ -32,11 +32,13 @@ impl_objc_class!(NSAppleEventDescriptor);
 impl_objc_class!(NSAppleEventManager);
 impl_objc_class!(NSArray);
 impl_objc_class!(NSAutoreleasePool);
+impl_objc_class!(NSBundle);
 impl_objc_class!(NSDictionary);
 impl_objc_class!(NSError);
 impl_objc_class!(NSMutableArray);
 impl_objc_class!(NSNotification);
 impl_objc_class!(NSNumber);
+impl_objc_class!(NSProcessInfo);
 impl_objc_class!(NSString);
 impl_objc_class!(NSURL);
 impl_objc_class!(NSURLRequest);
@@ -183,6 +185,21 @@ impl NSMutableArray {
     }
 }
 
+impl NSBundle {
+
+    pub fn from_class(class: &Class) -> Option<NSBundle> {
+        NSBundle::from_ptr(unsafe {
+            msg_send![class!("NSBundle"), bundleForClass:class]
+        })
+    }
+
+    pub fn get_info_dict_object<T: ObjCClass>(&self, key: &str) -> Option<T> {
+        T::from_ptr(unsafe {
+            msg_send![self.ptr, objectForInfoDictionaryKey:NSString::from(key).ptr]
+        })
+    }
+}
+
 impl NSDictionary {
 
     /// Creates a reference to an object in a dictionary if the specified type
@@ -226,6 +243,36 @@ impl NSNumber {
 
     pub fn integer_value(&self) -> NSInteger {
         unsafe { msg_send![self.ptr, integerValue] }
+    }
+}
+
+#[repr(C)]
+pub struct NSOperatingSystemVersion {
+    pub majorVersion: NSInteger,
+    pub minorVersion: NSInteger,
+    pub patchVersion: NSInteger,
+}
+
+unsafe impl Encode for NSOperatingSystemVersion {
+    fn encode() -> Encoding {
+        let encoding = format!("{{NSOperatingSystemVersion={}{}{}}}",
+                               NSInteger::encode().as_str(),
+                               NSInteger::encode().as_str(),
+                               NSInteger::encode().as_str());
+        unsafe { Encoding::from_str(&encoding) }
+    }
+}
+
+impl NSProcessInfo {
+
+    pub fn process_info() -> Self {
+        NSProcessInfo { ptr: unsafe {
+            msg_send![class!("NSProcessInfo"), processInfo]
+        }}
+    }
+
+    pub fn os_version(&self) -> NSOperatingSystemVersion {
+        unsafe { msg_send![self.ptr, operatingSystemVersion] }
     }
 }
 
