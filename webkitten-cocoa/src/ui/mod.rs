@@ -5,6 +5,7 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::marker::PhantomData;
+use std::process;
 
 use webkitten::ui::*;
 use webkitten::config::Config;
@@ -26,8 +27,12 @@ lazy_static! {
     pub static ref UI: CocoaUI<LuaEngine> = {
         if let Some(home_dir) = env::home_dir() {
             let default_config_path = &format!("{}/{}", home_dir.display(), DEFAULT_CONFIG_PATH);
-            parse_opts(default_config_path)
-                .and_then(|run_config| Engine::new(run_config))
+            let run_config = parse_opts(default_config_path);
+            if let Some((status, message)) = run_config.exit_status {
+                print!("{}", message);
+                process::exit(status);
+            }
+            Engine::new(run_config)
                 .and_then(|engine| CocoaUI::new(engine))
                 .unwrap_or_else(|| panic!("Unable to initialize application"))
         } else {
