@@ -8,12 +8,13 @@ use macos::core_services::register_default_scheme_handler;
 use macos::core_graphics::CGFloat;
 use macos::webkit::*;
 use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,BufferEvent};
-use webkitten::WEBKITTEN_APP_ID;
+use webkitten::{WEBKITTEN_APP_ID,WEBKITTEN_TITLE};
 use webkitten::config::Config;
 use block::Block;
 
 use ui::{CocoaUI,UI};
 
+const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 impl_objc_class!(CommandBarDelegate);
 impl_objc_class!(WebViewHistoryDelegate);
@@ -204,6 +205,30 @@ fn declare_webview_delegates() {
             webview_will_navigate as extern fn (&Object, Sel, Id, Id, Id));
     }
     decl.register();
+}
+
+pub fn default_user_agent() -> String {
+    let os_version = NSProcessInfo::process_info().os_version();
+    let minor_version = &format!("{}", os_version.minorVersion);
+    let os_version_string = format!("Macintosh; Intel Mac OS X {}_{}_{}",
+                                    os_version.majorVersion,
+                                    os_version.minorVersion,
+                                    os_version.patchVersion);
+    let webkit_version = NSBundle::from_class(class!("WKView"))
+        .and_then(|bundle| bundle.get_info_dict_object::<NSString>("CFBundleVersion"))
+        .and_then(|version| version.as_str())
+        .and_then(|version| Some(version.trim_left_matches(minor_version)));
+    let webkitten_version_string = format!("{}/{}", WEBKITTEN_TITLE, APP_VERSION);
+    if let Some(webkit_version) = webkit_version {
+        format!("Mozilla/5.0 ({}) AppleWebKit/{wkversion} {app_version} Version/9.1.1 Safari/{wkversion}",
+                os_version_string,
+                wkversion = webkit_version,
+                app_version = webkitten_version_string)
+    } else {
+        format!("Mozilla/5.0 ({}) AppleWebKit (KHTML, like Gecko) {app_version} Safari",
+                os_version_string,
+                app_version = webkitten_version_string)
+    }
 }
 
 extern fn set_as_default_browser(_: &Object, _cmd: Sel) {

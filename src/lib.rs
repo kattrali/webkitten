@@ -17,7 +17,7 @@ use script::ScriptingEngine;
 /// Application identifier for apps built with webkitten core
 pub const WEBKITTEN_APP_ID: &'static str = "me.delisa.Webkitten";
 /// Application title for apps built with webkitten core
-pub const WEBKITTEN_TITLE: &'static str = "webkitten";
+pub const WEBKITTEN_TITLE: &'static str = "Webkitten";
 
 /// The core of a webkitten application. The engine handles configuration options
 /// and responding to lifecycle and user events from the UI.
