@@ -209,6 +209,14 @@ fn create_runtime<T, S>(ui: &T, config_path: String) -> Lua
         info!("get focused_window_index");
         ui.focused_window_index().unwrap_or(NOT_FOUND)
     }));
+    lua.set("window_title", function1(|window_index: u32| {
+        info!("window_title: {}", window_index);
+        ui.window_title(window_index)
+    }));
+    lua.set("set_window_title", function2(|window_index: u32, title: String| {
+        info!("set_window_title: {}", window_index);
+        ui.set_window_title(window_index, &title);
+    }));
     lua.set("hide_window", function1(|window_index: u32| {
         info!("hide_window: {}", window_index);
         ui.toggle_window(window_index, false);
