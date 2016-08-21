@@ -136,6 +136,7 @@ pub struct CommandOutput {
 #[derive(Debug,Clone)]
 pub enum BufferEvent {
     Fail(String),
+    Focus,
     Load,
     Request,
 }
@@ -317,12 +318,14 @@ pub trait BrowserConfiguration: Sized {
     ///
     /// * `Load`: invokes all commands listed in `commands.on-load-uri`
     /// * `Request`: invokes all commands listed in `commands.on-request-uri`
+    /// * `Focus`: invokes all commands listed in `commands.on-focus-uri`
     /// * `Fail`: invokes all commands listed in `commands.on-fail-uri`
     fn on_buffer_event_commands(&self, event: &BufferEvent) -> Vec<String> {
         let key = match event {
-            &URIEvent::Load => "commands.on-load-uri",
-            &URIEvent::Request => "commands.on-request-uri",
-            &URIEvent::Fail(_) => "commands.on-fail-uri",
+            &BufferEvent::Load => "commands.on-load-uri",
+            &BufferEvent::Request => "commands.on-request-uri",
+            &BufferEvent::Focus => "commands.on-focus-uri",
+            &BufferEvent::Fail(_) => "commands.on-fail-uri",
         };
         self.lookup_str_vec(key).unwrap_or(vec![])
     }
