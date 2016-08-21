@@ -67,7 +67,7 @@ pub trait ScriptingEngine {
     /// the event trigger matching the URIEvent, provided the window index,
     /// webview index, and requested URI to the scope.
     fn on_uri_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
-                          webview_index: u32, requested_uri: &str,
+                          webview_index: u32, requested_uri: Option<&str>,
                           event: &URIEvent) -> ScriptResult<()>
         where T: ApplicationUI<S>,
               S: ScriptingEngine;

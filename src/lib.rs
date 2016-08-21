@@ -117,7 +117,7 @@ impl EventHandler for Engine {
         command::Command::list_commands(prefix, &self.config)
     }
 
-    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: &str, event: URIEvent)
+    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: URIEvent)
         where T: ApplicationUI<S>,
               S: ScriptingEngine {
         for name in self.config.on_uri_event_commands(&event) {

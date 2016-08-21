@@ -165,7 +165,7 @@ pub trait EventHandler {
     /// * `URIEvent::Load`: Invoke after document finishes loading but not
     ///   necessarily after subresources load
     /// * `URIEvent::Fail`: Invoke after a document fails to load
-    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: &str, event: URIEvent)
+    fn on_uri_event<T, S>(&self, ui: &T, window_index: u32, webview_index: u32, uri: Option<&str>, event: URIEvent)
         where T: ApplicationUI<S>,
               S: ScriptingEngine;
 

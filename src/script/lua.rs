@@ -74,12 +74,14 @@ impl ScriptingEngine for LuaEngine {
     }
 
     fn on_uri_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
-                          webview_index: u32, requested_uri: &str,
+                          webview_index: u32, requested_uri: Option<&str>,
                           event: &URIEvent) -> ScriptResult<()>
         where T: ApplicationUI<S>,
               S: ScriptingEngine {
         let mut lua = create_runtime::<T, S>(ui, config_path.to_owned());
-        lua.set("requested_uri", requested_uri);
+        if let Some(requested_uri) = requested_uri {
+            lua.set("requested_uri", requested_uri);
+        }
         lua.set("webview_index", webview_index);
         lua.set("window_index", window_index);
         if let Err(err) = lua.execute_from_reader::<(), _>(file) {

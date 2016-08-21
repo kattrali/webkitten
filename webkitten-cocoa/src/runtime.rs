@@ -366,11 +366,9 @@ fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
         .or(WKWebView::from_ptr(webview_ptr)
             .and_then(|view| view.url())
             .and_then(|url| url.absolute_string().as_str()));
-    if let Some(uri) = uri {
-        if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
-            UI.engine.on_uri_event::<CocoaUI<_>, _>(&UI, window_index, webview_index,
-                                              uri, event);
-        }
+    if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
+        UI.engine.on_uri_event::<CocoaUI<_>, _>(&UI, window_index, webview_index,
+                                          uri, event);
     }
 }
 
