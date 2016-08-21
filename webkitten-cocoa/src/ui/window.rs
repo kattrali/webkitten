@@ -9,7 +9,7 @@ use webkitten::ui::{BrowserConfiguration,WindowArea,BufferEvent,EventHandler};
 
 use ui::{CocoaUI,UI};
 use runtime::{CommandBarDelegate,WebViewHistoryDelegate,WebViewContainerView,
-              log_error_description,CommandBarView};
+              log_error_description,default_user_agent,CommandBarView};
 
 
 const BAR_HEIGHT: usize = 24;
@@ -295,7 +295,7 @@ fn add_and_focus_webview<T, B>(window_index: u32, uri: Option<T>, buffer_config:
             }
             let webview = WKWebView::new(CGRect::zero(), config).autorelease();
             webview.set_navigation_delegate(WebViewHistoryDelegate::new());
-            webview.set_custom_user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/601.6.17 (KHTML, like Gecko) Version/9.1.1 Safari/601.6.17");
+            webview.set_custom_user_agent(&default_user_agent());
             let webview_view = webview.coerce::<NSView>().unwrap();
             webview_view.disable_translates_autoresizing_mask_into_constraints();
             container.add_subview(&webview_view);
