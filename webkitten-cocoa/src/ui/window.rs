@@ -5,8 +5,9 @@ use macos::core_graphics::{CGFloat,CGRect};
 use macos::webkit::*;
 use block::ConcreteBlock;
 use webkitten::WEBKITTEN_TITLE;
-use webkitten::ui::{BrowserConfiguration,WindowArea};
+use webkitten::ui::{BrowserConfiguration,WindowArea,BufferEvent,EventHandler};
 
+use ui::{CocoaUI,UI};
 use runtime::{CommandBarDelegate,WebViewHistoryDelegate,WebViewContainerView,
               log_error_description,CommandBarView};
 
@@ -149,6 +150,9 @@ pub fn focus_webview(window_index: u32, webview_index: u32) {
                 view.set_hidden(hidden);
                 if !hidden {
                     view.coerce::<NSResponder>().unwrap().become_first_responder();
+                    UI.engine.on_buffer_event::<CocoaUI<_>, _>(&UI, window_index,
+                                                            webview_index,
+                                                            None, BufferEvent::Focus);
                 }
                 info!("Set webview {} hidden: {}", index, hidden);
             }

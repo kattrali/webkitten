@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fs::File;
 use std::fmt;
 
-use super::ui::{ApplicationUI,URIEvent};
+use super::ui::{ApplicationUI,BufferEvent};
 
 /// A sentinel value for representing empty optional numbers to scripting
 /// languages without optionals
@@ -64,11 +64,11 @@ pub trait ScriptingEngine {
               S: ScriptingEngine;
 
     /// Evaluate the contents of a file within the scripting runtime and execute
-    /// the event trigger matching the URIEvent, provided the window index,
+    /// the event trigger matching the BufferEvent, provided the window index,
     /// webview index, and requested URI to the scope.
-    fn on_uri_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
-                          webview_index: u32, requested_uri: &str,
-                          event: &URIEvent) -> ScriptResult<()>
+    fn on_buffer_event<T, S>(file: File, ui: &T, config_path: &str, window_index: u32,
+                             webview_index: u32, requested_uri: Option<&str>,
+                             event: &BufferEvent) -> ScriptResult<()>
         where T: ApplicationUI<S>,
               S: ScriptingEngine;
 }

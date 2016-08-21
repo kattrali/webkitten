@@ -7,7 +7,7 @@ use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags,
 use macos::core_services::register_default_scheme_handler;
 use macos::core_graphics::CGFloat;
 use macos::webkit::*;
-use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,URIEvent};
+use webkitten::ui::{ApplicationUI,EventHandler,BrowserConfiguration,BufferEvent};
 use webkitten::WEBKITTEN_APP_ID;
 use webkitten::config::Config;
 use block::Block;
@@ -192,6 +192,8 @@ fn declare_webview_delegates() {
     unsafe {
         decl.add_method(sel!(webView:didStartProvisionalNavigation:),
             webview_will_load as extern fn (&Object, Sel, Id, Id));
+        decl.add_method(sel!(_webView:navigation:didSameDocumentNavigation:),
+            webview_did_same_nav as extern fn (&Object, Sel, Id, Id, Id));
         decl.add_method(sel!(_webView:navigationDidFinishDocumentLoad:),
             webview_did_load as extern fn (&Object, Sel, Id, Id));
         decl.add_method(sel!(webView:didFailProvisionalNavigation:withError:),
@@ -309,7 +311,7 @@ fn run_nav_action_block(handler: Id, policy: WKNavigationActionPolicy) {
 }
 
 extern fn webview_will_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
-    register_uri_event(webview_ptr, nav_ptr, URIEvent::Request);
+    register_uri_event(webview_ptr, nav_ptr, BufferEvent::Request);
 }
 
 extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id, error: Id) {
@@ -321,12 +323,16 @@ extern fn webview_load_failed(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: I
         if let Some(reason) = error.localized_failure_reason().and_then(|d| d.as_str()) {
             message.push_str(&format!(" ({})", reason));
         }
-        register_uri_event(webview_ptr, nav_ptr, URIEvent::Fail(message));
+        register_uri_event(webview_ptr, nav_ptr, BufferEvent::Fail(message));
     }
 }
 
+extern fn webview_did_same_nav(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id, _nav_type: Id) {
+    register_uri_event(webview_ptr, nav_ptr, BufferEvent::Load);
+}
+
 extern fn webview_did_load(_: &Object, _cmd: Sel, webview_ptr: Id, nav_ptr: Id) {
-    register_uri_event(webview_ptr, nav_ptr, URIEvent::Load);
+    register_uri_event(webview_ptr, nav_ptr, BufferEvent::Load);
 }
 
 extern fn command_bar_did_end_editing(_: &Object, _cmd: Sel, notification: Id) {
@@ -358,7 +364,7 @@ extern fn command_bar_get_completion(_: &Object, _cmd: Sel, control: Id, _: Id, 
     }
 }
 
-fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
+fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: BufferEvent) {
     let uri = WKNavigation::from_ptr(nav_ptr)
         .and_then(|u| u.url_string())
         .and_then(|u| u.as_str())
@@ -366,11 +372,9 @@ fn register_uri_event(webview_ptr: Id, nav_ptr: Id, event: URIEvent) {
         .or(WKWebView::from_ptr(webview_ptr)
             .and_then(|view| view.url())
             .and_then(|url| url.absolute_string().as_str()));
-    if let Some(uri) = uri {
-        if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
-            UI.engine.on_uri_event::<CocoaUI<_>, _>(&UI, window_index, webview_index,
-                                              uri, event);
-        }
+    if let Some((window_index, webview_index)) = reference_indices(webview_ptr) {
+        UI.engine.on_buffer_event::<CocoaUI<_>, _>(&UI, window_index,
+                                                   webview_index, uri, event);
     }
 }
 
