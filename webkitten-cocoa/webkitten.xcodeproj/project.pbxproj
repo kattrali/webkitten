@@ -120,6 +120,7 @@
 					};
 					8A75143A1D3DDD42001C4112 = {
 						CreatedOnToolsVersion = 7.3.1;
+						LastSwiftMigration = 0800;
 					};
 				};
 			};
@@ -289,6 +290,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = me.delisa.Webkitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -302,6 +304,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = me.delisa.Webkitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -315,6 +318,7 @@
 				8A41C8F31D487CDE00515E73 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		8A7514361D3DDD42001C4112 /* Build configuration list for PBXProject "webkitten" */ = {
 			isa = XCConfigurationList;
