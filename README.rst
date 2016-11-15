@@ -28,6 +28,8 @@ Use ``make run`` to run the default implementation for your platform, and see
 the `User Guide`_ and the contrib_ directory for commands to kick start your
 configuration. Use ``make install`` to install the binary into your ``PATH``.
 
+My personal configuration files are here_ for reference.
+
 Building your own browser
 -------------------------
 
@@ -81,3 +83,4 @@ For all other commands, try `make help`.
 .. _contrib: contrib/scripts
 .. _Cargo: https://docs.crates.io
 .. _`Contribution Guide`: CONTRIBUTING.rst
+.. _here: https://github.com/kattrali/dotfiles/tree/master/.config/webkitten
