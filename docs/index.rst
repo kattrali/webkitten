@@ -16,9 +16,9 @@ Webkitten allows you to:
 In addition to the tooling, Webkitten includes two reference implementation of
 a the browser interface:
 
-- webkitten-gtk_: A WebKit2 GTK+3 implementation of Webkitten with Lua
-  scripting
 - webkitten-cocoa_: A Cocoa WebKit implementation of Webkitten with Lua
+  scripting
+- webkitten-gtk_: [WIP] A WebKit2 GTK+3 implementation of Webkitten with Lua
   scripting
 
 User Guide
