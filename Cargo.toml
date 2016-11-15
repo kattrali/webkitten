@@ -2,6 +2,10 @@
 name = "webkitten"
 version = "0.1.0"
 authors = ["Delisa Mason <iskanamagus@gmail.com>"]
+license = "BSD-2-Clause"
+description = "Core for running a configurable minimal browser"
+homepage = "https://webkitten.delisa.me"
+repository = "https://github.com/kattrali/webkitten"
 
 [dependencies]
 hlua    = "0.1.8"
