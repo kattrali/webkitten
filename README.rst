@@ -19,9 +19,9 @@ Running a reference implementation
 In addition to the tooling, Webkitten includes two reference implementations of
 the browser interface:
 
-- webkitten-gtk_: A WebKit2 GTK+3 implementation of Webkitten with Lua
-  scripting
 - webkitten-cocoa_: A Cocoa WebKit implementation of Webkitten with Lua
+  scripting
+- webkitten-gtk_: [WIP] A WebKit2 GTK+3 implementation of Webkitten with Lua
   scripting
 
 Use ``make run`` to run the default implementation for your platform, and see
