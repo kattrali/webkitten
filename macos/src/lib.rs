@@ -32,12 +32,6 @@ pub trait ObjCClass: Sized {
     fn release(&mut self);
 }
 
-/// Shorthand for getting a class by name
-#[macro_export]
-macro_rules! class {
-    ($name: expr) => (Class::get($name).unwrap());
-}
-
 /// Implements the basics of `NSObject`
 #[macro_export]
 macro_rules! impl_objc_class {
@@ -67,7 +61,7 @@ macro_rules! impl_objc_class {
 
             fn ptr_is_class(ptr: Id) -> bool {
                 let eq: BOOL = unsafe {
-                    msg_send![ptr, isKindOfClass:class!($name::class_name())]
+                    msg_send![ptr, isKindOfClass:class!($name)]
                 };
                 if eq != YES && ptr != 0 as Id {
                     println!("ERROR! Failed type coercion to {}", $name::class_name());
@@ -97,4 +91,3 @@ pub mod core_graphics;
 pub mod core_services;
 pub mod foundation;
 pub mod webkit;
-

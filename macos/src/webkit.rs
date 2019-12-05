@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use objc::runtime::{Class,YES,NO,BOOL};
+use objc::runtime::{YES,NO,BOOL};
 use foundation::{NSString,NSURLRequest,NSURL,NSUInteger};
 use core_graphics::CGRect;
 use block::Block;
@@ -129,7 +129,7 @@ impl WKWebView {
 
     pub fn new(frame: CGRect, config: WKWebViewConfiguration) -> Self {
         let ptr = unsafe {
-            let webview: Id = msg_send![class!("WKWebView"), alloc];
+            let webview: Id = msg_send![class!(WKWebView), alloc];
             let webview: Id = msg_send![webview, initWithFrame:frame
                                                  configuration:config.ptr()];
             webview
@@ -278,7 +278,7 @@ impl WKWebViewConfiguration {
 
     pub fn new() -> Self {
         WKWebViewConfiguration {
-            ptr: unsafe { msg_send![class!("WKWebViewConfiguration"), new] }
+            ptr: unsafe { msg_send![class!(WKWebViewConfiguration), new] }
         }
     }
 
@@ -308,7 +308,7 @@ impl WKWebsiteDataStore {
     pub fn default_store() -> Self {
         WKWebsiteDataStore {
             ptr: unsafe {
-                msg_send![class!("WKWebsiteDataStore"), defaultDataStore]
+                msg_send![class!(WKWebsiteDataStore), defaultDataStore]
             }
         }
     }
@@ -316,7 +316,7 @@ impl WKWebsiteDataStore {
     pub fn nonpersistent_store() -> Self {
         WKWebsiteDataStore {
             ptr: unsafe {
-                msg_send![class!("WKWebsiteDataStore"), nonPersistentDataStore]
+                msg_send![class!(WKWebsiteDataStore), nonPersistentDataStore]
             }
         }
     }
@@ -327,7 +327,7 @@ impl _WKUserContentExtensionStore {
     pub fn default_store() -> Self {
         _WKUserContentExtensionStore {
             ptr: unsafe {
-                msg_send![class!("_WKUserContentExtensionStore"), defaultStore]
+                msg_send![class!(_WKUserContentExtensionStore), defaultStore]
             }
         }
     }
@@ -361,7 +361,7 @@ impl _WKUserStyleSheet {
     pub fn new(styles: &str) -> Self {
         let source = NSString::from(styles);
         let ptr = unsafe {
-            let sheet: Id = msg_send![class!("_WKUserStyleSheet"), alloc];
+            let sheet: Id = msg_send![class!(_WKUserStyleSheet), alloc];
             let sheet: Id = msg_send![sheet, initWithSource:source
                                            forMainFrameOnly:YES];
             sheet
