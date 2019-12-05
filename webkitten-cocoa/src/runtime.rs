@@ -209,11 +209,11 @@ fn declare_webview_delegates() {
 
 pub fn default_user_agent() -> String {
     let os_version = NSProcessInfo::process_info().os_version();
-    let minor_version = &format!("{}", os_version.minorVersion);
+    let minor_version = &format!("{}", os_version.minor_version);
     let os_version_string = format!("Macintosh; Intel Mac OS X {}_{}_{}",
-                                    os_version.majorVersion,
-                                    os_version.minorVersion,
-                                    os_version.patchVersion);
+                                    os_version.major_version,
+                                    os_version.minor_version,
+                                    os_version.patch_version);
     let webkit_version = NSBundle::from_class(class!("WKView"))
         .and_then(|bundle| bundle.get_info_dict_object::<NSString>("CFBundleVersion"))
         .and_then(|version| version.as_str())

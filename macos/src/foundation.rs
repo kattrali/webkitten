@@ -248,9 +248,9 @@ impl NSNumber {
 
 #[repr(C)]
 pub struct NSOperatingSystemVersion {
-    pub majorVersion: NSInteger,
-    pub minorVersion: NSInteger,
-    pub patchVersion: NSInteger,
+    pub major_version: NSInteger,
+    pub minor_version: NSInteger,
+    pub patch_version: NSInteger,
 }
 
 unsafe impl Encode for NSOperatingSystemVersion {
