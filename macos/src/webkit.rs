@@ -11,7 +11,7 @@ use super::{Id,ObjCClass,nil};
 #[link(name = "WebKit", kind = "framework")]
 extern {}
 
-pub type ContentExtensionCompletionHandler = Deref<Target=Block<(Id, Id), ()>>;
+pub type ContentExtensionCompletionHandler = dyn Deref<Target=Block<(Id, Id), ()>>;
 
 pub enum WKFindOptions {
     CaseInsensitive = 1 << 0,
