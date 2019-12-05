@@ -76,8 +76,8 @@ impl CommandBarView {
 
     pub fn new() -> Self {
         let ptr = unsafe {
-            msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
             let view: Id = msg_send![class!(CommandBarView), new];
+            let () = msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
             view
         };
         CommandBarView { ptr: ptr }

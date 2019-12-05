@@ -156,7 +156,7 @@ impl NSControl {
 
     pub fn set_text(&self, text: &str) {
         unsafe {
-            msg_send![self.ptr, setStringValue:NSString::from(text).ptr()];
+            msg_send![self.ptr, setStringValue:NSString::from(text).ptr()]
         }
     }
 
@@ -167,7 +167,7 @@ impl NSControl {
             let font: Id = msg_send![class!(NSFont), fontWithName:name
                                                                size:size];
             if font != nil {
-                msg_send![self.ptr, setFont:font];
+                msg_send![self.ptr, setFont:font]
             }
         }
     }
@@ -217,7 +217,7 @@ impl NSLayoutConstraint {
     }
 
     pub fn set_constant(&self, constant: CGFloat) {
-        unsafe { msg_send![self.ptr, setConstant:constant]; }
+        unsafe { msg_send![self.ptr, setConstant:constant] }
     }
 
     pub fn constant(&self) -> CGFloat {
@@ -299,8 +299,8 @@ impl NSPasteboard {
         let data_types = NSMutableArray::new();
         data_types.push(NSString::from(NSPASTEBOARD_TYPE_STRING));
         unsafe {
-            msg_send![self.ptr, declareTypes:data_types.ptr() owner:nil];
-            msg_send![self.ptr, setString:data.ptr() forType:data_type.ptr()];
+            let () = msg_send![self.ptr, declareTypes:data_types.ptr() owner:nil];
+            let () = msg_send![self.ptr, setString:data.ptr() forType:data_type.ptr()];
         }
     }
 }
@@ -335,7 +335,7 @@ impl NSView {
 
     pub fn disable_translates_autoresizing_mask_into_constraints(&self) {
         unsafe {
-            msg_send![self.ptr, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            msg_send![self.ptr, setTranslatesAutoresizingMaskIntoConstraints:NO]
         }
     }
 
@@ -373,7 +373,7 @@ impl NSView {
 
     pub fn set_hidden(&self, hidden: bool) {
         let value = if hidden { YES } else { NO };
-        unsafe { msg_send![self.ptr, setHidden:value]; }
+        unsafe { msg_send![self.ptr, setHidden:value] }
     }
 
     pub fn hidden(&self) -> bool {
@@ -411,15 +411,15 @@ impl NSWindow {
     }
 
     pub fn close(&mut self) {
-        unsafe { msg_send![self.ptr, close]; }
+        let () = unsafe { msg_send![self.ptr, close] };
         self.ptr = nil;
     }
 
     pub fn release_delegate(&mut self) {
         unsafe {
             let delegate: Id = msg_send![self.ptr, delegate];
-            msg_send![delegate, release];
-            msg_send![self.ptr, setDelegate:nil];
+            let () = msg_send![delegate, release];
+            let () = msg_send![self.ptr, setDelegate:nil];
         }
     }
 

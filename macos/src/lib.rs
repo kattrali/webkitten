@@ -78,7 +78,7 @@ macro_rules! impl_objc_class {
             }
 
             fn release(&mut self) {
-                unsafe { msg_send![self.ptr(), release]; }
+                let () = unsafe { msg_send![self.ptr(), release] };
                 self.ptr = 0 as Id;
             }
         }

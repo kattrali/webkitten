@@ -71,7 +71,7 @@ impl NSAppleEventManager {
             msg_send![self.ptr, setEventHandler:handler.ptr()
                                     andSelector:sel!(handleGetURLEvent:withReplyEvent:)
                                   forEventClass:INTERNET_EVENT_CLASS
-                                     andEventID:GET_URL_EVENT_ID];
+                                     andEventID:GET_URL_EVENT_ID]
         }
     }
 }
