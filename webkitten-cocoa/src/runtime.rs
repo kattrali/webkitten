@@ -217,7 +217,7 @@ pub fn default_user_agent() -> String {
     let webkit_version = NSBundle::from_class(class!("WKView"))
         .and_then(|bundle| bundle.get_info_dict_object::<NSString>("CFBundleVersion"))
         .and_then(|version| version.as_str())
-        .and_then(|version| Some(version.trim_left_matches(minor_version)));
+        .and_then(|version| Some(version.trim_start_matches(minor_version)));
     let webkitten_version_string = format!("{}/{}", WEBKITTEN_TITLE, APP_VERSION);
     if let Some(webkit_version) = webkit_version {
         format!("Mozilla/5.0 ({}) AppleWebKit/{wkversion} {app_version} Version/9.1.1 Safari/{wkversion}",
