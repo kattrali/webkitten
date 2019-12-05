@@ -11,6 +11,7 @@ extern crate macos;
 #[macro_use]
 extern crate objc;
 extern crate webkitten;
+extern crate dirs;
 
 mod ui;
 mod runtime;

@@ -11,3 +11,4 @@ libc = "0.2"
 log = "0.3"
 webkitten = { path = "../" }
 macos = { path = "../macos" }
+dirs = "2.0.2"

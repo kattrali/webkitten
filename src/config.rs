@@ -1,5 +1,4 @@
 //! Configuration manipulation and handling for common browser options
-use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::collections::HashMap;
@@ -213,7 +212,7 @@ impl Config {
     }
 
     fn replace_home(&self, value: &str) -> String {
-        if let Some(home) = env::home_dir() {
+        if let Some(home) = dirs::home_dir() {
             if let Some(home) = home.to_str() {
                 return value.replace(HOME, &home)
             }
