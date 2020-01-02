@@ -3,6 +3,7 @@ extern crate toml;
 extern crate getopts;
 #[macro_use]
 extern crate log;
+extern crate dirs;
 
 pub mod command;
 pub mod config;
@@ -132,4 +133,3 @@ impl EventHandler for Engine {
         }
     }
 }
-

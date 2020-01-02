@@ -1,7 +1,6 @@
 pub mod application;
 pub mod window;
 
-use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::marker::PhantomData;
@@ -25,7 +24,7 @@ const DEFAULT_CONFIG_PATH: &'static str = ".config/webkitten/config.toml";
 
 lazy_static! {
     pub static ref UI: CocoaUI<LuaEngine> = {
-        if let Some(home_dir) = env::home_dir() {
+        if let Some(home_dir) = dirs::home_dir() {
             let default_config_path = &format!("{}/{}", home_dir.display(), DEFAULT_CONFIG_PATH);
             let run_config = parse_opts(default_config_path);
             if let Some((status, message)) = run_config.exit_status {
@@ -284,4 +283,3 @@ pub fn create_request(uri: &str) -> NSURLRequest {
     }
     NSURLRequest::from(NSURL::from(NSString::from(&target)))
 }
-

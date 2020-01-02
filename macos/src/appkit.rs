@@ -1,6 +1,6 @@
 use std::ops::BitOr;
 
-use objc::runtime::{Class,YES,NO,BOOL,Sel};
+use objc::runtime::{YES,NO,BOOL,Sel};
 use foundation::{NSString,NSMutableArray,NSArray,NSInteger,NSUInteger,NSRect,
                  NSPoint,NSURL};
 use core_graphics::CGFloat;
@@ -100,7 +100,7 @@ impl NSApplication {
 
     pub fn shared_app() -> Self {
         NSApplication {
-            ptr: unsafe { msg_send![class!("NSApplication"), sharedApplication] }
+            ptr: unsafe { msg_send![class!(NSApplication), sharedApplication] }
         }
     }
 
@@ -156,7 +156,7 @@ impl NSControl {
 
     pub fn set_text(&self, text: &str) {
         unsafe {
-            msg_send![self.ptr, setStringValue:NSString::from(text).ptr()];
+            msg_send![self.ptr, setStringValue:NSString::from(text).ptr()]
         }
     }
 
@@ -164,10 +164,10 @@ impl NSControl {
         let name = NSString::from(family);
         let size = size as CGFloat;
         unsafe {
-            let font: Id = msg_send![class!("NSFont"), fontWithName:name
+            let font: Id = msg_send![class!(NSFont), fontWithName:name
                                                                size:size];
             if font != nil {
-                msg_send![self.ptr, setFont:font];
+                msg_send![self.ptr, setFont:font]
             }
         }
     }
@@ -186,7 +186,7 @@ impl NSLayoutConstraint {
                view2: &NSView, attr2: NSLayoutAttribute, multiplier: CGFloat,
                constant: CGFloat) -> Self {
         let ptr = unsafe {
-            msg_send![class!("NSLayoutConstraint"), constraintWithItem:view1.ptr()
+            msg_send![class!(NSLayoutConstraint), constraintWithItem:view1.ptr()
                                                              attribute:attr1
                                                              relatedBy:relation
                                                                 toItem:view2.ptr()
@@ -217,7 +217,7 @@ impl NSLayoutConstraint {
     }
 
     pub fn set_constant(&self, constant: CGFloat) {
-        unsafe { msg_send![self.ptr, setConstant:constant]; }
+        unsafe { msg_send![self.ptr, setConstant:constant] }
     }
 
     pub fn constant(&self) -> CGFloat {
@@ -231,7 +231,7 @@ impl NSMenu {
         let title = NSString::from(title);
         NSMenu {
             ptr: unsafe {
-                let menu: Id = msg_send![class!("NSMenu"), alloc];
+                let menu: Id = msg_send![class!(NSMenu), alloc];
                 let menu: Id = msg_send![menu, initWithTitle:title.ptr()];
                 menu
             }
@@ -251,18 +251,18 @@ impl NSMenu {
 impl NSMenuItem {
 
     pub fn blank() -> Self {
-        NSMenuItem { ptr: unsafe { msg_send![class!("NSMenuItem"), new] } }
+        NSMenuItem { ptr: unsafe { msg_send![class!(NSMenuItem), new] } }
     }
 
     pub fn separator() -> Self {
-        NSMenuItem { ptr: unsafe { msg_send![class!("NSMenuItem"), separatorItem] } }
+        NSMenuItem { ptr: unsafe { msg_send![class!(NSMenuItem), separatorItem] } }
     }
 
     pub fn new(title: &str, action: Sel, key_equivalent: &str) -> Self {
         let title = NSString::from(title);
         let key = NSString::from(key_equivalent);
         let ptr = unsafe {
-            let item: Id = msg_send![class!("NSMenuItem"), alloc];
+            let item: Id = msg_send![class!(NSMenuItem), alloc];
             let item: Id = msg_send![item, initWithTitle:title
                                                   action:action
                                            keyEquivalent:key];
@@ -288,7 +288,7 @@ impl NSPasteboard {
 
     pub fn general() -> Self {
         NSPasteboard {
-            ptr: unsafe { msg_send![class!("NSPasteboard"), generalPasteboard] }
+            ptr: unsafe { msg_send![class!(NSPasteboard), generalPasteboard] }
         }
     }
 
@@ -299,8 +299,8 @@ impl NSPasteboard {
         let data_types = NSMutableArray::new();
         data_types.push(NSString::from(NSPASTEBOARD_TYPE_STRING));
         unsafe {
-            msg_send![self.ptr, declareTypes:data_types.ptr() owner:nil];
-            msg_send![self.ptr, setString:data.ptr() forType:data_type.ptr()];
+            let () = msg_send![self.ptr, declareTypes:data_types.ptr() owner:nil];
+            let () = msg_send![self.ptr, setString:data.ptr() forType:data_type.ptr()];
         }
     }
 }
@@ -308,7 +308,7 @@ impl NSPasteboard {
 impl NSTextField {
 
     pub fn new() -> Self {
-        NSTextField { ptr: unsafe { msg_send![class!("NSTextField"), new] } }
+        NSTextField { ptr: unsafe { msg_send![class!(NSTextField), new] } }
     }
 
     pub fn set_delegate<T: ObjCClass>(&self, delegate: &T) {
@@ -326,7 +326,7 @@ impl NSResponder {
 impl NSView {
 
     pub fn new() -> Self {
-        NSView { ptr: unsafe { msg_send![class!("NSView"), new] } }
+        NSView { ptr: unsafe { msg_send![class!(NSView), new] } }
     }
 
     pub fn add_constraint(&self, constraint: NSLayoutConstraint) {
@@ -335,7 +335,7 @@ impl NSView {
 
     pub fn disable_translates_autoresizing_mask_into_constraints(&self) {
         unsafe {
-            msg_send![self.ptr, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            msg_send![self.ptr, setTranslatesAutoresizingMaskIntoConstraints:NO]
         }
     }
 
@@ -373,7 +373,7 @@ impl NSView {
 
     pub fn set_hidden(&self, hidden: bool) {
         let value = if hidden { YES } else { NO };
-        unsafe { msg_send![self.ptr, setHidden:value]; }
+        unsafe { msg_send![self.ptr, setHidden:value] }
     }
 
     pub fn hidden(&self) -> bool {
@@ -396,7 +396,7 @@ impl NSWindow {
                backing: NSBackingStoreType, defer: bool) -> Self {
         let value = if defer { YES } else { NO };
         let ptr = unsafe {
-            let ptr: Id = msg_send![class!("NSWindow"), alloc];
+            let ptr: Id = msg_send![class!(NSWindow), alloc];
             let ptr: Id = msg_send![ptr, initWithContentRect:content_rect
                                                    styleMask:mask
                                                      backing:backing
@@ -411,15 +411,15 @@ impl NSWindow {
     }
 
     pub fn close(&mut self) {
-        unsafe { msg_send![self.ptr, close]; }
+        let () = unsafe { msg_send![self.ptr, close] };
         self.ptr = nil;
     }
 
     pub fn release_delegate(&mut self) {
         unsafe {
             let delegate: Id = msg_send![self.ptr, delegate];
-            msg_send![delegate, release];
-            msg_send![self.ptr, setDelegate:nil];
+            let () = msg_send![delegate, release];
+            let () = msg_send![self.ptr, setDelegate:nil];
         }
     }
 
@@ -468,7 +468,7 @@ impl NSWindow {
 impl NSWorkspace {
 
     pub fn shared_workspace() -> Self {
-        NSWorkspace { ptr: unsafe { msg_send![class!(Self::class_name()), sharedWorkspace] }}
+        NSWorkspace { ptr: unsafe { msg_send![class!(NSWorkspace), sharedWorkspace] }}
     }
 
     pub fn open_url(&self, url: NSURL) {

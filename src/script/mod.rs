@@ -25,7 +25,7 @@ impl Error for ScriptError {
         &self.description
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         None
     }
 }
@@ -72,4 +72,3 @@ pub trait ScriptingEngine {
         where T: ApplicationUI<S>,
               S: ScriptingEngine;
 }
-

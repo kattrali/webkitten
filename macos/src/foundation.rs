@@ -59,7 +59,7 @@ impl NSAppleEventManager {
     pub fn shared_manager() -> Self {
         NSAppleEventManager {
             ptr: unsafe {
-                msg_send![class!("NSAppleEventManager"), sharedAppleEventManager]
+                msg_send![class!(NSAppleEventManager), sharedAppleEventManager]
             }
         }
     }
@@ -71,7 +71,7 @@ impl NSAppleEventManager {
             msg_send![self.ptr, setEventHandler:handler.ptr()
                                     andSelector:sel!(handleGetURLEvent:withReplyEvent:)
                                   forEventClass:INTERNET_EVENT_CLASS
-                                     andEventID:GET_URL_EVENT_ID];
+                                     andEventID:GET_URL_EVENT_ID]
         }
     }
 }
@@ -135,7 +135,7 @@ impl NSAutoreleasePool {
 
     pub fn new() -> Self {
         NSAutoreleasePool {
-            ptr: unsafe { msg_send![class!("NSAutoreleasePool"), new] }
+            ptr: unsafe { msg_send![class!(NSAutoreleasePool), new] }
         }
     }
 
@@ -157,7 +157,7 @@ impl NSMutableArray {
     /// assert_eq!(0, array.count());
     /// ```
     pub fn new() -> Self {
-        NSMutableArray { ptr: unsafe { msg_send![class!("NSMutableArray"), new] }}
+        NSMutableArray { ptr: unsafe { msg_send![class!(NSMutableArray), new] }}
     }
 
     pub fn count(&self) -> NSUInteger {
@@ -189,7 +189,7 @@ impl NSBundle {
 
     pub fn from_class(class: &Class) -> Option<NSBundle> {
         NSBundle::from_ptr(unsafe {
-            msg_send![class!("NSBundle"), bundleForClass:class]
+            msg_send![class!(NSBundle), bundleForClass:class]
         })
     }
 
@@ -248,9 +248,9 @@ impl NSNumber {
 
 #[repr(C)]
 pub struct NSOperatingSystemVersion {
-    pub majorVersion: NSInteger,
-    pub minorVersion: NSInteger,
-    pub patchVersion: NSInteger,
+    pub major_version: NSInteger,
+    pub minor_version: NSInteger,
+    pub patch_version: NSInteger,
 }
 
 unsafe impl Encode for NSOperatingSystemVersion {
@@ -267,7 +267,7 @@ impl NSProcessInfo {
 
     pub fn process_info() -> Self {
         NSProcessInfo { ptr: unsafe {
-            msg_send![class!("NSProcessInfo"), processInfo]
+            msg_send![class!(NSProcessInfo), processInfo]
         }}
     }
 
@@ -289,7 +289,7 @@ impl NSString {
     /// assert_eq!(0, string.len());
     /// ```
     pub fn new() -> Self {
-        NSString { ptr: unsafe { msg_send![class!("NSString"), new] } }
+        NSString { ptr: unsafe { msg_send![class!(NSString), new] } }
     }
 
     /// Creates an `NSString` from a `str`.
@@ -304,7 +304,7 @@ impl NSString {
     /// ```
     pub fn from(content: &str) -> Self {
         let ptr: *mut Object = unsafe {
-            let string: *mut Object = msg_send![class!("NSString"), alloc];
+            let string: *mut Object = msg_send![class!(NSString), alloc];
             msg_send![string, initWithBytes:content.as_ptr()
                                      length:content.len()
                                    encoding:UTF8_ENCODING]
@@ -396,7 +396,7 @@ impl NSURL {
     /// ```
     pub fn from(string: NSString) -> Self {
         let ptr: *mut Object = unsafe {
-            msg_send![class!("NSURL"), URLWithString:string.ptr]
+            msg_send![class!(NSURL), URLWithString:string.ptr]
         };
         NSURL { ptr: ptr }
     }
@@ -416,7 +416,7 @@ impl NSURLRequest {
 
     pub fn from(url: NSURL) -> Self {
         let ptr: *mut Object = unsafe {
-            msg_send![class!("NSURLRequest"), requestWithURL:url.ptr]
+            msg_send![class!(NSURLRequest), requestWithURL:url.ptr]
         };
         NSURLRequest { ptr: ptr }
     }

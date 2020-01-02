@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use objc::runtime::{Class,YES,NO,BOOL};
+use objc::runtime::{YES,NO,BOOL};
 use foundation::{NSString,NSURLRequest,NSURL,NSUInteger};
 use core_graphics::CGRect;
 use block::Block;
@@ -11,7 +11,7 @@ use super::{Id,ObjCClass,nil};
 #[link(name = "WebKit", kind = "framework")]
 extern {}
 
-pub type ContentExtensionCompletionHandler = Deref<Target=Block<(Id, Id), ()>>;
+pub type ContentExtensionCompletionHandler = dyn Deref<Target=Block<(Id, Id), ()>>;
 
 pub enum WKFindOptions {
     CaseInsensitive = 1 << 0,
@@ -98,23 +98,23 @@ impl WKPreferences {
 
     pub fn set_javascript_enabled(&self, enabled: bool) {
         let value = if enabled { YES } else { NO };
-        unsafe { msg_send![self.ptr, setJavaScriptEnabled:value]; }
+        unsafe { msg_send![self.ptr, setJavaScriptEnabled:value] }
     }
 
     pub fn set_plugins_enabled(&self, enabled: bool) {
         let value = if enabled { YES } else { NO };
-        unsafe { msg_send![self.ptr, setPlugInsEnabled:value]; }
+        unsafe { msg_send![self.ptr, setPlugInsEnabled:value] }
     }
 }
 
 impl WKUserContentController {
 
     pub fn add_user_content_filter(&self, filter: _WKUserContentFilter) {
-        unsafe { msg_send![self.ptr, _addUserContentFilter:filter.ptr()]; }
+        unsafe { msg_send![self.ptr, _addUserContentFilter:filter.ptr()] }
     }
 
     pub fn add_user_style_sheet(&self, stylesheet: _WKUserStyleSheet) {
-        unsafe { msg_send![self.ptr, _addUserStyleSheet:stylesheet.ptr()]; }
+        unsafe { msg_send![self.ptr, _addUserStyleSheet:stylesheet.ptr()] }
     }
 
     pub fn can_add_user_style_sheet(&self) -> bool {
@@ -129,7 +129,7 @@ impl WKWebView {
 
     pub fn new(frame: CGRect, config: WKWebViewConfiguration) -> Self {
         let ptr = unsafe {
-            let webview: Id = msg_send![class!("WKWebView"), alloc];
+            let webview: Id = msg_send![class!(WKWebView), alloc];
             let webview: Id = msg_send![webview, initWithFrame:frame
                                                  configuration:config.ptr()];
             webview
@@ -138,15 +138,15 @@ impl WKWebView {
     }
 
     pub fn load_request(&self, request: NSURLRequest) {
-        unsafe { msg_send![self.ptr, loadRequest:request.ptr()]; }
+        unsafe { msg_send![self.ptr, loadRequest:request.ptr()] }
     }
 
     pub fn set_history_delegate<T: ObjCClass>(&self, delegate: T) {
-        unsafe { msg_send![self.ptr, _setHistoryDelegate:delegate.ptr()]; }
+        unsafe { msg_send![self.ptr, _setHistoryDelegate:delegate.ptr()] }
     }
 
     pub fn set_navigation_delegate<T: ObjCClass>(&self, delegate: T) {
-        unsafe { msg_send![self.ptr, setNavigationDelegate:delegate.ptr()]; }
+        unsafe { msg_send![self.ptr, setNavigationDelegate:delegate.ptr()] }
     }
 
     pub fn configuration(&self) -> WKWebViewConfiguration {
@@ -166,20 +166,20 @@ impl WKWebView {
     }
 
     pub fn go_back(&self) {
-        unsafe { msg_send![self.ptr, goBack]; }
+        unsafe { msg_send![self.ptr, goBack] }
     }
 
     pub fn go_forward(&self) {
-        unsafe { msg_send![self.ptr, goForward]; }
+        unsafe { msg_send![self.ptr, goForward] }
     }
 
     pub fn reload(&self) {
-        unsafe { msg_send![self.ptr, reload:nil]; }
+        unsafe { msg_send![self.ptr, reload:nil] }
     }
 
     pub fn reload_without_content_blockers(&self) {
         if self.can_reload_without_content_blockers() {
-            unsafe { msg_send![self.ptr, _reloadWithoutContentBlockers]; }
+            unsafe { msg_send![self.ptr, _reloadWithoutContentBlockers] }
         }
     }
 
@@ -192,7 +192,7 @@ impl WKWebView {
     }
 
     pub fn stop_loading(&self) {
-        unsafe { msg_send![self.ptr, stopLoading]; }
+        unsafe { msg_send![self.ptr, stopLoading] }
     }
 
     pub fn has_only_secure_content(&self) -> bool {
@@ -203,7 +203,7 @@ impl WKWebView {
     pub fn load_html_string(&self, contents: &str, base_url: &str) {
         unsafe {
             msg_send![self.ptr, loadHTMLString:NSString::from(contents)
-                                       baseURL:NSURL::from(NSString::from(base_url))];
+                                       baseURL:NSURL::from(NSString::from(base_url))]
         }
     }
 
@@ -222,7 +222,7 @@ impl WKWebView {
 
     pub fn set_custom_user_agent(&self, user_agent: &str) {
         unsafe {
-            msg_send![self.ptr, setCustomUserAgent:NSString::from(user_agent)];
+            msg_send![self.ptr, setCustomUserAgent:NSString::from(user_agent)]
         }
     }
 
@@ -233,7 +233,7 @@ impl WKWebView {
     pub fn evaluate_javascript(&self, script: &str) {
         unsafe {
             msg_send![self.ptr, evaluateJavaScript:NSString::from(script)
-                                 completionHandler:nil];
+                                 completionHandler:nil]
         }
     }
 
@@ -246,31 +246,31 @@ impl WKWebView {
         unsafe {
             msg_send![self.ptr, _findString:NSString::from(query)
                                     options:options
-                                   maxCount:100 as NSUInteger];
+                                   maxCount:100 as NSUInteger]
         }
     }
 
     pub fn hide_find_results(&self) {
-        unsafe { msg_send![self.ptr, _hideFindUI]; }
+        unsafe { msg_send![self.ptr, _hideFindUI] }
     }
 
     pub fn remove_from_superview(&self) {
-        unsafe { msg_send![self.ptr, removeFromSuperview]; }
+        unsafe { msg_send![self.ptr, removeFromSuperview] }
     }
 
     pub fn release_delegates(&self) {
         unsafe {
             let nav_delegate: Id = msg_send![self.ptr, navigationDelegate];
-            msg_send![nav_delegate, release];
+            let () = msg_send![nav_delegate, release];
             let history_delegate: Id = msg_send![self.ptr, _historyDelegate];
-            msg_send![history_delegate, release];
-            msg_send![self.ptr, setNavigationDelegate:nil];
-            msg_send![self.ptr, _setHistoryDelegate:nil];
+            let () = msg_send![history_delegate, release];
+            let () = msg_send![self.ptr, setNavigationDelegate:nil];
+            let () = msg_send![self.ptr, _setHistoryDelegate:nil];
         }
     }
 
     pub fn close(&self) {
-        unsafe { msg_send![self.ptr, _close]; }
+        unsafe { msg_send![self.ptr, _close] }
     }
 }
 
@@ -278,7 +278,7 @@ impl WKWebViewConfiguration {
 
     pub fn new() -> Self {
         WKWebViewConfiguration {
-            ptr: unsafe { msg_send![class!("WKWebViewConfiguration"), new] }
+            ptr: unsafe { msg_send![class!(WKWebViewConfiguration), new] }
         }
     }
 
@@ -308,7 +308,7 @@ impl WKWebsiteDataStore {
     pub fn default_store() -> Self {
         WKWebsiteDataStore {
             ptr: unsafe {
-                msg_send![class!("WKWebsiteDataStore"), defaultDataStore]
+                msg_send![class!(WKWebsiteDataStore), defaultDataStore]
             }
         }
     }
@@ -316,7 +316,7 @@ impl WKWebsiteDataStore {
     pub fn nonpersistent_store() -> Self {
         WKWebsiteDataStore {
             ptr: unsafe {
-                msg_send![class!("WKWebsiteDataStore"), nonPersistentDataStore]
+                msg_send![class!(WKWebsiteDataStore), nonPersistentDataStore]
             }
         }
     }
@@ -327,7 +327,7 @@ impl _WKUserContentExtensionStore {
     pub fn default_store() -> Self {
         _WKUserContentExtensionStore {
             ptr: unsafe {
-                msg_send![class!("_WKUserContentExtensionStore"), defaultStore]
+                msg_send![class!(_WKUserContentExtensionStore), defaultStore]
             }
         }
     }
@@ -341,7 +341,7 @@ impl _WKUserContentExtensionStore {
         unsafe {
             msg_send![self.ptr, compileContentExtensionForIdentifier:id_str
                                              encodedContentExtension:ex_str
-                                                   completionHandler:block.deref()];
+                                                   completionHandler:block.deref()]
         }
     }
 
@@ -351,7 +351,7 @@ impl _WKUserContentExtensionStore {
         let id_str = NSString::from(identifier);
         unsafe {
             msg_send![self.ptr, lookupContentExtensionForIdentifier:id_str
-                                                  completionHandler:block.deref()];
+                                                  completionHandler:block.deref()]
         }
     }
 }
@@ -361,7 +361,7 @@ impl _WKUserStyleSheet {
     pub fn new(styles: &str) -> Self {
         let source = NSString::from(styles);
         let ptr = unsafe {
-            let sheet: Id = msg_send![class!("_WKUserStyleSheet"), alloc];
+            let sheet: Id = msg_send![class!(_WKUserStyleSheet), alloc];
             let sheet: Id = msg_send![sheet, initWithSource:source
                                            forMainFrameOnly:YES];
             sheet

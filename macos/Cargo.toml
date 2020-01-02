@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["Delisa Mason <iskanamagus@gmail.com>"]
 
 [dependencies]
-block = "0.1"
-libc  = "0.2"
-objc  = "0.2"
+block = "0.1.6"
+libc  = "0.2.66"
+objc  = "0.2.7"

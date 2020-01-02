@@ -11,36 +11,35 @@ extern crate macos;
 #[macro_use]
 extern crate objc;
 extern crate webkitten;
+extern crate dirs;
 
 mod ui;
 mod runtime;
 
-use log::{LogRecord, LogLevel, LogMetadata,LogLevelFilter};
 use webkitten::ui::ApplicationUI;
+
+static SIMPLE_LOGGER: SimpleLogger = SimpleLogger;
 
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &LogMetadata) -> bool {
-        metadata.level() <= LogLevel::Info
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Info
     }
 
-    fn log(&self, record: &LogRecord) {
+    fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
             println!("{}:{}: {}", record.level(),
-                     record.location().module_path(), record.args());
+                     record.module_path().unwrap(), record.args());
         }
     }
+
+    fn flush(&self) {}
 }
 
 fn main() {
-	let log_result = log::set_logger(|max_log_level| {
-        max_log_level.set(LogLevelFilter::Info);
-        Box::new(SimpleLogger)
-    });
-    if let Err(err) = log_result {
-        println!("Failed to initialize logger: {}", err);
-    }
+    log::set_logger(&SIMPLE_LOGGER).unwrap();
+    log::set_max_level(log::LevelFilter::Info);
     runtime::declare_classes();
     ui::UI.run();
 }

@@ -1,5 +1,5 @@
 use objc::declare::ClassDecl;
-use objc::runtime::{Class,Object,Sel,BOOL,YES,NO};
+use objc::runtime::{Object,Sel,BOOL,YES,NO};
 use macos::{Id,ObjCClass};
 use macos::foundation::*;
 use macos::appkit::{NSControl,NSEvent,NSView,NSEventModifierFlags,
@@ -26,7 +26,7 @@ impl_objc_class!(CommandBarView);
 impl CommandBarDelegate {
     pub fn new() -> Self {
         CommandBarDelegate {
-            ptr: unsafe { msg_send![class!("CommandBarDelegate"), new] }
+            ptr: unsafe { msg_send![class!(CommandBarDelegate), new] }
         }
     }
 }
@@ -34,7 +34,7 @@ impl CommandBarDelegate {
 impl WebViewHistoryDelegate {
     pub fn new() -> Self {
         WebViewHistoryDelegate {
-            ptr: unsafe { msg_send![class!("WebViewHistoryDelegate"), new] }
+            ptr: unsafe { msg_send![class!(WebViewHistoryDelegate), new] }
         }
     }
 }
@@ -42,7 +42,7 @@ impl WebViewHistoryDelegate {
 impl AppDelegate {
     pub fn new() -> Self {
         AppDelegate {
-            ptr: unsafe { msg_send![class!("AppDelegate"), new] }
+            ptr: unsafe { msg_send![class!(AppDelegate), new] }
         }
     }
 }
@@ -50,7 +50,7 @@ impl AppDelegate {
 impl WebViewContainerView {
     pub fn new() -> Self {
         WebViewContainerView {
-            ptr: unsafe { msg_send![class!("WebViewContainerView"), new] }
+            ptr: unsafe { msg_send![class!(WebViewContainerView), new] }
         }
     }
 }
@@ -58,7 +58,7 @@ impl WebViewContainerView {
 impl KeyInputDelegate {
     pub fn new(command: &str) -> Self {
         let ptr = unsafe {
-            let delegate: *mut Object = msg_send![class!("KeyInputDelegate"), new];
+            let delegate: *mut Object = msg_send![class!(KeyInputDelegate), new];
             let obj = &mut *(delegate as *mut _ as *mut Object);
             obj.set_ivar("_command", NSString::from(command).ptr());
             delegate
@@ -76,8 +76,8 @@ impl CommandBarView {
 
     pub fn new() -> Self {
         let ptr = unsafe {
-            let view: Id = msg_send![class!(CommandBarView::class_name()), new];
-            msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
+            let view: Id = msg_send![class!(CommandBarView), new];
+            let () = msg_send![view, setTranslatesAutoresizingMaskIntoConstraints:NO];
             view
         };
         CommandBarView { ptr: ptr }
@@ -138,7 +138,7 @@ pub fn declare_classes() {
 }
 
 fn declare_view_classes() {
-    let mut container = ClassDecl::new(WebViewContainerView::class_name(), class!("NSView")).unwrap();
+    let mut container = ClassDecl::new(WebViewContainerView::class_name(), class!(NSView)).unwrap();
     unsafe {
         container.add_method(sel!(acceptsFirstResponder),
             container_accepts_first_responder as extern fn (&Object, Sel) -> BOOL);
@@ -146,20 +146,20 @@ fn declare_view_classes() {
             container_key_down as extern fn (&mut Object, Sel, Id));
     }
     container.register();
-    let mut bar = ClassDecl::new(CommandBarView::class_name(), class!("NSTextField")).unwrap();
+    let mut bar = ClassDecl::new(CommandBarView::class_name(), class!(NSTextField)).unwrap();
     bar.add_ivar::<Id>("_heightConstraint");
     bar.register();
 }
 
 fn declare_app_delegates() {
-    let mut key_input = ClassDecl::new(KeyInputDelegate::class_name(), class!("NSObject")).unwrap();
+    let mut key_input = ClassDecl::new(KeyInputDelegate::class_name(), class!(NSObject)).unwrap();
     key_input.add_ivar::<Id>("_command");
     unsafe {
         key_input.add_method(sel!(runKeybindingCommand),
             run_keybinding_command as extern fn(&mut Object, Sel));
     }
     key_input.register();
-    let mut app_delegate = ClassDecl::new(AppDelegate::class_name(), class!("NSObject")).unwrap();
+    let mut app_delegate = ClassDecl::new(AppDelegate::class_name(), class!(NSObject)).unwrap();
     unsafe {
         app_delegate.add_method(sel!(applicationWillFinishLaunching:),
             app_will_finish_launching as extern fn (&mut Object, Sel, Id));
@@ -176,7 +176,7 @@ fn declare_app_delegates() {
 }
 
 fn declare_bar_delegate() {
-    let mut decl = ClassDecl::new(CommandBarDelegate::class_name(), class!("NSObject")).unwrap();
+    let mut decl = ClassDecl::new(CommandBarDelegate::class_name(), class!(NSObject)).unwrap();
     unsafe {
         decl.add_method(sel!(controlTextDidChange:),
             command_bar_text_changed as extern fn(&Object, Sel, Id));
@@ -189,7 +189,7 @@ fn declare_bar_delegate() {
 }
 
 fn declare_webview_delegates() {
-    let mut decl = ClassDecl::new(WebViewHistoryDelegate::class_name(), class!("NSObject")).unwrap();
+    let mut decl = ClassDecl::new(WebViewHistoryDelegate::class_name(), class!(NSObject)).unwrap();
     unsafe {
         decl.add_method(sel!(webView:didStartProvisionalNavigation:),
             webview_will_load as extern fn (&Object, Sel, Id, Id));
@@ -209,15 +209,15 @@ fn declare_webview_delegates() {
 
 pub fn default_user_agent() -> String {
     let os_version = NSProcessInfo::process_info().os_version();
-    let minor_version = &format!("{}", os_version.minorVersion);
+    let minor_version = &format!("{}", os_version.minor_version);
     let os_version_string = format!("Macintosh; Intel Mac OS X {}_{}_{}",
-                                    os_version.majorVersion,
-                                    os_version.minorVersion,
-                                    os_version.patchVersion);
-    let webkit_version = NSBundle::from_class(class!("WKView"))
+                                    os_version.major_version,
+                                    os_version.minor_version,
+                                    os_version.patch_version);
+    let webkit_version = NSBundle::from_class(class!(WKView))
         .and_then(|bundle| bundle.get_info_dict_object::<NSString>("CFBundleVersion"))
         .and_then(|version| version.as_str())
-        .and_then(|version| Some(version.trim_left_matches(minor_version)));
+        .and_then(|version| Some(version.trim_start_matches(minor_version)));
     let webkitten_version_string = format!("{}/{}", WEBKITTEN_TITLE, APP_VERSION);
     if let Some(webkit_version) = webkit_version {
         format!("Mozilla/5.0 ({}) AppleWebKit/{wkversion} {app_version} Version/9.1.1 Safari/{wkversion}",
